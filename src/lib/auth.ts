@@ -19,6 +19,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        try {
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await prisma.user.findUnique({
@@ -31,9 +32,12 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
+        console.log("[Auth] user found:", user?.email, "hasPassword:", !!user?.password);
+
         if (!user || !user.password) return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
+        console.log("[Auth] password valid:", isValid);
         if (!isValid) return null;
 
         return {
@@ -45,6 +49,10 @@ export const authOptions: NextAuthOptions = {
           organizationId: user.organizationMembers[0]?.organizationId || null,
           organizationName: user.organizationMembers[0]?.organization?.name || null,
         };
+        } catch (error) {
+          console.error("[Auth] ERROR:", error);
+          return null;
+        }
       },
     }),
   ],
