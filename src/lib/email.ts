@@ -1,6 +1,11 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initialization to avoid build errors when RESEND_API_KEY is not set
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY ?? "placeholder");
+  return _resend;
+}
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -27,7 +32,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ id?: string; 
   const from = `${fromName} <${fromEmail}>`;
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from,
       to: Array.isArray(opts.to) ? opts.to : [opts.to],
       replyTo: opts.replyTo,
