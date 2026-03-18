@@ -1,11 +1,22 @@
--- Add Google Ads OAuth fields to organizations
-ALTER TABLE "organizations" ADD COLUMN "google_access_token" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "google_refresh_token" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "google_customer_id" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "google_customer_name" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "google_connected_at" TIMESTAMP(3);
-ALTER TABLE "organizations" ADD COLUMN "google_connected_by" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "google_token_expires_at" TIMESTAMP(3);
+-- CreateEnum (safe)
+DO $$ BEGIN
+  CREATE TYPE "campaign_objective" AS ENUM ('LEAD_GENERATION', 'BRAND_AWARENESS', 'TRAFFIC', 'CONVERSIONS', 'REACH');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "campaign_status" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Add Google Ads OAuth fields to organizations (safe)
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "google_access_token" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "google_refresh_token" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "google_customer_id" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "google_customer_name" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "google_connected_at" TIMESTAMP(3);
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "google_connected_by" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "google_token_expires_at" TIMESTAMP(3);
 
 -- Create google_campaigns table
 CREATE TABLE "google_campaigns" (

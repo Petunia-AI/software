@@ -1,21 +1,23 @@
--- CreateEnum
-CREATE TYPE "campaign_status" AS ENUM ('DRAFT', 'PENDING_REVIEW', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ERROR');
+-- AlterEnum: add new values to campaign_status (safe)
+ALTER TYPE "campaign_status" ADD VALUE IF NOT EXISTS 'PENDING_REVIEW';
+ALTER TYPE "campaign_status" ADD VALUE IF NOT EXISTS 'ERROR';
 
--- CreateEnum
-CREATE TYPE "campaign_objective" AS ENUM ('LEAD_GENERATION', 'TRAFFIC', 'BRAND_AWARENESS', 'ENGAGEMENT', 'CONVERSIONS', 'MESSAGES');
+-- AlterEnum: add new values to campaign_objective (safe)
+ALTER TYPE "campaign_objective" ADD VALUE IF NOT EXISTS 'ENGAGEMENT';
+ALTER TYPE "campaign_objective" ADD VALUE IF NOT EXISTS 'MESSAGES';
 
 -- AlterEnum
-ALTER TYPE "ai_usage_type" ADD VALUE 'CAMPAIGN_CREATION';
+ALTER TYPE "ai_usage_type" ADD VALUE IF NOT EXISTS 'CAMPAIGN_CREATION';
 
 -- AlterTable: Add Meta OAuth fields to organizations
-ALTER TABLE "organizations" ADD COLUMN "meta_access_token" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "meta_page_id" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "meta_page_name" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "meta_ad_account_id" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "meta_ad_account_name" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "meta_connected_at" TIMESTAMP(3);
-ALTER TABLE "organizations" ADD COLUMN "meta_connected_by" TEXT;
-ALTER TABLE "organizations" ADD COLUMN "meta_token_expires_at" TIMESTAMP(3);
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_access_token" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_page_id" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_page_name" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_ad_account_id" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_ad_account_name" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_connected_at" TIMESTAMP(3);
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_connected_by" TEXT;
+ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "meta_token_expires_at" TIMESTAMP(3);
 
 -- CreateTable
 CREATE TABLE "meta_campaigns" (
