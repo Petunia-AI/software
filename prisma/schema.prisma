@@ -1,0 +1,1159 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  USER
+
+  @@map("user_role")
+}
+
+enum OrgMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+
+  @@map("org_member_role")
+}
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  LAND
+  COMMERCIAL
+  OFFICE
+
+  @@map("property_type")
+}
+
+enum OperationType {
+  SALE
+  RENT
+  BOTH
+
+  @@map("operation_type")
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  RENTED
+
+  @@map("property_status")
+}
+
+enum ContentPostType {
+  POST
+  STORY
+  REEL
+  CAROUSEL
+  WHATSAPP
+  EMAIL
+
+  @@map("content_post_type")
+}
+
+enum Platform {
+  INSTAGRAM
+  FACEBOOK
+  TIKTOK
+  WHATSAPP
+  EMAIL
+  LINKEDIN
+
+  @@map("platform")
+}
+
+enum ContentPostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+
+  @@map("content_post_status")
+}
+
+enum LeadSource {
+  WEBSITE
+  INSTAGRAM
+  FACEBOOK
+  WHATSAPP
+  REFERRAL
+  FOLLOW_UP_BOSS
+  OTHER
+
+  @@map("lead_source")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+
+  @@map("lead_status")
+}
+
+enum LeadActivityType {
+  NOTE
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  TASK
+
+  @@map("lead_activity_type")
+}
+
+enum FollowUpTaskType {
+  REMINDER
+  EMAIL
+  WHATSAPP
+  CALL
+
+  @@map("follow_up_task_type")
+}
+
+enum AIProvider {
+  CLAUDE
+  OPENAI
+
+  @@map("ai_provider")
+}
+
+// ---------------------------------------------------------------------------
+// NextAuth models
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  password      String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  accounts            Account[]
+  sessions            Session[]
+  organizationMembers OrganizationMember[]
+  properties          Property[]
+  contentPosts        ContentPost[]
+  assignedLeads       Lead[]             @relation("LeadAssignedTo")
+  leadActivities      LeadActivity[]
+  followUpTasks       FollowUpTask[]
+  heygenAvatars       HeyGenAvatar[]
+  metaCampaigns       MetaCampaign[]
+  googleCampaigns     GoogleCampaign[]
+  landingPages        LandingPage[]
+  savedAvatars        SavedAvatar[]
+  knowledgeEntries    KnowledgeEntry[]
+  campaignResults     CampaignResult[]
+  emailDrips          EmailDrip[]      @relation("DripCreatedBy")
+  abTests             AbTest[]         @relation("AbTestCreatedBy")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Multi-tenant organization
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  logo             String?
+  brandColor       String?   @map("brand_color")
+  tone             String?
+  description      String?
+  // Suscripción y facturación
+  plan                  String    @default("trial")
+  planStatus            String    @default("active") @map("plan_status")
+  balance               Decimal   @default(0) @db.Decimal(12, 2)
+  monthlyRate           Decimal   @default(0) @db.Decimal(12, 2) @map("monthly_rate")
+  currency              String    @default("USD")
+  trialEndsAt           DateTime? @map("trial_ends_at")
+  lastPaymentAt         DateTime? @map("last_payment_at")
+  // Stripe
+  stripeCustomerId      String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId  String?   @unique @map("stripe_subscription_id")
+  stripePriceId         String?   @map("stripe_price_id")
+  contactEmail     String?   @map("contact_email")
+  contactPhone     String?   @map("contact_phone")
+  maxProperties    Int       @default(10) @map("max_properties")
+  maxLeads         Int       @default(50) @map("max_leads")
+  // AI Credits
+  aiCreditsLimit   Int       @default(50) @map("ai_credits_limit")
+  aiCreditsUsed    Int       @default(0) @map("ai_credits_used")
+  aiCreditsResetAt DateTime? @map("ai_credits_reset_at")
+  // Slack Integration
+  slackTeamId       String?   @unique @map("slack_team_id")
+  slackTeamName     String?   @map("slack_team_name")
+  slackBotToken     String?   @map("slack_bot_token")
+  slackChannelId    String?   @map("slack_channel_id")
+  slackChannelName  String?   @map("slack_channel_name")
+  slackConnectedAt  DateTime? @map("slack_connected_at")
+  slackConnectedBy  String?   @map("slack_connected_by")
+  // Meta Ads Integration (OAuth)
+  metaAppId         String?   @map("meta_app_id")
+  metaAppSecret     String?   @map("meta_app_secret")
+  metaAccessToken   String?   @map("meta_access_token") @db.Text
+  metaPageId        String?   @map("meta_page_id")
+  metaPageName      String?   @map("meta_page_name")
+  metaAdAccountId   String?   @map("meta_ad_account_id")
+  metaAdAccountName String?   @map("meta_ad_account_name")
+  metaConnectedAt   DateTime? @map("meta_connected_at")
+  metaConnectedBy   String?   @map("meta_connected_by")
+  metaTokenExpiresAt DateTime? @map("meta_token_expires_at")
+  // Google Ads Integration (OAuth)
+  googleClientId       String?   @map("google_client_id")
+  googleClientSecret   String?   @map("google_client_secret")
+  googleDeveloperToken String?   @map("google_developer_token")
+  googleAccessToken    String?   @map("google_access_token") @db.Text
+  googleRefreshToken   String?   @map("google_refresh_token") @db.Text
+  googleCustomerId     String?   @map("google_customer_id")
+  googleCustomerName   String?   @map("google_customer_name")
+  googleConnectedAt    DateTime? @map("google_connected_at")
+  googleConnectedBy    String?   @map("google_connected_by")
+  googleTokenExpiresAt DateTime? @map("google_token_expires_at")
+  // Follow Up Boss Integration
+  fubApiKey            String?   @map("fub_api_key")
+  fubLastSyncAt        DateTime? @map("fub_last_sync_at")
+  fubLeadsSynced       Int       @default(0) @map("fub_leads_synced")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  members          OrganizationMember[]
+  properties       Property[]
+  contentPosts     ContentPost[]
+  leads            Lead[]
+  followUpSequences FollowUpSequence[]
+  followUpTasks    FollowUpTask[]
+  aiSettings       AISettings?
+  aiUsageLogs      AIUsageLog[]
+  heygenAvatars    HeyGenAvatar[]
+  metaCampaigns    MetaCampaign[]
+  googleCampaigns  GoogleCampaign[]
+  landingPages     LandingPage[]
+  savedAvatars     SavedAvatar[]
+  knowledgeEntries KnowledgeEntry[]
+  campaignResults  CampaignResult[]
+  auditLogs        AuditLog[]
+  emailDrips       EmailDrip[]
+  abTests          AbTest[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String        @id @default(cuid())
+  userId         String        @map("user_id")
+  organizationId String        @map("organization_id")
+  role           OrgMemberRole @default(MEMBER)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+// ---------------------------------------------------------------------------
+// Real estate
+// ---------------------------------------------------------------------------
+
+model Property {
+  id            String         @id @default(cuid())
+  title         String
+  description   String?        @db.Text
+  propertyType  PropertyType   @map("property_type")
+  operationType OperationType  @map("operation_type")
+  price         Decimal?       @db.Decimal(14, 2)
+  currency      String?        @default("USD")
+  area          Decimal?       @db.Decimal(10, 2)
+  bedrooms      Int?
+  bathrooms     Int?
+  parking       Int?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?        @map("zip_code")
+  latitude      Float?
+  longitude     Float?
+  features      Json?
+  images        Json?
+  videoUrl      String?        @map("video_url")
+  status        PropertyStatus @default(AVAILABLE)
+  organizationId String        @map("organization_id")
+  createdById   String         @map("created_by_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation(fields: [createdById], references: [id])
+  contentPosts ContentPost[]
+  leads        Lead[]
+  metaCampaigns MetaCampaign[]
+  googleCampaigns GoogleCampaign[]
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([status])
+  @@index([propertyType])
+  @@index([operationType])
+  @@map("properties")
+}
+
+// ---------------------------------------------------------------------------
+// AI-generated content
+// ---------------------------------------------------------------------------
+
+model ContentPost {
+  id             String            @id @default(cuid())
+  propertyId     String?           @map("property_id")
+  type           ContentPostType
+  platform       Platform
+  title          String?
+  content        String            @db.Text
+  hashtags       String?
+  mediaUrls      Json?             @map("media_urls")
+  status         ContentPostStatus @default(DRAFT)
+  scheduledAt    DateTime?         @map("scheduled_at")
+  publishedAt    DateTime?         @map("published_at")
+  organizationId String            @map("organization_id")
+  createdById    String            @map("created_by_id")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  property     Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([propertyId])
+  @@index([status])
+  @@index([platform])
+  @@map("content_posts")
+}
+
+// ---------------------------------------------------------------------------
+// CRM / Leads
+// ---------------------------------------------------------------------------
+
+model Lead {
+  id             String     @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  source         LeadSource @default(OTHER)
+  status         LeadStatus @default(NEW)
+  notes          String?    @db.Text
+  propertyId     String?    @map("property_id")
+  organizationId String     @map("organization_id")
+  assignedToId   String?    @map("assigned_to_id")
+  score          Int        @default(0)
+  scoreDetails   Json?      @map("score_details")
+  scoreUpdatedAt DateTime?  @map("score_updated_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  property      Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  assignedTo    User?          @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  activities    LeadActivity[]
+  followUpTasks FollowUpTask[]
+  dripEnrollments EmailDripEnrollment[]
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([source])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id          String           @id @default(cuid())
+  leadId      String           @map("lead_id")
+  type        LeadActivityType
+  content     String           @db.Text
+  dueAt       DateTime?        @map("due_at")
+  completedAt DateTime?        @map("completed_at")
+  createdById String           @map("created_by_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  lead      Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([leadId])
+  @@index([createdById])
+  @@map("lead_activities")
+}
+
+// ---------------------------------------------------------------------------
+// Follow-up automation
+// ---------------------------------------------------------------------------
+
+model FollowUpSequence {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  steps          Json
+  isActive       Boolean  @default(true) @map("is_active")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  followUpTasks FollowUpTask[]
+
+  @@index([organizationId])
+  @@map("follow_up_sequences")
+}
+
+model FollowUpTask {
+  id             String           @id @default(cuid())
+  leadId         String           @map("lead_id")
+  sequenceId     String?          @map("sequence_id")
+  type           FollowUpTaskType
+  content        String           @db.Text
+  scheduledAt    DateTime         @map("scheduled_at")
+  completedAt    DateTime?        @map("completed_at")
+  organizationId String           @map("organization_id")
+  createdById    String           @map("created_by_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  lead         Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sequence     FollowUpSequence? @relation(fields: [sequenceId], references: [id], onDelete: SetNull)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User              @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([leadId])
+  @@index([sequenceId])
+  @@index([createdById])
+  @@index([scheduledAt])
+  @@map("follow_up_tasks")
+}
+
+// ---------------------------------------------------------------------------
+// AI configuration (per-organization — legacy, kept for migration)
+// ---------------------------------------------------------------------------
+
+model AISettings {
+  id             String     @id @default(cuid())
+  provider       AIProvider @default(CLAUDE)
+  apiKey         String     @map("api_key") @db.Text
+  model          String?
+  tone           String?
+  language       String?    @default("es")
+  organizationId String     @unique @map("organization_id")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_settings")
+}
+
+// ---------------------------------------------------------------------------
+// HeyGen Avatars — persisted per organization
+// ---------------------------------------------------------------------------
+
+enum HeyGenAvatarStatus {
+  GENERATING
+  READY
+  FAILED
+
+  @@map("heygen_avatar_status")
+}
+
+model HeyGenAvatar {
+  id               String             @id @default(cuid())
+  organizationId   String             @map("organization_id")
+  createdById      String             @map("created_by_id")
+  name             String
+  heygenAvatarId   String?            @map("heygen_avatar_id")
+  generationId     String?            @map("generation_id")
+  status           HeyGenAvatarStatus @default(GENERATING)
+  previewImageUrl  String?            @map("preview_image_url")
+  previewVideoUrl  String?            @map("preview_video_url")
+  gender           String?
+  age              String?
+  ethnicity        String?
+  style            String?
+  pose             String?
+  appearance       String?            @db.Text
+  metadata         Json?
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([status])
+  @@map("heygen_avatars")
+}
+
+// ---------------------------------------------------------------------------
+// Platform-level AI configuration (Super Admin manages these keys)
+// ---------------------------------------------------------------------------
+
+model PlatformAIConfig {
+  id            String     @id @default(cuid())
+  provider      AIProvider @default(CLAUDE)
+  apiKey        String     @map("api_key") @db.Text
+  model         String?
+  // Third-party API keys (centralized)
+  heygenApiKey  String?    @map("heygen_api_key") @db.Text
+  falApiKey     String?    @map("fal_api_key") @db.Text
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@map("platform_ai_config")
+}
+
+// ---------------------------------------------------------------------------
+// AI Usage Log — tracks every AI call per organization
+// ---------------------------------------------------------------------------
+
+enum AIUsageType {
+  CONTENT_GENERATION
+  LANDING_PAGE
+  VIDEO_SCRIPT
+  ASSISTANT_CHAT
+  AVATAR_GENERATION
+  CAMPAIGN_CREATION
+
+  @@map("ai_usage_type")
+}
+
+model AIUsageLog {
+  id             String      @id @default(cuid())
+  organizationId String      @map("organization_id")
+  userId         String?     @map("user_id")
+  type           AIUsageType
+  creditsUsed    Int         @default(1) @map("credits_used")
+  provider       AIProvider
+  model          String?
+  tokensInput    Int?        @map("tokens_input")
+  tokensOutput   Int?        @map("tokens_output")
+  endpoint       String?
+  metadata       Json?
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([type])
+  @@map("ai_usage_logs")
+}
+
+// ---------------------------------------------------------------------------
+// AI Assistant Conversations
+// ---------------------------------------------------------------------------
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+
+  @@map("message_role")
+}
+
+model Conversation {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  organizationId String    @map("organization_id")
+  title          String?
+  currentPage    String?   @map("current_page")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  messages Message[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String      @map("conversation_id")
+  role           MessageRole
+  content        String      @db.Text
+  metadata       Json?
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding Progress
+// ---------------------------------------------------------------------------
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+
+  @@map("onboarding_status")
+}
+
+model OnboardingProgress {
+  id               String           @id @default(cuid())
+  userId           String           @map("user_id")
+  organizationId   String           @unique @map("organization_id")
+  status           OnboardingStatus @default(NOT_STARTED)
+  currentStep      Int              @default(0) @map("current_step")
+  completedSteps   Json             @default("[]") @map("completed_steps")
+  // Step 1: Business Profile
+  businessName     String?          @map("business_name")
+  businessType     String?          @map("business_type")
+  markets          Json?
+  buyerBudget      String?          @map("buyer_budget")
+  // Step 2: WhatsApp
+  whatsappConnected Boolean         @default(false) @map("whatsapp_connected")
+  whatsappPhone     String?         @map("whatsapp_phone")
+  // Step 3: Lead Channel (Meta/TikTok)
+  metaConnected     Boolean         @default(false) @map("meta_connected")
+  metaAdAccountId   String?         @map("meta_ad_account_id")
+  tiktokConnected   Boolean         @default(false) @map("tiktok_connected")
+  // Step 4: CRM Pipeline
+  pipelineConfigured Boolean        @default(false) @map("pipeline_configured")
+  pipelineStages     Json?          @map("pipeline_stages")
+  //
+  completedAt      DateTime?        @map("completed_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("onboarding_progress")
+}
+
+// ---------------------------------------------------------------------------
+// Meta Ads Campaign Management
+// ---------------------------------------------------------------------------
+
+enum CampaignStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ERROR
+
+  @@map("campaign_status")
+}
+
+enum CampaignObjective {
+  LEAD_GENERATION
+  TRAFFIC
+  BRAND_AWARENESS
+  ENGAGEMENT
+  CONVERSIONS
+  MESSAGES
+
+  @@map("campaign_objective")
+}
+
+model MetaCampaign {
+  id               String            @id @default(cuid())
+  organizationId   String            @map("organization_id")
+  createdById      String            @map("created_by_id")
+  // Meta IDs (set after publishing)
+  metaCampaignId   String?           @map("meta_campaign_id")
+  metaAdSetId      String?           @map("meta_ad_set_id")
+  metaAdId         String?           @map("meta_ad_id")
+  metaCreativeId   String?           @map("meta_creative_id")
+  // Campaign config
+  name             String
+  objective        CampaignObjective @default(LEAD_GENERATION)
+  status           CampaignStatus    @default(DRAFT)
+  // Budget
+  dailyBudget      Decimal?          @db.Decimal(12, 2) @map("daily_budget")
+  lifetimeBudget   Decimal?          @db.Decimal(12, 2) @map("lifetime_budget")
+  currency         String            @default("USD")
+  // Schedule
+  startDate        DateTime?         @map("start_date")
+  endDate          DateTime?         @map("end_date")
+  // Targeting
+  targetLocations  Json?             @map("target_locations")   // [{key, name, type}]
+  targetAgeMin     Int?              @default(25) @map("target_age_min")
+  targetAgeMax     Int?              @default(65) @map("target_age_max")
+  targetGenders    Json?             @map("target_genders")     // [0,1,2]
+  targetInterests  Json?             @map("target_interests")   // [{id, name}]
+  targetPlatforms  Json?             @map("target_platforms")   // ["facebook","instagram"]
+  // Ad Creative
+  headline         String?
+  primaryText      String?           @map("primary_text") @db.Text
+  description      String?
+  callToAction     String?           @default("LEARN_MORE") @map("call_to_action")
+  imageUrl         String?           @map("image_url")
+  linkUrl          String?           @map("link_url")
+  // Related property (for real estate campaigns)
+  propertyId       String?           @map("property_id")
+  // Performance metrics (synced from Meta)
+  impressions      Int?              @default(0)
+  clicks           Int?              @default(0)
+  leads            Int?              @default(0)
+  spent            Decimal?          @default(0) @db.Decimal(12, 2)
+  cpl              Decimal?          @db.Decimal(12, 2) // cost per lead
+  ctr              Decimal?          @db.Decimal(6, 4)  // click-through rate
+  lastSyncAt       DateTime?         @map("last_sync_at")
+  // Error tracking
+  errorMessage     String?           @map("error_message") @db.Text
+  // Timestamps
+  publishedAt      DateTime?         @map("published_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  property     Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([status])
+  @@index([metaCampaignId])
+  @@index([propertyId])
+  @@map("meta_campaigns")
+}
+
+// ---------------------------------------------------------------------------
+// Landing Pages — AI-generated capture pages
+// ---------------------------------------------------------------------------
+
+enum LandingPageStatus {
+  DRAFT
+  ACTIVE
+
+  @@map("landing_page_status")
+}
+
+model LandingPage {
+  id              String            @id @default(cuid())
+  organizationId  String            @map("organization_id")
+  createdById     String            @map("created_by_id")
+  title           String
+  description     String?           @db.Text
+  slug            String
+  template        String            // compradores, sellers, inversores, proyecto
+  nicho           String?           // residencial-lujo, inversion, etc.
+  status          LandingPageStatus @default(DRAFT)
+  html            String?           @db.Text
+  // Metrics
+  views           Int               @default(0)
+  leads           Int               @default(0)
+  conversionRate  Decimal?          @default(0) @db.Decimal(6, 2) @map("conversion_rate")
+  // Timestamps
+  publishedAt     DateTime?         @map("published_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([status])
+  @@map("landing_pages")
+}
+
+// ---------------------------------------------------------------------------
+// Google Ads Campaign Management
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Saved Avatar Videos (VEED Fabric generated)
+// ---------------------------------------------------------------------------
+
+model SavedAvatar {
+  id               String   @id @default(cuid())
+  organizationId   String   @map("organization_id")
+  createdById      String   @map("created_by_id")
+  name             String
+  videoUrl         String   @map("video_url") @db.Text
+  thumbnailUrl     String?  @map("thumbnail_url") @db.Text
+  sourceImageUrl   String?  @map("source_image_url") @db.Text
+  script           String?  @db.Text
+  voiceDescription String?  @map("voice_description")
+  resolution       String?  @default("480p")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@map("saved_avatars")
+}
+
+// ---------------------------------------------------------------------------
+// Google Ads Campaign Management
+// ---------------------------------------------------------------------------
+
+model GoogleCampaign {
+  id               String            @id @default(cuid())
+  organizationId   String            @map("organization_id")
+  createdById      String            @map("created_by_id")
+  // Google Ads IDs (set after publishing)
+  googleCampaignId String?           @map("google_campaign_id")
+  googleAdGroupId  String?           @map("google_ad_group_id")
+  googleAdId       String?           @map("google_ad_id")
+  // Campaign config
+  name             String
+  objective        CampaignObjective @default(LEAD_GENERATION)
+  status           CampaignStatus    @default(DRAFT)
+  // Budget
+  dailyBudget      Decimal?          @db.Decimal(12, 2) @map("daily_budget")
+  currency         String            @default("USD")
+  // Schedule
+  startDate        DateTime?         @map("start_date")
+  endDate          DateTime?         @map("end_date")
+  // Targeting
+  targetLocations  Json?             @map("target_locations")   // [{id, name, type}]
+  targetAgeMin     Int?              @default(25) @map("target_age_min")
+  targetAgeMax     Int?              @default(65) @map("target_age_max")
+  targetGenders    Json?             @map("target_genders")
+  targetKeywords   Json?             @map("target_keywords")    // [{text, matchType}]
+  // Ad Creative — Responsive Search Ad
+  headlines        Json?                                        // ["headline1","headline2",...]
+  descriptions     Json?                                        // ["desc1","desc2",...]
+  finalUrl         String?           @map("final_url")
+  displayUrl       String?           @map("display_url")
+  callToAction     String?           @default("LEARN_MORE") @map("call_to_action")
+  imageUrl         String?           @map("image_url")
+  // Related property
+  propertyId       String?           @map("property_id")
+  // Performance metrics (synced from Google Ads)
+  impressions      Int?              @default(0)
+  clicks           Int?              @default(0)
+  leads            Int?              @default(0)
+  spent            Decimal?          @default(0) @db.Decimal(12, 2)
+  cpl              Decimal?          @db.Decimal(12, 2)
+  ctr              Decimal?          @db.Decimal(6, 4)
+  conversions      Int?              @default(0)
+  lastSyncAt       DateTime?         @map("last_sync_at")
+  // Error tracking
+  errorMessage     String?           @map("error_message") @db.Text
+  // Timestamps
+  publishedAt      DateTime?         @map("published_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  property     Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([status])
+  @@index([googleCampaignId])
+  @@index([propertyId])
+  @@map("google_campaigns")
+}
+
+// ---------------------------------------------------------------------------
+// AI Knowledge Base — base de conocimiento del negocio para aprendizaje
+// ---------------------------------------------------------------------------
+
+model KnowledgeEntry {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  createdById    String   @map("created_by_id")
+  category       String   // "mercado", "propiedad", "contenido", "campana", "general"
+  title          String
+  content        String   @db.Text
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([category])
+  @@map("knowledge_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Campaign Results — feedback loop para que la IA aprenda de campañas pasadas
+// ---------------------------------------------------------------------------
+
+model CampaignResult {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  createdById    String   @map("created_by_id")
+  campaignName   String   @map("campaign_name")
+  campaignType   String   @map("campaign_type")  // "meta", "google", "organic", "email"
+  platform       String   // "instagram", "facebook", "whatsapp", etc.
+  period         String?  // "enero 2026", "Q1 2026"
+  headline       String?
+  primaryText    String?  @map("primary_text") @db.Text
+  impressions    Int?     @default(0)
+  clicks         Int?     @default(0)
+  leads          Int?     @default(0)
+  spent          Decimal? @db.Decimal(12, 2)
+  ctr            Decimal? @db.Decimal(6, 4)
+  cpl            Decimal? @db.Decimal(12, 2)
+  whatWorked     String?  @map("what_worked") @db.Text
+  whatDidntWork  String?  @map("what_didnt_work") @db.Text
+  propertyType   String?  @map("property_type")
+  targetCity     String?  @map("target_city")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@map("campaign_results")
+}
+
+// ---------------------------------------------------------------------------
+// Audit Log — quién hizo qué y cuándo
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?  @map("organization_id")
+  userId         String?  @map("user_id")
+  action         String   // "lead.created", "campaign.published", "property.created", etc.
+  resourceType   String   @map("resource_type") // "lead", "campaign", "property"
+  resourceId     String?  @map("resource_id")
+  details        Json?
+  ipAddress      String?  @map("ip_address")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Email Drip Campaigns — secuencias de email automatizadas para leads
+// ---------------------------------------------------------------------------
+
+enum DripStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+
+  @@map("drip_status")
+}
+
+enum DripEnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  BOUNCED
+
+  @@map("drip_enrollment_status")
+}
+
+model EmailDrip {
+  id             String     @id @default(cuid())
+  organizationId String     @map("organization_id")
+  createdById    String     @map("created_by_id")
+  name           String
+  description    String?    @db.Text
+  // Trigger: cuando se activa esta secuencia
+  trigger        String     @default("lead.created")   // lead.created | lead.status_changed | manual
+  triggerStatus  String?    @map("trigger_status")      // para trigger lead.status_changed
+  status         DripStatus @default(DRAFT)
+  fromName       String?    @map("from_name")            // nombre del remitente
+  fromEmail      String?    @map("from_email")           // email remitente
+  replyTo        String?    @map("reply_to")
+  totalEnrolled  Int        @default(0) @map("total_enrolled")
+  totalCompleted Int        @default(0) @map("total_completed")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  organization  Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy     User                  @relation("DripCreatedBy", fields: [createdById], references: [id])
+  steps         EmailDripStep[]
+  enrollments   EmailDripEnrollment[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("email_drips")
+}
+
+model EmailDripStep {
+  id         String    @id @default(cuid())
+  dripId     String    @map("drip_id")
+  stepNumber Int       @map("step_number")   // 1, 2, 3…
+  delayDays  Int       @default(0) @map("delay_days")  // días desde el paso anterior
+  subject    String
+  bodyHtml   String    @db.Text @map("body_html")
+  bodyText   String?   @db.Text @map("body_text")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  drip EmailDrip @relation(fields: [dripId], references: [id], onDelete: Cascade)
+
+  @@index([dripId])
+  @@map("email_drip_steps")
+}
+
+model EmailDripEnrollment {
+  id          String               @id @default(cuid())
+  dripId      String               @map("drip_id")
+  leadId      String               @map("lead_id")
+  currentStep Int                  @default(0) @map("current_step")
+  status      DripEnrollmentStatus @default(ACTIVE)
+  nextSendAt  DateTime?            @map("next_send_at")
+  enrolledAt  DateTime             @default(now()) @map("enrolled_at")
+  completedAt DateTime?            @map("completed_at")
+  emailsSent  Int                  @default(0) @map("emails_sent")
+  lastError   String?              @db.Text @map("last_error")
+
+  drip EmailDrip @relation(fields: [dripId], references: [id], onDelete: Cascade)
+  lead Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([dripId, leadId])
+  @@index([dripId])
+  @@index([leadId])
+  @@index([nextSendAt])
+  @@map("email_drip_enrollments")
+}
+
+// ---------------------------------------------------------------------------
+// A/B Testing — comparar variantes de campañas
+// ---------------------------------------------------------------------------
+
+enum AbTestStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  CANCELLED
+
+  @@map("ab_test_status")
+}
+
+model AbTest {
+  id              String       @id @default(cuid())
+  organizationId  String       @map("organization_id")
+  createdById     String       @map("created_by_id")
+  name            String
+  description     String?      @db.Text
+  platform        String       @default("meta")   // meta | google
+  status          AbTestStatus @default(DRAFT)
+  winnerVariantId String?      @map("winner_variant_id")
+  goalMetric      String       @default("leads")  // leads | clicks | ctr | cpl
+  startedAt       DateTime?    @map("started_at")
+  endedAt         DateTime?    @map("ended_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User           @relation("AbTestCreatedBy", fields: [createdById], references: [id])
+  variants     AbTestVariant[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("ab_tests")
+}
+
+model AbTestVariant {
+  id             String   @id @default(cuid())
+  testId         String   @map("test_id")
+  name           String                         // "Variante A", "Variante B"
+  headline       String?
+  primaryText    String?  @db.Text @map("primary_text")
+  imageUrl       String?  @map("image_url")
+  callToAction   String?  @map("call_to_action")
+  // Linked Meta campaign (populated after publishing)
+  metaCampaignId String?  @map("meta_campaign_id")
+  // Metrics (synced from Meta)
+  impressions    Int      @default(0)
+  clicks         Int      @default(0)
+  leads          Int      @default(0)
+  spent          Decimal  @default(0) @db.Decimal(12, 2)
+  ctr            Decimal  @default(0) @db.Decimal(6, 4)
+  cpl            Decimal? @db.Decimal(12, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  test AbTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+  @@map("ab_test_variants")
+}
