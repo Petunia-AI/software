@@ -31,6 +31,7 @@ export const authOptions: NextAuthOptions = {
             },
           },
         });
+        console.log("[Auth] user:", user?.email ?? "NOT FOUND");
 
         if (!user || !user.password) return null;
 
@@ -47,7 +48,7 @@ export const authOptions: NextAuthOptions = {
           organizationName: user.organizationMembers[0]?.organization?.name || null,
         };
         } catch (error) {
-          console.error("[Auth] authorize error:", error);
+          console.error("[Auth] authorize error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
           return null;
         }
       },
