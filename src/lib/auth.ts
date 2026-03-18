@@ -20,35 +20,34 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-        if (!credentials?.email || !credentials?.password) return null;
+          if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: {
-            organizationMembers: {
-              include: { organization: true },
-              take: 1,
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: {
+              organizationMembers: {
+                select: { organizationId: true },
+                take: 1,
+              },
             },
-          },
-        });
-        console.log("[Auth] user:", user?.email ?? "NOT FOUND");
+          });
 
-        if (!user || !user.password) return null;
+          if (!user || !user.password) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) return null;
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) return null;
 
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          role: user.role,
-          organizationId: user.organizationMembers[0]?.organizationId || null,
-          organizationName: user.organizationMembers[0]?.organization?.name || null,
-        };
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: user.role,
+            organizationId: user.organizationMembers[0]?.organizationId || null,
+            organizationName: null,
+          };
         } catch (error) {
-          console.error("[Auth] authorize error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+          console.error("[Auth] authorize error:", error);
           return null;
         }
       },
