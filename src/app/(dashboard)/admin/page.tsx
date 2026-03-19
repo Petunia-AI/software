@@ -20,6 +20,7 @@ import {
   Key,
   Save,
   Zap,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -139,6 +141,8 @@ export default function AdminPage() {
   const [filterPlan, setFilterPlan] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
+  const [deletingClient, setDeletingClient] = useState(false);
 
   // AI Config state
   const [aiConfig, setAiConfig] = useState<AIConfigData | null>(null);
@@ -149,6 +153,36 @@ export default function AdminPage() {
   const [heygenApiKey, setHeygenApiKey] = useState("");
   const [savingAi, setSavingAi] = useState(false);
   const [savingHeygen, setSavingHeygen] = useState(false);
+
+  const fetchClients = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch("/api/admin/clients");
+      const d = await r.json();
+      if (d.error) setError(d.error);
+      else setData(d);
+    } catch { setError("Error de conexión"); } finally { setLoading(false); }
+  }, []);
+
+  const handleDeleteClient = async () => {
+    if (!clientToDelete) return;
+    setDeletingClient(true);
+    try {
+      const res = await fetch("/api/admin/clients", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: clientToDelete.id }),
+      });
+      if (res.ok) {
+        toast.success(`Cliente "${clientToDelete.name}" eliminado correctamente`);
+        setClientToDelete(null);
+        fetchClients();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Error al eliminar");
+      }
+    } catch { toast.error("Error de conexión"); } finally { setDeletingClient(false); }
+  };
 
   const fetchAiConfig = useCallback(async () => {
     setLoadingAi(true);
@@ -223,19 +257,7 @@ export default function AdminPage() {
     } catch { toast.error("Error de conexión"); } finally { setSavingHeygen(false); }
   };
 
-  useEffect(() => {
-    fetch("/api/admin/clients")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) {
-          setError(d.error);
-        } else {
-          setData(d);
-        }
-      })
-      .catch(() => setError("Error de conexión"))
-      .finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { fetchClients(); }, [fetchClients]);
 
   useEffect(() => {
     if (adminTab === "ai") fetchAiConfig();
@@ -702,15 +724,25 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td className="p-3 text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => setSelectedClient(client)}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Ver
-                        </Button>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => setSelectedClient(client)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Ver
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setClientToDelete(client)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -824,6 +856,59 @@ export default function AdminPage() {
                 {selectedClient.lastPaymentAt && (
                   <span>Último pago: {new Date(selectedClient.lastPaymentAt).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}</span>
                 )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!clientToDelete} onOpenChange={(open) => { if (!open && !deletingClient) setClientToDelete(null); }}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Eliminar cliente
+            </DialogTitle>
+            <DialogDescription>
+              Esta acción es permanente e irreversible.
+            </DialogDescription>
+          </DialogHeader>
+          {clientToDelete && (
+            <div className="space-y-4 pt-2">
+              <div className="p-4 rounded-xl border border-red-200 bg-red-50 space-y-1">
+                <p className="text-sm font-semibold text-red-800">{clientToDelete.name}</p>
+                {clientToDelete.owner && (
+                  <p className="text-xs text-red-600">{clientToDelete.owner.name} · {clientToDelete.owner.email}</p>
+                )}
+                <p className="text-xs text-red-500 mt-1">
+                  Se eliminarán: {clientToDelete.counts.properties} propiedades, {clientToDelete.counts.leads} leads,
+                  {" "}{clientToDelete.counts.contentPosts} contenidos y todos los datos asociados.
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                ¿Estás seguro de que deseas eliminar permanentemente a <span className="font-semibold">{clientToDelete.name}</span> y todos sus datos?
+              </p>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setClientToDelete(null)}
+                  disabled={deletingClient}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleDeleteClient}
+                  disabled={deletingClient}
+                >
+                  {deletingClient ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Eliminando...</>
+                  ) : (
+                    <><Trash2 className="h-4 w-4 mr-2" />Eliminar definitivamente</>
+                  )}
+                </Button>
               </div>
             </div>
           )}

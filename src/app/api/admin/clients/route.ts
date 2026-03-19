@@ -81,3 +81,35 @@ export async function GET() {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const admin = await requireAdmin();
+    if (!admin) return unauthorized();
+
+    const { organizationId } = await req.json();
+    if (!organizationId) {
+      return NextResponse.json({ error: "organizationId requerido" }, { status: 400 });
+    }
+
+    // Find the owner user before deleting
+    const member = await prisma.organizationMember.findFirst({
+      where: { organizationId, role: "OWNER" },
+      select: { userId: true },
+    });
+
+    // Delete organization (cascades: members, properties, leads, content, etc.)
+    await prisma.organization.delete({ where: { id: organizationId } });
+
+    // Delete owner user if found
+    if (member?.userId) {
+      await prisma.user.delete({ where: { id: member.userId } }).catch(() => {
+        // Ignore if user already deleted or has other memberships
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Error al eliminar cliente" }, { status: 500 });
+  }
+}
