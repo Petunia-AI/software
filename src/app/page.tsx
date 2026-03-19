@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SalesChat } from "@/components/marketing/sales-chat";
 
 /* ─── Section color map ───────────────────────────────────────────────────── */
 const SEC_BG: Record<string, string> = {
@@ -740,6 +741,9 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Sales Assistant */}
+      <SalesChat />
     </div>
   );
 }
