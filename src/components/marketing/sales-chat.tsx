@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   X,
   Send,
@@ -11,6 +11,7 @@ import {
   Sparkles,
   MessageSquare,
   ChevronRight,
+  UserPlus,
 } from "lucide-react";
 
 interface Message {
@@ -26,6 +27,25 @@ const QUICK_ACTIONS = [
   { label: "¿Cómo funciona el CRM?", message: "¿Cómo funciona el CRM Pipeline?" },
   { label: "Video IA con Avatar", message: "¿Cómo funciona el Video IA con Avatar?" },
 ];
+
+// Renders message text and turns /register mentions into clickable buttons
+function renderContent(text: string, onRegister: () => void) {
+  const parts = text.split(/(\/?register)/gi);
+  return parts.map((part, i) =>
+    /^\/?register$/i.test(part) ? (
+      <button
+        key={i}
+        onClick={onRegister}
+        className="underline font-bold cursor-pointer"
+        style={{ color: "#c084fc" }}
+      >
+        /register
+      </button>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
 
 function TypingDots() {
   return (
@@ -54,7 +74,7 @@ function TypingDots() {
   );
 }
 
-function Bubble({ msg }: { msg: Message }) {
+function Bubble({ msg, onRegister }: { msg: Message; onRegister: () => void }) {
   const isUser = msg.role === "user";
   return (
     <div className={`flex mb-3 ${isUser ? "justify-end" : "items-start gap-2.5"}`}>
@@ -74,7 +94,7 @@ function Bubble({ msg }: { msg: Message }) {
             : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.9)", borderRadius: "4px 12px 12px 12px" }
         }
       >
-        {msg.content}
+        {isUser ? msg.content : renderContent(msg.content, onRegister)}
         {msg.isStreaming && (
           <span
             className="inline-block w-0.5 h-3.5 ml-0.5 -mb-0.5 animate-pulse"
@@ -87,12 +107,18 @@ function Bubble({ msg }: { msg: Message }) {
 }
 
 export function SalesChat() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showBubble, setShowBubble] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const goToRegister = useCallback(() => {
+    setIsOpen(false);
+    router.push("/register");
+  }, [router]);
 
   // Show proactive bubble after 4 seconds
   useEffect(() => {
@@ -339,20 +365,20 @@ export function SalesChat() {
                   </button>
                 ))}
               </div>
-              <Link
-                href="/register"
-                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105"
+              <button
+                onClick={goToRegister}
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105 cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff", boxShadow: "0 4px 16px rgba(124,58,237,0.4)" }}
               >
                 <Sparkles className="size-3" />
                 Comenzar gratis
-              </Link>
+              </button>
             </div>
           )}
 
           {/* Message list */}
           {messages.map((msg) => (
-            <Bubble key={msg.id} msg={msg} />
+            <Bubble key={msg.id} msg={msg} onRegister={goToRegister} />
           ))}
 
           {/* Typing indicator */}
@@ -394,9 +420,19 @@ export function SalesChat() {
               {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             </button>
           </div>
-          <p className="text-[10px] text-center mt-1.5" style={{ color: "rgba(255,255,255,0.15)" }}>
-            Petunia AI · Asistente de ventas
-          </p>
+          {/* Persistent CTA */}
+          <button
+            onClick={goToRegister}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-xl transition-all hover:scale-[1.02] cursor-pointer"
+            style={{
+              background: "linear-gradient(135deg,#7c3aed,#a855f7)",
+              color: "#fff",
+              boxShadow: "0 4px 16px rgba(124,58,237,0.35)",
+            }}
+          >
+            <UserPlus className="size-3.5" />
+            Crear mi cuenta gratis
+          </button>
         </div>
       </div>
     </>
