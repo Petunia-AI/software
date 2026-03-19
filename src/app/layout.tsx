@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Petunia AI — Real Estate OS",
   description: "The AI Operating System for Real Estate — automatización comercial y marketing inmobiliario",
+  icons: {
+    icon: "/logo-petunia.svg",
+    shortcut: "/logo-petunia.svg",
+    apple: "/logo-petunia.svg",
+  },
 };
 
 export default function RootLayout({
