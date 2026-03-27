@@ -73,6 +73,9 @@ interface ScheduledContent {
   type: string;
   status: "DRAFT" | "SCHEDULED" | "PUBLISHED";
   aiGenerated?: boolean;
+  content?: string | null;
+  mediaUrls?: string[] | null;
+  scheduledAt?: string | null;
 }
 
 function getDaysInMonth(year: number, month: number) {
@@ -169,6 +172,7 @@ export default function CalendarPage() {
     `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
   );
   const [schedule, setSchedule] = useState<Record<string, ScheduledContent[]>>({});
+  const [selectedPost, setSelectedPost] = useState<ScheduledContent | null>(null);
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState(0);
@@ -199,6 +203,9 @@ export default function CalendarPage() {
             type: post.type,
             status: post.status,
             aiGenerated: false,
+            content: post.content,
+            mediaUrls: post.mediaUrls,
+            scheduledAt: dateStr,
           });
         }
         setSchedule(mapped);
@@ -487,9 +494,10 @@ export default function CalendarPage() {
               {selectedContent.map((item) => {
                 const Icon = platformIcons[item.platform];
                 return (
-                  <div
+                  <button
                     key={item.id}
-                    className="p-3 rounded-2xl border border-border/40 hover:bg-muted/30 transition-colors group"
+                    onClick={() => setSelectedPost(item)}
+                    className="w-full p-3 rounded-2xl border border-border/40 hover:bg-muted/30 hover:-translate-y-0.5 hover:shadow-md transition-all text-left group cursor-pointer"
                   >
                     <div className="flex items-start gap-3">
                       <div className={`p-2 rounded-xl ${platformColors[item.platform]}`}>
@@ -522,7 +530,7 @@ export default function CalendarPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -725,6 +733,115 @@ export default function CalendarPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Post Detail Modal */}
+      {selectedPost && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedPost(null); }}
+          style={{ background: "rgba(10,6,10,0.65)", backdropFilter: "blur(6px)" }}
+        >
+          <div
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            style={{ border: "1.5px solid transparent", background: "linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #9B3FCB 0%, #4A154B 50%, #611f69 100%) border-box" }}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#EEE8EE] rounded-t-3xl">
+              <div className="flex items-center gap-3 min-w-0 pr-3">
+                <div className={`p-2.5 rounded-xl shrink-0 ${platformColors[selectedPost.platform]}`}>
+                  {(() => { const Icon = platformIcons[selectedPost.platform]; return Icon ? <Icon className="h-4 w-4" /> : null; })()}
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold truncate">{selectedPost.title}</h2>
+                  <div className="flex gap-1.5 mt-1 flex-wrap">
+                    <Badge className={`text-[10px] rounded-full ${platformColors[selectedPost.platform]}`}>
+                      {selectedPost.platform}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] rounded-full">{selectedPost.type}</Badge>
+                    <Badge className={`text-[10px] rounded-full ${selectedPost.status === "SCHEDULED" ? "bg-blue-100 text-blue-700" : selectedPost.status === "PUBLISHED" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                      {selectedPost.status === "SCHEDULED" ? "Programado" : selectedPost.status === "PUBLISHED" ? "Publicado" : "Borrador"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPost(null)}
+                className="shrink-0 h-8 w-8 rounded-xl bg-[#F5EFF5] hover:bg-[#EDE0ED] transition-colors flex items-center justify-center text-[#4A154B] font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              {/* Schedule info */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-[#FAF5FA] rounded-2xl px-4 py-3">
+                <Clock className="h-4 w-4 shrink-0" />
+                <span>
+                  {selectedPost.scheduledAt
+                    ? new Date(selectedPost.scheduledAt).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+                    : selectedDate && new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+                  {" · "}{selectedPost.time}
+                </span>
+              </div>
+
+              {/* Image */}
+              {(selectedPost.mediaUrls as string[] | null)?.[0] && (
+                <div className="relative rounded-2xl overflow-hidden aspect-video bg-[#F5EFF5]">
+                  <img src={(selectedPost.mediaUrls as string[])[0]} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  <a
+                    href={(selectedPost.mediaUrls as string[])[0]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 text-[10px] font-semibold text-white bg-black/40 backdrop-blur-sm px-2 py-1.5 rounded-lg hover:bg-black/60 transition-colors border border-white/20"
+                  >
+                    Ver imagen
+                  </a>
+                </div>
+              )}
+
+              {/* Copy */}
+              {selectedPost.content && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Post copy</p>
+                  <div className="bg-[#FAF5FA] rounded-2xl p-4 border border-[#EEE8EE]">
+                    <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed text-[#1D1C1D]">{selectedPost.content}</pre>
+                  </div>
+                </div>
+              )}
+
+              {!selectedPost.content && !((selectedPost.mediaUrls as string[] | null)?.[0]) && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Sparkles className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Este post fue generado con IA y aún no tiene copy</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                {selectedPost.content && (
+                  <Button
+                    className="flex-1 bg-[#4A154B] hover:bg-[#611f69] text-white rounded-2xl h-11 font-bold border-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedPost.content!);
+                      toast.success("Copiado al portapapeles");
+                    }}
+                  >
+                    Copiar texto
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="rounded-2xl h-11 border-[#C4A0D4] text-[#4A154B] hover:bg-[#FAF5FA] font-semibold px-5"
+                  onClick={() => setSelectedPost(null)}
+                >
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
