@@ -7,8 +7,9 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter } as any);
 
 async function main() {
-  const orgId = "org_uperland_001";
-  const userId = "usr_demo_001";
+  // Use env-provided IDs or fall back to defaults
+  const orgId = process.env.SEED_ORG_ID || "org_uperland_001";
+  const userId = process.env.SEED_USER_ID || "usr_demo_001";
 
   console.log("🗓️  Seeding calendar content posts...");
 

@@ -3,13 +3,13 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcryptjs";
 
-const pool = new pg.Pool({ connectionString: "postgresql://jaimegomez@localhost:5432/uperland_growth_os" });
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL || "postgresql://jaimegomez@localhost:5432/uperland_growth_os" });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const userId = "usr_demo_001";
-  const orgId = "org_uperland_001";
+  const userId = process.env.SEED_USER_ID || "usr_demo_001";
+  const orgId = process.env.SEED_ORG_ID || "org_uperland_001";
 
   // ── Super Admin ──────────────────────────────────────────────────────────
   const hashedPassword = await bcrypt.hash("admin123", 12);

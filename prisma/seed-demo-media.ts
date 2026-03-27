@@ -6,12 +6,12 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-const pool = new pg.Pool({ connectionString: "postgresql://jaimegomez@localhost:5432/uperland_growth_os" });
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL || "postgresql://jaimegomez@localhost:5432/uperland_growth_os" });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const ORG_ID  = "org_uperland_001";
-const USER_ID = "usr_demo_001";
+const ORG_ID  = process.env.SEED_ORG_ID  || "org_uperland_001";
+const USER_ID = process.env.SEED_USER_ID || "usr_demo_001";
 
 // ─── Property images (Unsplash, real estate) ────────────────────────────────
 const PROPERTY_IMAGES: Record<string, string[]> = {
