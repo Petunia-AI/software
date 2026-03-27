@@ -26,7 +26,6 @@ import {
   BarChart3,
   ShieldCheck,
   Mail,
-  FlaskConical,
   FileText,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -39,7 +38,6 @@ const clientNavigation = [
   { name: "CRM Pipeline", href: "/crm", icon: Kanban },
   { name: "Campañas", href: "/campaigns", icon: Megaphone },
   { name: "Email Drip", href: "/email-drip", icon: Mail },
-  { name: "A/B Testing", href: "/ab-testing", icon: FlaskConical },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Reportes PDF", href: "/reports", icon: FileText },
   { name: "Contenido IA", href: "/content", icon: Sparkles },

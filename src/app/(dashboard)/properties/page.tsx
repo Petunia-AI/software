@@ -419,7 +419,7 @@ export default function PropertiesPage() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Ej: Departamento de lujo en Polanco"
-                className="rounded-xl bg-muted/30 border-0"
+                className="rounded-xl bg-muted/30 border border-border/60"
               />
             </div>
             <div className="grid gap-2">
@@ -431,7 +431,7 @@ export default function PropertiesPage() {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Describe la propiedad..."
                 rows={3}
-                className="rounded-xl bg-muted/30 border-0"
+                className="rounded-xl bg-muted/30 border border-border/60"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -440,7 +440,7 @@ export default function PropertiesPage() {
                   Tipo
                 </Label>
                 <Select value={form.propertyType} onValueChange={(v) => setForm({ ...form, propertyType: v ?? "APARTMENT" })}>
-                  <SelectTrigger className="rounded-xl bg-muted/30 border-0"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl bg-muted/30 border border-border/60"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(typeLabels).map(([k, v]) => (
                       <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -453,7 +453,7 @@ export default function PropertiesPage() {
                   Operación
                 </Label>
                 <Select value={form.operationType} onValueChange={(v) => setForm({ ...form, operationType: v ?? "SALE" })}>
-                  <SelectTrigger className="rounded-xl bg-muted/30 border-0"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl bg-muted/30 border border-border/60"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(operationLabels).map(([k, v]) => (
                       <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -467,14 +467,14 @@ export default function PropertiesPage() {
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Precio
                 </Label>
-                <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" className="rounded-xl bg-muted/30 border-0" />
+                <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" className="rounded-xl bg-muted/30 border border-border/60" />
               </div>
               <div className="grid gap-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Moneda
                 </Label>
                 <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? "USD" })}>
-                  <SelectTrigger className="rounded-xl bg-muted/30 border-0"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl bg-muted/30 border border-border/60"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="MXN">MXN</SelectItem>
@@ -487,45 +487,45 @@ export default function PropertiesPage() {
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Área m²
                 </Label>
-                <Input type="number" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="rounded-xl bg-muted/30 border-0" />
+                <Input type="number" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="rounded-xl bg-muted/30 border border-border/60" />
               </div>
               <div className="grid gap-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Recámaras
                 </Label>
-                <Input type="number" value={form.bedrooms} onChange={(e) => setForm({ ...form, bedrooms: e.target.value })} className="rounded-xl bg-muted/30 border-0" />
+                <Input type="number" value={form.bedrooms} onChange={(e) => setForm({ ...form, bedrooms: e.target.value })} className="rounded-xl bg-muted/30 border border-border/60" />
               </div>
               <div className="grid gap-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Baños
                 </Label>
-                <Input type="number" value={form.bathrooms} onChange={(e) => setForm({ ...form, bathrooms: e.target.value })} className="rounded-xl bg-muted/30 border-0" />
+                <Input type="number" value={form.bathrooms} onChange={(e) => setForm({ ...form, bathrooms: e.target.value })} className="rounded-xl bg-muted/30 border border-border/60" />
               </div>
               <div className="grid gap-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Parking
                 </Label>
-                <Input type="number" value={form.parking} onChange={(e) => setForm({ ...form, parking: e.target.value })} className="rounded-xl bg-muted/30 border-0" />
+                <Input type="number" value={form.parking} onChange={(e) => setForm({ ...form, parking: e.target.value })} className="rounded-xl bg-muted/30 border border-border/60" />
               </div>
             </div>
             <div className="grid gap-2">
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                 Dirección
               </Label>
-              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle y número" className="rounded-xl bg-muted/30 border-0" />
+              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle y número" className="rounded-xl bg-muted/30 border border-border/60" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Ciudad
                 </Label>
-                <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="rounded-xl bg-muted/30 border-0" />
+                <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="rounded-xl bg-muted/30 border border-border/60" />
               </div>
               <div className="grid gap-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                   Estado
                 </Label>
-                <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="rounded-xl bg-muted/30 border-0" />
+                <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="rounded-xl bg-muted/30 border border-border/60" />
               </div>
             </div>
             <Button onClick={handleCreate} disabled={saving} className="w-full bg-primary text-white rounded-xl hover:bg-foreground/90 border-0">
