@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CalendarDays,
   ChevronLeft,
@@ -163,8 +163,11 @@ function generateAISchedule(
 }
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1));
-  const [selectedDate, setSelectedDate] = useState("2026-03-10");
+  const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+  );
   const [schedule, setSchedule] = useState<Record<string, ScheduledContent[]>>({});
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -174,6 +177,34 @@ export default function CalendarPage() {
   const [aiScope, setAiScope] = useState<"week" | "month">("week");
   const [postsPerDay, setPostsPerDay] = useState("3");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["INSTAGRAM", "FACEBOOK"]);
+
+  // Load existing content posts from DB
+  useEffect(() => {
+    fetch("/api/content")
+      .then((r) => r.json())
+      .then((posts: any[]) => {
+        if (!Array.isArray(posts)) return;
+        const mapped: Record<string, ScheduledContent[]> = {};
+        for (const post of posts) {
+          const dateStr = post.scheduledAt || post.publishedAt;
+          if (!dateStr) continue;
+          const d = new Date(dateStr);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          if (!mapped[key]) mapped[key] = [];
+          mapped[key].push({
+            id: post.id,
+            title: post.title || post.content?.slice(0, 50) || "Sin título",
+            platform: post.platform,
+            time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+            type: post.type,
+            status: post.status,
+            aiGenerated: false,
+          });
+        }
+        setSchedule(mapped);
+      })
+      .catch(() => {});
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();

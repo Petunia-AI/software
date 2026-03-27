@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
 
     // Step 1: Generate the video script with AI
     const durationGuide = videoType === "story"
-      ? "15 segundos máximo (2-3 oraciones cortas y directas)"
-      : "30-45 segundos (5-7 oraciones, con hook inicial, desarrollo y CTA)";
+      ? "15 segundos máximo (2-3 oraciones cortas). MÁXIMO 120 palabras."
+      : "30-45 segundos (4-5 oraciones). MÁXIMO 200 palabras.";
 
     const scriptPrompt = `Genera un guion de video publicitario inmobiliario para un agente hablando a cámara.
 
@@ -92,7 +92,7 @@ Genera SOLO el texto que el avatar va a decir. Sin indicaciones de escena, sin e
         model: aiConfig.model,
         prompt: scriptPrompt,
         systemPrompt: "Eres un copywriter experto en videos publicitarios inmobiliarios de alta conversión. Generas guiones naturales, persuasivos y optimizados para redes sociales. Responde SOLO con el texto del guion.",
-        maxTokens: 500,
+        maxTokens: 300,
       });
     } else {
       // Fallback demo script
@@ -121,6 +121,11 @@ Genera SOLO el texto que el avatar va a decir. Sin indicaciones de escena, sin e
       }
     }
 
+    // Truncate script to avoid HeyGen quality issues with long texts
+    const maxWords = videoType === "story" ? 120 : 200;
+    const words = script.split(" ");
+    const safeScript = words.length > maxWords ? words.slice(0, maxWords).join(" ") + "." : script;
+
     // Step 3: Create video with HeyGen API
     const videoPayload = {
       video_inputs: [
@@ -131,13 +136,13 @@ Genera SOLO el texto que el avatar va a decir. Sin indicaciones de escena, sin e
           },
           voice: {
             type: "text",
-            input_text: script,
-            ...(resolvedVoiceId ? { voice_id: resolvedVoiceId } : { voice_id: "en_us_male_1" }),
+            input_text: safeScript,
+            voice_id: resolvedVoiceId || "Maria",
             speed: 1.0,
           },
           background: {
             type: "color",
-            value: "#ffffff",
+            value: "#1a1a2e",
           },
         },
       ],

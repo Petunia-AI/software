@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const aspectRatio = videoType === "reel" ? "9:16" : "16:9";
 
     const { content } = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 300,
       messages: [{
         role: "user",
