@@ -54,6 +54,7 @@ interface Property {
   state: string | null;
   status: string;
   features: string[] | null;
+  images?: string[] | null;
   createdAt: string;
 }
 
