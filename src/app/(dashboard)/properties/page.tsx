@@ -304,8 +304,18 @@ export default function PropertiesPage() {
               className="rounded-2xl border border-border/40 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group overflow-hidden"
             >
               <CardContent className="p-0">
-                <div className="h-44 bg-gradient-to-br from-muted/80 to-muted/30 flex items-center justify-center relative">
-                  <TypeIcon className="h-12 w-12 text-muted-foreground/15" />
+                <div className="h-44 relative overflow-hidden bg-gradient-to-br from-muted/80 to-muted/30">
+                  {property.images && Array.isArray(property.images) && (property.images as string[])[0] ? (
+                    <img
+                      src={(property.images as string[])[0]}
+                      alt={property.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <TypeIcon className="h-12 w-12 text-muted-foreground/15" />
+                    </div>
+                  )}
                   <div className="absolute top-3 left-3 flex gap-1.5">
                     <Badge className={`rounded-full text-[10px] border ${statusColors[property.status]}`}>
                       {statusLabels[property.status]}

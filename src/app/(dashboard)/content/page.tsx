@@ -2008,8 +2008,12 @@ export default function ContentPage() {
                       className="w-full flex items-center justify-between p-4 rounded-2xl border border-[#C4A0D4]/40 hover:bg-[#FAF5FA] hover:-translate-y-0.5 hover:shadow-md hover:border-[#4A154B]/30 transition-all duration-200 text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-[#F5EFF5] flex items-center justify-center shrink-0">
-                          <Sparkles className="h-4 w-4 text-[#4A154B]/60" />
+                        <div className="h-9 w-9 rounded-xl overflow-hidden bg-[#F5EFF5] flex items-center justify-center shrink-0">
+                          {(item.mediaUrls as string[] | null)?.[0] ? (
+                            <img src={(item.mediaUrls as string[])[0]} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 text-[#4A154B]/60" />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate max-w-[280px]">{item.title || "Sin título"}</p>
