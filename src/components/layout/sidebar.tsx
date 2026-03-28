@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Building2,
   Sparkles,
+  CalendarDays,
   Kanban,
   Bell,
   Settings,
@@ -14,77 +15,54 @@ import {
   ChevronLeft,
   Menu,
   Shield,
-  CreditCard,
-  Megaphone,
-  BarChart3,
-  Mail,
-  Globe,
-  FileText,
   Camera,
-  CalendarDays,
+  CreditCard,
+  BookOpen,
+  Rocket,
+  Globe,
+  Megaphone,
+  ExternalLink,
   Brain,
+  BarChart3,
+  ShieldCheck,
+  Mail,
+  FileText,
+  Lock,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
-// ─── Navigation groups ────────────────────────────────────────────────────
-
-const pipelineGroup = {
-  label: "Pipeline",
-  items: [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Propiedades", href: "/properties", icon: Building2 },
-    { name: "CRM Pipeline", href: "/crm", icon: Kanban },
-  ],
-};
-
-const marketingGroup = {
-  label: "Marketing",
-  items: [
-    { name: "Campañas", href: "/campaigns", icon: Megaphone },
-    { name: "Contenido IA", href: "/content", icon: Sparkles },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  ],
-};
-
-const automationGroup = {
-  label: "Automatización",
-  items: [
-    { name: "Seguimiento", href: "/follow-up", icon: Bell },
-    { name: "Email Drip", href: "/email-drip", icon: Mail },
-  ],
-};
-
-// Items that exist but are still being improved — still navigable
-const extrasGroup = {
-  label: "Más herramientas",
-  items: [
-    { name: "Reportes PDF", href: "/reports", icon: FileText },
-    { name: "Avatar IA", href: "/avatar", icon: Camera },
-    { name: "Calendario", href: "/calendar", icon: CalendarDays },
-    { name: "Aprendizaje IA", href: "/knowledge", icon: Brain },
-  ],
-};
-
-const bottomGroup = {
-  items: [
-    { name: "Planes y Pagos", href: "/billing", icon: CreditCard },
-    { name: "Configuración", href: "/settings", icon: Settings },
-  ],
-};
+const clientNavigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Propiedades", href: "/properties", icon: Building2 },
+  { name: "CRM Pipeline", href: "/crm", icon: Kanban },
+  { name: "Campañas", href: "/campaigns", icon: Megaphone },
+  { name: "Email Drip", href: "/email-drip", icon: Mail, enterprise: true },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Reportes PDF", href: "/reports", icon: FileText },
+  { name: "Contenido IA", href: "/content", icon: Sparkles },
+  { name: "Avatar IA", href: "/avatar", icon: Camera, enterprise: true },
+  { name: "Calendario", href: "/calendar", icon: CalendarDays },
+  { name: "Landing Pages", href: "/landing-pages", icon: Globe },
+  { name: "Seguimiento", href: "/follow-up", icon: Bell },
+  { name: "Aprendizaje IA", href: "/knowledge", icon: Brain },
+  { name: "Knowledge Base", href: "/docs", icon: BookOpen },
+  { name: "Planes y Pagos", href: "/billing", icon: CreditCard },
+  { name: "Configuración", href: "/settings", icon: Settings },
+  { name: "Audit Log", href: "/audit-log", icon: ShieldCheck },
+];
 
 const adminNavigation = [
   { name: "Super Admin", href: "/admin", icon: Shield },
 ];
-
-// ─── Component ────────────────────────────────────────────────────────────
 
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { data: session } = useSession();
 
+  // Sync main content padding with sidebar width
   useEffect(() => {
     const el = document.getElementById("main-content");
     if (el) {
@@ -95,56 +73,9 @@ export function Sidebar() {
   const userRole = (session?.user as any)?.role;
   const isAdmin = userRole === "ADMIN";
 
-  const isActive = (href: string) =>
-    pathname === href || pathname?.startsWith(href + "/");
-
-  const NavItem = ({
-    item,
-    isAdminItem = false,
-    soon = false,
-  }: {
-    item: { name: string; href: string; icon?: React.ElementType };
-    isAdminItem?: boolean;
-    soon?: boolean;
-  }) => {
-    const active = isActive(item.href);
-    const Icon = item.icon;
-
-    return (
-      <Link
-        href={item.href}
-        className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-all duration-150 group",
-          active
-            ? "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
-            : "text-white/60 hover:bg-white/8 hover:text-white/90",
-          isAdminItem && !active && "text-[#ECB22E]/80 hover:text-[#ECB22E]"
-        )}
-        title={collapsed ? item.name : undefined}
-      >
-        {Icon && (
-          <Icon
-            className={cn(
-              "h-[17px] w-[17px] shrink-0 transition-colors",
-              active ? "text-white" : "text-white/45 group-hover:text-white/80",
-              isAdminItem && !active && "text-[#ECB22E]/60"
-            )}
-          />
-        )}
-        {!collapsed && (
-          <>
-            <span className="truncate">{item.name}</span>
-            {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
-            {soon && !active && (
-              <span className="ml-auto text-[9px] font-semibold text-white/25 uppercase tracking-wider">
-                Pronto
-              </span>
-            )}
-          </>
-        )}
-      </Link>
-    );
-  };
+  const navigation = isAdmin
+    ? [...adminNavigation, ...clientNavigation]
+    : clientNavigation;
 
   return (
     <>
@@ -166,7 +97,7 @@ export function Sidebar() {
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Sidebar */}
+      {/* Sidebar — Slack aubergine */}
       <aside
         className={cn(
           "fixed left-0 top-0 z-40 h-screen transition-all duration-300 flex flex-col",
@@ -207,85 +138,74 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2.5 py-3 overflow-y-auto scrollbar-none space-y-4">
-          {/* Admin section */}
-          {isAdmin && (
-            <div>
-              {!collapsed && (
-                <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
-                  Admin
-                </p>
-              )}
-              {adminNavigation.map((item) => (
-                <NavItem key={item.name} item={item} isAdminItem />
-              ))}
-              <div className="mt-3 border-t border-white/8" />
-            </div>
-          )}
+        <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto scrollbar-none">
+          {navigation.map((item, index) => {
+            const isActive =
+              pathname === item.href || pathname?.startsWith(item.href + "/");
+            const isAdminItem = item.href === "/admin";
 
-          {/* Pipeline group */}
-          <div>
-            {!collapsed && (
-              <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
-                {pipelineGroup.label}
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {pipelineGroup.items.map((item) => (
-                <NavItem key={item.name} item={item} />
-              ))}
-            </div>
-          </div>
-
-          {/* Marketing group */}
-          <div>
-            {!collapsed && (
-              <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
-                {marketingGroup.label}
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {marketingGroup.items.map((item) => (
-                <NavItem key={item.name} item={item} />
-              ))}
-            </div>
-          </div>
-
-          {/* Automation group */}
-          <div>
-            {!collapsed && (
-              <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
-                {automationGroup.label}
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {automationGroup.items.map((item) => (
-                <NavItem key={item.name} item={item} />
-              ))}
-            </div>
-          </div>
-
-          {/* Extras group */}
-          <div>
-            {!collapsed && (
-              <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
-                {extrasGroup.label}
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {extrasGroup.items.map((item) => (
-                <NavItem key={item.name} item={item} />
-              ))}
-            </div>
-          </div>
+            return (
+              <div key={item.name}>
+                {isAdmin && index === adminNavigation.length && (
+                  <div className="my-2 border-t border-white/8 mx-1" />
+                )}
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-all duration-150 group",
+                    isActive
+                      ? "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+                      : "text-white/60 hover:bg-white/8 hover:text-white/90",
+                    isAdminItem && !isActive && "text-[#ECB22E]/80 hover:text-[#ECB22E]"
+                  )}
+                  title={collapsed ? item.name : undefined}
+                >
+                  <item.icon
+                    className={cn(
+                      "h-[17px] w-[17px] shrink-0 transition-colors",
+                      isActive ? "text-white" : "text-white/45 group-hover:text-white/80",
+                      isAdminItem && !isActive && "text-[#ECB22E]/60"
+                    )}
+                  />
+                  {!collapsed && <span className="truncate">{item.name}</span>}
+                  {!collapsed && (item as any).enterprise && (
+                    <Lock className="ml-auto h-3 w-3 text-white/30 shrink-0" />
+                  )}
+                  {isActive && !collapsed && !(item as any).enterprise && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />
+                  )}
+                </Link>
+              </div>
+            );
+          })}
         </nav>
 
-        {/* Bottom: billing + settings */}
+        {/* Setup wizard link — separate from navigation */}
         <div className="px-2.5 pb-1">
-          <div className="border-t border-white/8 pt-2 mb-1 space-y-0.5">
-            {bottomGroup.items.map((item) => (
-              <NavItem key={item.name} item={item} />
-            ))}
+          <div className="border-t border-white/8 pt-2 mb-1">
+            {!collapsed && (
+              <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
+                Configuración inicial
+              </p>
+            )}
+            <Link
+              href="/onboarding"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-all duration-150 group",
+                pathname?.startsWith("/onboarding")
+                  ? "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+                  : "text-white/40 hover:bg-white/8 hover:text-white/70"
+              )}
+              title={collapsed ? "Setup Wizard (pantalla completa)" : undefined}
+            >
+              <Rocket className="h-[17px] w-[17px] shrink-0 text-white/30 group-hover:text-white/60" />
+              {!collapsed && (
+                <>
+                  <span className="truncate">Setup Wizard</span>
+                  <ExternalLink className="ml-auto h-3 w-3 text-white/25" />
+                </>
+              )}
+            </Link>
           </div>
         </div>
 

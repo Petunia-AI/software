@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { usePlan } from "@/hooks/use-plan";
+import { EnterpriseGate } from "@/components/ui/enterprise-gate";
 import {
   Sparkles,
   Download,
@@ -51,6 +53,7 @@ interface SavedAvatarItem {
 }
 
 export default function AvatarPage() {
+  const { isEnterprise, loading: planLoading } = usePlan();
   const [imageUrl, setImageUrl] = useState("");
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
@@ -217,6 +220,10 @@ export default function AvatarPage() {
   };
 
   const previewImageSrc = uploadPreview || (imageUrl.startsWith("http") ? imageUrl : null);
+
+  if (!planLoading && !isEnterprise) {
+    return <EnterpriseGate feature="Avatar IA" description="Generate AI-powered video avatars to present your properties professionally. Available exclusively on the Enterprise plan." />;
+  }
 
   return (
     <div className="space-y-6">

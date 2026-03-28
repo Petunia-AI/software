@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { usePlan } from "@/hooks/use-plan";
+import { EnterpriseGate } from "@/components/ui/enterprise-gate";
 import {
   Mail,
   Plus,
@@ -323,6 +325,7 @@ function DripForm({
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function EmailDripPage() {
+  const { isEnterprise, loading: planLoading } = usePlan();
   const [drips, setDrips] = useState<EmailDrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "new" | "edit">("list");
@@ -339,6 +342,10 @@ export default function EmailDripPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  if (!planLoading && !isEnterprise) {
+    return <EnterpriseGate feature="Email Drip" description="Automate your email follow-up sequences with AI-powered drip campaigns. Available exclusively on the Enterprise plan." />;
+  }
 
   const handleSave = async (data: any) => {
     const isEdit = view === "edit" && editing;
