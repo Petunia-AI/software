@@ -77,8 +77,9 @@ export async function GET() {
         totalBalance,
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  } catch (err: any) {
+    console.error("[admin/clients]", err);
+    return NextResponse.json({ error: err?.message ?? "Error interno" }, { status: 500 });
   }
 }
 
@@ -109,7 +110,8 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Error al eliminar cliente" }, { status: 500 });
+  } catch (err: any) {
+    console.error("[admin/clients DELETE]", err);
+    return NextResponse.json({ error: err?.message ?? "Error al eliminar cliente" }, { status: 500 });
   }
 }
