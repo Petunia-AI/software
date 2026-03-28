@@ -330,7 +330,7 @@ export function PetuniaChat() {
               </div>
               <h4 className="text-base font-semibold mb-1">Hola! Soy Petunia</h4>
               <p className="text-xs text-muted-foreground mb-6 max-w-[260px] leading-relaxed">
-                Tu asistente inteligente de Uperland. Puedo ayudarte con tus leads, campanas, seguimientos y mas.
+                Tu asistente inteligente de Petunia AI. Puedo ayudarte con tus leads, campañas, seguimientos y más.
               </p>
               <div className="flex flex-col gap-2 w-full max-w-[280px]">
                 {QUICK_ACTIONS.map((qa) => (

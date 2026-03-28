@@ -76,6 +76,12 @@ interface SimpleProperty {
   id: string;
   title: string;
   images?: string[];
+  price?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area?: number | null;
+  city?: string | null;
+  address?: string | null;
 }
 
 interface ContentPost {
@@ -243,7 +249,17 @@ export default function ContentPage() {
     fetch("/api/properties")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data)) setProperties(data.map((p: any) => ({ id: p.id, title: p.title, images: Array.isArray(p.images) ? p.images : [] })));
+        if (Array.isArray(data)) setProperties(data.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          images: Array.isArray(p.images) ? p.images : [],
+          price: p.price ?? null,
+          bedrooms: p.bedrooms ?? null,
+          bathrooms: p.bathrooms ?? null,
+          area: p.area ?? null,
+          city: p.city ?? null,
+          address: p.address ?? null,
+        })));
       })
       .catch(() => {});
 
@@ -254,6 +270,18 @@ export default function ContentPage() {
       .then((data) => { if (Array.isArray(data)) setKlingAvatarList(data); })
       .catch(() => {});
   }, []);
+
+  // Auto-fill marketing image fields when a property is selected
+  useEffect(() => {
+    if (!selectedProperty || selectedProperty === "none") return;
+    const prop = properties.find((p) => p.id === selectedProperty);
+    if (!prop) return;
+    if (prop.price) setImgPrice(`$${Number(prop.price).toLocaleString("en-US")}`);
+    if (prop.bedrooms) setImgBedrooms(String(prop.bedrooms));
+    if (prop.bathrooms) setImgBathrooms(String(prop.bathrooms));
+    if (prop.area) setImgArea(String(prop.area));
+    if (prop.city) setImgLocation(prop.address ? `${prop.address}, ${prop.city}` : prop.city);
+  }, [selectedProperty, properties]);
 
   const loadHistory = () => {
     fetch("/api/content")

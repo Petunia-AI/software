@@ -166,17 +166,26 @@ function BarRow({
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const load = async () => {
     setLoading(true);
+    setError(false);
     try {
-      const res = await fetch("/api/analytics");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch("/api/analytics", { signal: controller.signal });
+      clearTimeout(timeout);
       if (res.ok) {
         setData(await res.json());
         setLastUpdated(new Date());
+      } else {
+        setError(true);
       }
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -207,10 +216,33 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
-      <div className="py-20 flex items-center justify-center">
-        <p className="text-gray-400">No se pudieron cargar los datos.</p>
+      <div className="py-20 flex flex-col items-center justify-center text-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center">
+          <BarChart3 className="w-7 h-7 text-violet-400" />
+        </div>
+        <div>
+          <p className="text-gray-700 font-semibold text-lg">Sin datos de analytics todavía</p>
+          <p className="text-gray-400 text-sm mt-1 max-w-sm">
+            Conecta tus cuentas publicitarias para comenzar a rastrear campañas y métricas de leads.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={load}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reintentar
+          </button>
+          <a
+            href="/settings"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition"
+          >
+            Conectar cuentas
+          </a>
+        </div>
       </div>
     );
   }

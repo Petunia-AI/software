@@ -14,8 +14,9 @@ import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 
 export function Header() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const user = session?.user;
+  const isLoading = status === "loading";
   const initials = user?.name
     ? user.name
         .split(" ")
@@ -23,7 +24,7 @@ export function Header() {
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : "U";
+    : "?";
 
   return (
     <header className="sticky top-0 z-30 h-[58px] bg-white border-b border-[#C4A0D4] shadow-[0_1px_0_#C4A0D4]">
@@ -69,12 +70,21 @@ export function Header() {
                 </AvatarFallback>
               </Avatar>
               <div className="hidden md:flex flex-col items-start">
-                <span className="text-[12px] font-semibold text-[#1D1C1D] leading-tight">
-                  {user?.name || "Usuario"}
-                </span>
-                <span className="text-[10px] text-[#AAAAAA] leading-tight">
-                  {(user as any)?.organizationName || "Mi Organización"}
-                </span>
+                {isLoading ? (
+                  <>
+                    <div className="h-3 w-20 bg-gray-200 rounded animate-pulse mb-1" />
+                    <div className="h-2.5 w-28 bg-gray-100 rounded animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[12px] font-semibold text-[#1D1C1D] leading-tight">
+                      {user?.name || user?.email?.split("@")[0] || "—"}
+                    </span>
+                    <span className="text-[10px] text-[#AAAAAA] leading-tight">
+                      {(user as any)?.organizationName || user?.email || "—"}
+                    </span>
+                  </>
+                )}
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 rounded-xl border-[#C4A0D4] shadow-[0_8px_32px_rgba(0,0,0,0.12)] p-1">

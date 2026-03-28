@@ -131,8 +131,9 @@ export default function PropertiesPage() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setProperties(data);
+        else setProperties([]);
       })
-      .catch(() => {})
+      .catch(() => setProperties([]))
       .finally(() => setLoading(false));
   };
 
@@ -396,8 +397,27 @@ export default function PropertiesPage() {
           <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
             <Building2 className="h-8 w-8 text-muted-foreground/40" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">No se encontraron propiedades</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Intenta cambiar los filtros</p>
+          {properties.length === 0 ? (
+            <>
+              <p className="text-sm font-semibold text-foreground">Aún no tienes propiedades</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                Agrega tu primera propiedad para comenzar a generar contenido y campañas con IA.
+              </p>
+              <Button
+                size="sm"
+                className="mt-4 rounded-xl bg-primary text-white"
+                onClick={() => setShowNewDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar primera propiedad
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-muted-foreground">No se encontraron propiedades</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Intenta cambiar los filtros o el término de búsqueda</p>
+            </>
+          )}
         </div>
       )}
 

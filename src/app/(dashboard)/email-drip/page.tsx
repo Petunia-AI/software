@@ -415,11 +415,10 @@ export default function EmailDripPage() {
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
         <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
         <div className="text-sm text-blue-700">
-          <strong className="text-blue-800">Cómo funciona:</strong> Configura el trigger (ej. "Al crear un lead"),
-          agrega los emails con sus días de espera, activa la secuencia.
-          El cron <code className="text-blue-700 bg-blue-100 px-1 rounded">/api/cron/process-drips</code> envía
-          automáticamente cada email en el momento correcto.
-          Configura <code className="text-blue-700 bg-blue-100 px-1 rounded">RESEND_API_KEY</code> en tu .env para activar el envío real.
+          <strong className="text-blue-800">Cómo funciona:</strong> Define el disparador (ej. "Al crear un lead"),
+          agrega los emails con sus días de espera y activa la secuencia.
+          Los emails se envían automáticamente en el momento correcto.
+          Para habilitar el envío real, configura tu cuenta de email en <strong className="text-blue-800">Configuración → Integraciones</strong>.
         </div>
       </div>
 

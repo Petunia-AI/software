@@ -463,55 +463,57 @@ export default function CampaignsPage() {
       )}
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Megaphone className="h-3.5 w-3.5" />
-              <span className="text-xs">Activas</span>
-            </div>
-            <p className="text-2xl font-bold">{activeCampaigns}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Eye className="h-3.5 w-3.5" />
-              <span className="text-xs">Impresiones</span>
-            </div>
-            <p className="text-2xl font-bold">
-              {totalImpressions >= 1000 ? (totalImpressions / 1000).toFixed(1) + "k" : totalImpressions}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <MousePointerClick className="h-3.5 w-3.5" />
-              <span className="text-xs">Clics</span>
-            </div>
-            <p className="text-2xl font-bold">{totalClicks}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Users className="h-3.5 w-3.5" />
-              <span className="text-xs">Leads</span>
-            </div>
-            <p className="text-2xl font-bold">{totalLeads}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <DollarSign className="h-3.5 w-3.5" />
-              <span className="text-xs">Gastado</span>
-            </div>
-            <p className="text-2xl font-bold">{"$" + totalSpent.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {allCampaigns.length === 0 && metaStatus && !metaStatus.connected && googleStatus && !googleStatus.connected ? null : (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card className="rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Megaphone className="h-3.5 w-3.5" />
+                <span className="text-xs">Activas</span>
+              </div>
+              <p className="text-2xl font-bold">{activeCampaigns}</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Eye className="h-3.5 w-3.5" />
+                <span className="text-xs">Impresiones</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {totalImpressions >= 1000 ? (totalImpressions / 1000).toFixed(1) + "k" : totalImpressions}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <MousePointerClick className="h-3.5 w-3.5" />
+                <span className="text-xs">Clics</span>
+              </div>
+              <p className="text-2xl font-bold">{totalClicks}</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Users className="h-3.5 w-3.5" />
+                <span className="text-xs">Leads</span>
+              </div>
+              <p className="text-2xl font-bold">{totalLeads}</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <DollarSign className="h-3.5 w-3.5" />
+                <span className="text-xs">Gastado</span>
+              </div>
+              <p className="text-2xl font-bold">{"$" + totalSpent.toFixed(2)}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Campaigns list */}
       {loading ? (

@@ -153,8 +153,9 @@ export default function LeadsPage() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setLeads(data);
+        else setLeads([]);
       })
-      .catch(() => {})
+      .catch(() => setLeads([]))
       .finally(() => setLoading(false));
   }, []);
 
@@ -642,7 +643,26 @@ export default function LeadsPage() {
           {filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Users className="h-10 w-10 text-muted-foreground/20 mb-3" />
-              <p className="text-sm font-medium text-muted-foreground">No se encontraron leads</p>
+              {leads.length === 0 ? (
+                <>
+                  <p className="text-sm font-semibold text-foreground">Aún no tienes leads</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                    Importa desde CSV o crea tu primer lead manualmente.
+                  </p>
+                  <div className="flex gap-2 mt-4">
+                    <Button size="sm" className="rounded-xl bg-primary text-white" onClick={() => setShowNewDialog(true)}>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Crear lead
+                    </Button>
+                    <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setShowImportDialog(true)}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Importar CSV
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground">No se encontraron leads con ese filtro</p>
+              )}
             </div>
           )}
         </>
