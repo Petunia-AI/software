@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { LeadSource } from "@/generated/prisma/client";
+import { sendMetaDM } from "@/lib/whatsapp";
+import { generateAutoReply } from "@/lib/auto-learn";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,6 +22,7 @@ interface MetaLeadResponse {
   platform?: string;
 }
 
+// Lead-gen webhook entry (existing)
 interface MetaWebhookEntry {
   id: string;
   time: number;
@@ -36,9 +39,24 @@ interface MetaWebhookEntry {
   }[];
 }
 
+// Messaging webhook entry (Instagram DM / Messenger)
+interface MetaMessagingEntry {
+  id: string;
+  time: number;
+  messaging?: {
+    sender: { id: string };
+    recipient: { id: string };
+    timestamp: number;
+    message?: {
+      mid: string;
+      text?: string;
+    };
+  }[];
+}
+
 interface MetaWebhookPayload {
   object: string;
-  entry: MetaWebhookEntry[];
+  entry: (MetaWebhookEntry & MetaMessagingEntry)[];
 }
 
 // ---------------------------------------------------------------------------
@@ -95,17 +113,14 @@ export async function GET(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// POST - Receive lead form submissions
+// POST - Receive lead forms + Instagram DMs + Messenger messages
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
   const organizationId = process.env.META_ORGANIZATION_ID;
   if (!organizationId) {
     console.error("[Meta Webhook] META_ORGANIZATION_ID is not configured");
-    return NextResponse.json(
-      { error: "Server misconfigured" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }
 
   let payload: MetaWebhookPayload;
@@ -115,12 +130,89 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Meta expects a 200 response quickly; process leads after acknowledging.
-  // In a serverless environment we process synchronously but keep work minimal.
+  const isInstagram = payload.object === "instagram";
+  const isMessenger = payload.object === "page";
+
+  // ── Instagram DM / Messenger auto-reply ─────────────────────────────────
+  if (isInstagram || isMessenger) {
+    const platform: "instagram" | "messenger" = isInstagram ? "instagram" : "messenger";
+
+    for (const entry of payload.entry ?? []) {
+      for (const messaging of entry.messaging ?? []) {
+        const senderId = messaging.sender?.id;
+        const pageId = entry.id; // Page / IG account ID
+        const text = messaging.message?.text;
+
+        if (!senderId || !text) continue;
+
+        // Skip messages from the page itself (echo)
+        if (senderId === pageId) continue;
+
+        // Create or update lead
+        const source: LeadSource =
+          platform === "instagram" ? LeadSource.INSTAGRAM : LeadSource.FACEBOOK;
+
+        const existing = await prisma.lead.findFirst({
+          where: {
+            organizationId,
+            notes: { contains: `${platform}_psid:${senderId}` },
+          },
+          select: { id: true },
+        });
+
+        if (!existing) {
+          await prisma.lead.create({
+            data: {
+              name: `${platform === "instagram" ? "Instagram" : "Messenger"} ${senderId.slice(-6)}`,
+              source,
+              status: "NEW",
+              notes: `${platform}_psid:${senderId}`,
+              organizationId,
+            },
+          });
+        }
+
+        // Auto-reply if enabled for this platform
+        const org = await prisma.organization.findUnique({
+          where: { id: organizationId },
+          select: {
+            instagramAutoReply: true,
+            messengerAutoReply: true,
+            metaAccessToken: true,
+          },
+        });
+
+        const autoReplyEnabled =
+          platform === "instagram"
+            ? (org?.instagramAutoReply ?? false)
+            : (org?.messengerAutoReply ?? false);
+
+        const accessToken = org?.metaAccessToken ?? process.env.META_ACCESS_TOKEN ?? "";
+
+        if (autoReplyEnabled && accessToken) {
+          // Fire-and-forget
+          (async () => {
+            try {
+              const senderName =
+                platform === "instagram" ? "cliente de Instagram" : "cliente de Messenger";
+              const reply = await generateAutoReply(text, senderName, organizationId);
+              await sendMetaDM(pageId, accessToken, senderId, reply, platform);
+            } catch (err) {
+              console.error(`[Meta Webhook] ${platform} auto-reply error:`, err);
+            }
+          })();
+        }
+      }
+    }
+
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
+  // ── Lead form submissions (existing logic) ───────────────────────────────
   const results: { leadgenId: string; status: string }[] = [];
 
   for (const entry of payload.entry ?? []) {
-    for (const change of entry.changes ?? []) {
+    for (const change of (entry as MetaWebhookEntry).changes ?? []) {
       if (change.field !== "leadgen") continue;
 
       const leadgenId = change.value?.leadgen_id;

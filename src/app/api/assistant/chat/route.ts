@@ -12,6 +12,7 @@ import {
   type AgentMessage,
 } from "@/lib/ai";
 import { AGENT_TOOLS, executeTool } from "@/lib/agent-tools";
+import { triggerAutoLearn } from "@/lib/auto-learn";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -702,7 +703,10 @@ export async function POST(req: NextRequest) {
         endpoint: "/api/assistant/chat",
       });
 
-      // 9. Signal completion
+      // 9. Fire auto-learning in background (every 5th assistant message)
+      triggerAutoLearn(conversation.id, organizationId, userId).catch(() => {});
+
+      // 10. Signal completion
       await send({
         type: "done",
         conversationId: conversation.id,

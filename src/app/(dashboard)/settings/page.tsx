@@ -213,6 +213,50 @@ export default function SettingsPage() {
   const [fubSyncing, setFubSyncing] = useState(false);
   const [disconnectingFub, setDisconnectingFub] = useState(false);
 
+  // Auto-reply state
+  const [whatsappAutoReply, setWhatsappAutoReply] = useState(false);
+  const [instagramAutoReply, setInstagramAutoReply] = useState(false);
+  const [messengerAutoReply, setMessengerAutoReply] = useState(false);
+  const [savingAutoReply, setSavingAutoReply] = useState(false);
+
+  const fetchAutoReply = useCallback(async () => {
+    try {
+      const res = await fetch("/api/integrations/auto-reply");
+      if (res.ok) {
+        const data = await res.json();
+        setWhatsappAutoReply(data.whatsappAutoReply ?? false);
+        setInstagramAutoReply(data.instagramAutoReply ?? false);
+        setMessengerAutoReply(data.messengerAutoReply ?? false);
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const saveAutoReply = async (
+    field: "whatsappAutoReply" | "instagramAutoReply" | "messengerAutoReply",
+    value: boolean,
+  ) => {
+    setSavingAutoReply(true);
+    try {
+      const res = await fetch("/api/integrations/auto-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Configuración guardada");
+    } catch {
+      toast.error("Error al guardar configuración");
+      // Revert optimistic update
+      if (field === "whatsappAutoReply") setWhatsappAutoReply(!value);
+      if (field === "instagramAutoReply") setInstagramAutoReply(!value);
+      if (field === "messengerAutoReply") setMessengerAutoReply(!value);
+    } finally {
+      setSavingAutoReply(false);
+    }
+  };
+
   const fetchMetaStatus = useCallback(async () => {
     setLoadingMeta(true);
     try {
@@ -653,8 +697,9 @@ export default function SettingsPage() {
       fetchMetaCredentials();
       fetchGoogleCredentials();
       fetchFubCredentials();
+      fetchAutoReply();
     }
-  }, [activeTab, fetchSlackStatus, fetchMetaStatus, fetchGoogleStatus, fetchMetaCredentials, fetchGoogleCredentials, fetchFubCredentials]);
+  }, [activeTab, fetchSlackStatus, fetchMetaStatus, fetchGoogleStatus, fetchMetaCredentials, fetchGoogleCredentials, fetchFubCredentials, fetchAutoReply]);
 
   const fetchAiUsage = useCallback(async () => {
     setLoadingAiUsage(true);
@@ -1504,6 +1549,74 @@ export default function SettingsPage() {
                   Guardar WhatsApp
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Auto-respuesta IA */}
+          <Card className="rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300" style={{ border: '1.5px solid transparent', background: 'linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #9B3FCB 0%, #4A154B 50%, #611f69 100%) border-box' }}>
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <span className="text-lg">🤖</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Auto-respuesta IA</p>
+                  <p className="text-xs text-muted-foreground">
+                    Petunia responde automáticamente mensajes entrantes cuando no estás disponible
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-muted/40">
+                  <div>
+                    <p className="text-sm font-medium">WhatsApp Business</p>
+                    <p className="text-xs text-muted-foreground">Responde a nuevos mensajes de WhatsApp</p>
+                  </div>
+                  <Switch
+                    checked={whatsappAutoReply}
+                    onCheckedChange={(val) => {
+                      setWhatsappAutoReply(val);
+                      saveAutoReply("whatsappAutoReply", val);
+                    }}
+                    disabled={savingAutoReply}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b border-muted/40">
+                  <div>
+                    <p className="text-sm font-medium">Instagram DM</p>
+                    <p className="text-xs text-muted-foreground">Responde mensajes directos de Instagram</p>
+                  </div>
+                  <Switch
+                    checked={instagramAutoReply}
+                    onCheckedChange={(val) => {
+                      setInstagramAutoReply(val);
+                      saveAutoReply("instagramAutoReply", val);
+                    }}
+                    disabled={savingAutoReply}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm font-medium">Facebook Messenger</p>
+                    <p className="text-xs text-muted-foreground">Responde mensajes de Messenger</p>
+                  </div>
+                  <Switch
+                    checked={messengerAutoReply}
+                    onCheckedChange={(val) => {
+                      setMessengerAutoReply(val);
+                      saveAutoReply("messengerAutoReply", val);
+                    }}
+                    disabled={savingAutoReply}
+                  />
+                </div>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+                💡 Las respuestas se generan con IA usando el conocimiento de tu negocio. Se activan solo si el mensaje entrante contiene texto.
+              </p>
             </CardContent>
           </Card>
 

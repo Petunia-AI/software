@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { generateAutoReply } from "@/lib/auto-learn";
 
 // ---------------------------------------------------------------------------
 // GET  – WhatsApp webhook verification (Meta Cloud API handshake)
@@ -74,14 +76,13 @@ export async function POST(req: NextRequest) {
 
     for (const entry of body.entry) {
       for (const change of entry.changes) {
-        const { messages, contacts } = change.value;
+        const { messages, contacts, metadata } = change.value as typeof change.value & { metadata: { phone_number_id: string } };
         if (!messages || messages.length === 0) continue;
 
         for (const message of messages) {
           const phone = message.from; // E.164 format without "+"
           const contactName =
-            contacts?.find((c) => c.wa_id === phone)?.profile.name ??
-            phone;
+            contacts?.find((c) => c.wa_id === phone)?.profile.name ?? phone;
           const text =
             message.type === "text" ? message.text?.body ?? "" : "";
 
@@ -102,6 +103,36 @@ export async function POST(req: NextRequest) {
                 organizationId,
               },
             });
+          }
+
+          // ─── Auto-reply ──────────────────────────────────────────────────
+          // Check if the org has WhatsApp auto-reply enabled
+          if (text) {
+            const org = await prisma.organization.findUnique({
+              where: { id: organizationId },
+              select: { whatsappAutoReply: true, metaAccessToken: true, whatsappPhoneNumberId: true },
+            });
+
+            const autoReplyEnabled = org?.whatsappAutoReply ?? false;
+            const accessToken =
+              org?.metaAccessToken ?? process.env.META_ACCESS_TOKEN ?? "";
+            const phoneNumberId =
+              org?.whatsappPhoneNumberId ??
+              metadata?.phone_number_id ??
+              process.env.WHATSAPP_PHONE_NUMBER_ID ??
+              "";
+
+            if (autoReplyEnabled && accessToken && phoneNumberId) {
+              // Fire-and-forget — don't block webhook response
+              (async () => {
+                try {
+                  const reply = await generateAutoReply(text, contactName, organizationId);
+                  await sendWhatsAppMessage(phoneNumberId, accessToken, phone, reply);
+                } catch (err) {
+                  console.error("[whatsapp-webhook] Auto-reply error:", err);
+                }
+              })();
+            }
           }
         }
       }

@@ -279,6 +279,12 @@ model Organization {
   fubApiKey            String?   @map("fub_api_key")
   fubLastSyncAt        DateTime? @map("fub_last_sync_at")
   fubLeadsSynced       Int       @default(0) @map("fub_leads_synced")
+  // WhatsApp Business API — auto-respuesta
+  whatsappPhoneNumberId  String?  @map("whatsapp_phone_number_id")
+  whatsappAutoReply      Boolean  @default(false) @map("whatsapp_auto_reply")
+  // Social media DM auto-respuesta
+  instagramAutoReply     Boolean  @default(false) @map("instagram_auto_reply")
+  messengerAutoReply     Boolean  @default(false) @map("messenger_auto_reply")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
@@ -940,6 +946,7 @@ model KnowledgeEntry {
   title          String
   content        String   @db.Text
   isActive       Boolean  @default(true) @map("is_active")
+  source         String   @default("manual") // "manual" | "auto"
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
