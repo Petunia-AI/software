@@ -44,7 +44,6 @@ const marketingGroup = {
   items: [
     { name: "Campañas", href: "/campaigns", icon: Megaphone },
     { name: "Contenido IA", href: "/content", icon: Sparkles },
-    { name: "Landing Pages", href: "/landing-pages", icon: Globe },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
   ],
 };
