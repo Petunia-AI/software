@@ -85,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     const campaign = await prisma.googleCampaign.update({
-      where: { id },
+      where: { id, organizationId },
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.objective !== undefined && { objective: body.objective }),
@@ -144,7 +144,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       );
     }
 
-    await prisma.googleCampaign.delete({ where: { id } });
+    await prisma.googleCampaign.delete({ where: { id, organizationId } });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

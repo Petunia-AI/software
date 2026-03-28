@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
             ? (org.instagramAutoReply ?? false)
             : (org.messengerAutoReply ?? false);
 
-        const accessToken = org.metaAccessToken ?? process.env.META_ACCESS_TOKEN ?? "";
+        const accessToken = org.metaAccessToken ?? null;
 
         if (autoReplyEnabled && accessToken) {
           // Fire-and-forget
@@ -222,9 +222,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, metaAccessToken: true },
     });
 
-    // Fallback to env var for backwards compatibility / single-tenant setups
-    const organizationId =
-      orgForEntry?.id ?? process.env.META_ORGANIZATION_ID ?? null;
+    const organizationId = orgForEntry?.id ?? null;
 
     if (!organizationId) {
       console.warn(`[Meta Webhook] No organization found for pageId: ${pageId} — skipping leadgen entry`);

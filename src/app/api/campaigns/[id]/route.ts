@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     const campaign = await prisma.metaCampaign.update({
-      where: { id },
+      where: { id, organizationId },
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.objective !== undefined && { objective: body.objective }),
@@ -141,7 +141,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
     }
 
-    await prisma.metaCampaign.delete({ where: { id } });
+    await prisma.metaCampaign.delete({ where: { id, organizationId } });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
