@@ -11,12 +11,14 @@ export type AuthUser = {
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  role?: string;
+  role?: string;       // UserRole: "ADMIN" | "USER" (global platform role)
+  orgRole?: string;    // OrgMemberRole: "OWNER" | "ADMIN" | "MEMBER"
   organizationId?: string | null;
   organizationName?: string | null;
 };
 
 export type OrgUser = AuthUser & { organizationId: string };
+export type OrgAdminUser = OrgUser & { orgRole: "OWNER" | "ADMIN" };
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const session = await getSession();
@@ -40,6 +42,21 @@ export async function requireOrganization(): Promise<OrgUser | null> {
   const user = await getCurrentUser();
   if (!user || !user.organizationId) return null;
   return user as OrgUser;
+}
+
+/**
+ * Require OWNER or ADMIN role within the organization.
+ * Super admins (UserRole=ADMIN) bypass this check.
+ * Returns null if the user is only a MEMBER.
+ */
+export async function requireOrgAdmin(): Promise<OrgUser | null> {
+  const user = await getCurrentUser();
+  if (!user || !user.organizationId) return null;
+  // Platform super-admins always pass
+  if (user.role === "ADMIN") return user as OrgUser;
+  // Org-level: only OWNER or ADMIN can manage settings
+  if (user.orgRole === "OWNER" || user.orgRole === "ADMIN") return user as OrgUser;
+  return null;
 }
 
 /**

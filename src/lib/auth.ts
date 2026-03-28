@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
             where: { email: credentials.email },
             include: {
               organizationMembers: {
-                select: { organizationId: true },
+                select: { organizationId: true, role: true },
                 take: 1,
               },
             },
@@ -44,6 +44,7 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
             role: user.role,
             organizationId: user.organizationMembers[0]?.organizationId || null,
+            orgRole: user.organizationMembers[0]?.role || null,
             organizationName: null,
           };
         } catch (error) {
@@ -60,6 +61,7 @@ export const authOptions: NextAuthOptions = {
         token.image = user.image;
         token.role = (user as any).role;
         token.organizationId = (user as any).organizationId;
+        token.orgRole = (user as any).orgRole;
         token.organizationName = (user as any).organizationName;
       }
       // Refrescar imagen de perfil cuando se dispara update
@@ -75,6 +77,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).image = token.image;
         (session.user as any).role = token.role;
+        (session.user as any).orgRole = token.orgRole;
         (session.user as any).organizationId = token.organizationId;
         (session.user as any).organizationName = token.organizationName;
       }

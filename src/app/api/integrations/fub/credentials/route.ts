@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization, unauthorized } from "@/lib/auth-helpers";
+import { requireOrganization, requireOrgAdmin, unauthorized, forbidden } from "@/lib/auth-helpers";
 
 /**
  * GET /api/integrations/fub/credentials
@@ -32,8 +32,8 @@ export async function GET() {
  * Save (or clear) Follow Up Boss API key
  */
 export async function POST(req: NextRequest) {
-  const user = await requireOrganization();
-  if (!user) return unauthorized();
+  const user = await requireOrgAdmin();
+  if (!user) return forbidden();
 
   const body = await req.json();
   const { apiKey } = body;
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
  * Disconnect Follow Up Boss
  */
 export async function DELETE() {
-  const user = await requireOrganization();
-  if (!user) return unauthorized();
+  const user = await requireOrgAdmin();
+  if (!user) return forbidden();
 
   await prisma.organization.update({
     where: { id: user.organizationId },

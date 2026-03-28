@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireOrganization, requireOrgAdmin, unauthorized, forbidden } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
-// GET — fetch current auto-reply settings
+// GET — fetch current auto-reply settings (any org member)
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const organizationId = (session.user as any).organizationId as string | null;
-  if (!organizationId) {
-    return NextResponse.json({ error: "Sin organización" }, { status: 400 });
-  }
+  const user = await requireOrganization();
+  if (!user) return unauthorized();
 
   const org = await prisma.organization.findUnique({
-    where: { id: organizationId },
+    where: { id: user.organizationId },
     select: {
       whatsappAutoReply: true,
       instagramAutoReply: true,
@@ -31,17 +23,10 @@ export async function GET() {
   });
 }
 
-// POST — update auto-reply settings
+// POST — update auto-reply settings (OWNER / ADMIN only)
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const organizationId = (session.user as any).organizationId as string | null;
-  if (!organizationId) {
-    return NextResponse.json({ error: "Sin organización" }, { status: 400 });
-  }
+  const user = await requireOrgAdmin();
+  if (!user) return forbidden();
 
   let body: {
     whatsappAutoReply?: boolean;
@@ -55,22 +40,16 @@ export async function POST(req: NextRequest) {
   }
 
   const updateData: Record<string, boolean> = {};
-  if (typeof body.whatsappAutoReply === "boolean") {
-    updateData.whatsappAutoReply = body.whatsappAutoReply;
-  }
-  if (typeof body.instagramAutoReply === "boolean") {
-    updateData.instagramAutoReply = body.instagramAutoReply;
-  }
-  if (typeof body.messengerAutoReply === "boolean") {
-    updateData.messengerAutoReply = body.messengerAutoReply;
-  }
+  if (typeof body.whatsappAutoReply === "boolean") updateData.whatsappAutoReply = body.whatsappAutoReply;
+  if (typeof body.instagramAutoReply === "boolean") updateData.instagramAutoReply = body.instagramAutoReply;
+  if (typeof body.messengerAutoReply === "boolean") updateData.messengerAutoReply = body.messengerAutoReply;
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
   }
 
   await prisma.organization.update({
-    where: { id: organizationId },
+    where: { id: user.organizationId },
     data: updateData,
   });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, unauthorized } from "@/lib/auth-helpers";
+import { requireOrganization, requireOrgAdmin, unauthorized, forbidden } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -36,8 +36,8 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireOrganization();
-    if (!user) return unauthorized();
+    const user = await requireOrgAdmin();
+    if (!user) return forbidden();
 
     const body = await req.json();
     const { clientId, clientSecret, developerToken } = body;

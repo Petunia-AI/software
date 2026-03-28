@@ -1,25 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireOrganization, requireOrgAdmin, unauthorized, forbidden } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
-// GET — fetch current WhatsApp configuration
+// GET — fetch current WhatsApp configuration (any org member)
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const organizationId = (session.user as any).organizationId as string | null;
-  if (!organizationId) {
-    return NextResponse.json({ error: "Sin organización" }, { status: 400 });
-  }
+  const user = await requireOrganization();
+  if (!user) return unauthorized();
 
   const org = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: {
-      whatsappPhoneNumberId: true,
-    },
+    where: { id: user.organizationId },
+    select: { whatsappPhoneNumberId: true },
   });
 
   return NextResponse.json({
@@ -28,22 +18,13 @@ export async function GET() {
   });
 }
 
-// POST — save WhatsApp Phone Number ID
+// POST — save WhatsApp Phone Number ID (OWNER / ADMIN only)
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const organizationId = (session.user as any).organizationId as string | null;
-  if (!organizationId) {
-    return NextResponse.json({ error: "Sin organización" }, { status: 400 });
-  }
+  const user = await requireOrgAdmin();
+  if (!user) return forbidden();
 
   let body: { phoneNumberId: string };
-  try {
-    body = await req.json();
-  } catch {
+  try { body = await req.json(); } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
@@ -53,31 +34,21 @@ export async function POST(req: NextRequest) {
   }
 
   await prisma.organization.update({
-    where: { id: organizationId },
+    where: { id: user.organizationId },
     data: { whatsappPhoneNumberId: phoneNumberId.trim() },
   });
 
   return NextResponse.json({ success: true });
 }
 
-// DELETE — remove WhatsApp configuration
+// DELETE — remove WhatsApp configuration (OWNER / ADMIN only)
 export async function DELETE() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const organizationId = (session.user as any).organizationId as string | null;
-  if (!organizationId) {
-    return NextResponse.json({ error: "Sin organización" }, { status: 400 });
-  }
+  const user = await requireOrgAdmin();
+  if (!user) return forbidden();
 
   await prisma.organization.update({
-    where: { id: organizationId },
-    data: {
-      whatsappPhoneNumberId: null,
-      whatsappAutoReply: false,
-    },
+    where: { id: user.organizationId },
+    data: { whatsappPhoneNumberId: null, whatsappAutoReply: false },
   });
 
   return NextResponse.json({ success: true });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth-helpers";
+import { requireOrganization, requireOrgAdmin, unauthorized, forbidden } from "@/lib/auth-helpers";
 import { verifySmtpConfig } from "@/lib/email";
 
 /** GET — returns current SMTP config (password masked) */
@@ -41,11 +41,11 @@ export async function GET() {
   }
 }
 
-/** POST — save SMTP config */
+/** POST — save SMTP config (OWNER / ADMIN only) */
 export async function POST(req: Request) {
   try {
-    const user = await requireOrganization();
-    if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    const user = await requireOrgAdmin();
+    if (!user) return forbidden();
 
     const body = await req.json();
     const {
@@ -88,11 +88,11 @@ export async function POST(req: Request) {
   }
 }
 
-/** DELETE — remove SMTP config */
+/** DELETE — remove SMTP config (OWNER / ADMIN only) */
 export async function DELETE() {
   try {
-    const user = await requireOrganization();
-    if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    const user = await requireOrgAdmin();
+    if (!user) return forbidden();
 
     await prisma.organization.update({
       where: { id: user.organizationId },
