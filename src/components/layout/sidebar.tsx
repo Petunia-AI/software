@@ -34,23 +34,48 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 
 const clientNavigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Propiedades", href: "/properties", icon: Building2 },
-  { name: "CRM Pipeline", href: "/crm", icon: Kanban },
-  { name: "Campañas", href: "/campaigns", icon: Megaphone },
-  { name: "Email Drip", href: "/email-drip", icon: Mail, enterprise: true },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Reportes PDF", href: "/reports", icon: FileText },
-  { name: "Contenido IA", href: "/content", icon: Sparkles },
-  { name: "Avatar IA", href: "/avatar", icon: Camera, enterprise: true },
-  { name: "Calendario", href: "/calendar", icon: CalendarDays },
-  { name: "Landing Pages", href: "/landing-pages", icon: Globe },
-  { name: "Seguimiento", href: "/follow-up", icon: Bell },
-  { name: "Aprendizaje IA", href: "/knowledge", icon: Brain },
-  { name: "Knowledge Base", href: "/docs", icon: BookOpen },
-  { name: "Planes y Pagos", href: "/billing", icon: CreditCard },
-  { name: "Configuración", href: "/settings", icon: Settings },
-  { name: "Audit Log", href: "/audit-log", icon: ShieldCheck },
+  {
+    group: "Principal",
+    items: [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Propiedades", href: "/properties", icon: Building2 },
+      { name: "CRM Pipeline", href: "/crm", icon: Kanban },
+    ],
+  },
+  {
+    group: "Marketing",
+    items: [
+      { name: "Campañas", href: "/campaigns", icon: Megaphone },
+      { name: "Email Drip", href: "/email-drip", icon: Mail, enterprise: true },
+      { name: "Analytics", href: "/analytics", icon: BarChart3 },
+      { name: "Reportes PDF", href: "/reports", icon: FileText },
+    ],
+  },
+  {
+    group: "Contenido",
+    items: [
+      { name: "Contenido IA", href: "/content", icon: Sparkles },
+      { name: "Avatar IA", href: "/avatar", icon: Camera, enterprise: true },
+      { name: "Calendario", href: "/calendar", icon: CalendarDays },
+      { name: "Landing Pages", href: "/landing-pages", icon: Globe },
+    ],
+  },
+  {
+    group: "Gestión",
+    items: [
+      { name: "Seguimiento", href: "/follow-up", icon: Bell },
+      { name: "Aprendizaje IA", href: "/knowledge", icon: Brain },
+      { name: "Knowledge Base", href: "/docs", icon: BookOpen },
+    ],
+  },
+  {
+    group: "Cuenta",
+    items: [
+      { name: "Planes y Pagos", href: "/billing", icon: CreditCard },
+      { name: "Configuración", href: "/settings", icon: Settings },
+      { name: "Audit Log", href: "/audit-log", icon: ShieldCheck },
+    ],
+  },
 ];
 
 const adminNavigation = [
@@ -72,10 +97,6 @@ export function Sidebar() {
 
   const userRole = (session?.user as any)?.role;
   const isAdmin = userRole === "ADMIN";
-
-  const navigation = isAdmin
-    ? [...adminNavigation, ...clientNavigation]
-    : clientNavigation;
 
   return (
     <>
@@ -138,46 +159,76 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto scrollbar-none">
-          {navigation.map((item, index) => {
-            const isActive =
-              pathname === item.href || pathname?.startsWith(item.href + "/");
-            const isAdminItem = item.href === "/admin";
-
-            return (
-              <div key={item.name}>
-                {isAdmin && index === adminNavigation.length && (
-                  <div className="my-2 border-t border-white/8 mx-1" />
-                )}
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-all duration-150 group",
-                    isActive
-                      ? "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
-                      : "text-white/60 hover:bg-white/8 hover:text-white/90",
-                    isAdminItem && !isActive && "text-[#ECB22E]/80 hover:text-[#ECB22E]"
-                  )}
-                  title={collapsed ? item.name : undefined}
-                >
-                  <item.icon
+        <nav className="flex-1 px-2.5 py-3 overflow-y-auto scrollbar-none space-y-3">
+          {/* Admin item */}
+          {isAdmin && (
+            <div className="space-y-0.5">
+              {adminNavigation.map((item) => {
+                const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
                     className={cn(
-                      "h-[17px] w-[17px] shrink-0 transition-colors",
-                      isActive ? "text-white" : "text-white/45 group-hover:text-white/80",
-                      isAdminItem && !isActive && "text-[#ECB22E]/60"
+                      "flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-all duration-150 group",
+                      isActive
+                        ? "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+                        : "text-[#ECB22E]/80 hover:bg-white/8 hover:text-[#ECB22E]"
                     )}
-                  />
-                  {!collapsed && <span className="truncate">{item.name}</span>}
-                  {!collapsed && (item as any).enterprise && (
-                    <Lock className="ml-auto h-3 w-3 text-white/30 shrink-0" />
-                  )}
-                  {isActive && !collapsed && !(item as any).enterprise && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />
-                  )}
-                </Link>
+                    title={collapsed ? item.name : undefined}
+                  >
+                    <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive ? "text-white" : "text-[#ECB22E]/60")} />
+                    {!collapsed && <span className="truncate">{item.name}</span>}
+                    {isActive && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
+                  </Link>
+                );
+              })}
+              <div className="my-1 border-t border-white/8 mx-1" />
+            </div>
+          )}
+
+          {/* Grouped client navigation */}
+          {clientNavigation.map((group) => (
+            <div key={group.group}>
+              {!collapsed && (
+                <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
+                  {group.group}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-all duration-150 group",
+                        isActive
+                          ? "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+                          : "text-white/60 hover:bg-white/8 hover:text-white/90"
+                      )}
+                      title={collapsed ? item.name : undefined}
+                    >
+                      <item.icon
+                        className={cn(
+                          "h-[17px] w-[17px] shrink-0 transition-colors",
+                          isActive ? "text-white" : "text-white/45 group-hover:text-white/80"
+                        )}
+                      />
+                      {!collapsed && <span className="truncate">{item.name}</span>}
+                      {!collapsed && (item as any).enterprise && (
+                        <Lock className="ml-auto h-3 w-3 text-white/30 shrink-0" />
+                      )}
+                      {isActive && !collapsed && !(item as any).enterprise && (
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </nav>
 
         {/* Setup wizard link — separate from navigation */}
