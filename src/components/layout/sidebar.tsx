@@ -11,7 +11,6 @@ import {
   Kanban,
   Bell,
   Settings,
-  LogOut,
   ChevronLeft,
   Menu,
   Shield,
@@ -29,7 +28,7 @@ import {
   FileText,
   Lock,
 } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
@@ -259,41 +258,6 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* User section */}
-        <div className="border-t border-white/8 p-2.5">
-          {!collapsed && session?.user?.name && (
-            <div className="px-3 py-2 mb-1 rounded-lg hover:bg-white/8 transition-colors">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
-                  <span className="text-[11px] font-bold text-white">
-                    {session.user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-white/90 truncate">
-                    {session.user.name}
-                  </p>
-                  <p className="text-[10px] text-white/35 truncate">
-                    {session.user.email}
-                  </p>
-                </div>
-              </div>
-              {isAdmin && (
-                <span className="inline-flex items-center mt-2 text-[9px] bg-[#ECB22E]/20 text-[#ECB22E] px-2 py-0.5 rounded-full font-semibold tracking-wide">
-                  SUPER ADMIN
-                </span>
-              )}
-            </div>
-          )}
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium text-white/40 hover:bg-white/8 hover:text-white/75 transition-all w-full"
-            title={collapsed ? "Cerrar sesión" : undefined}
-          >
-            <LogOut className="h-[17px] w-[17px] shrink-0" />
-            {!collapsed && <span>Cerrar sesión</span>}
-          </button>
-        </div>
       </aside>
     </>
   );

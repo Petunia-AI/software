@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -90,12 +90,17 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-48 rounded-xl border-[#C4A0D4] shadow-[0_8px_32px_rgba(0,0,0,0.12)] p-1">
               <DropdownMenuItem className="rounded-lg text-[13px]">Mi perfil</DropdownMenuItem>
               <DropdownMenuItem className="rounded-lg text-[13px]">Configuración</DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[#F0F0F0]" />
-              <DropdownMenuItem className="rounded-lg text-[13px] text-[#E01E5A] focus:text-[#E01E5A] focus:bg-[#FFECF0]" onClick={() => signOut({ callbackUrl: "/login" })}>
-                Cerrar sesión
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Logout button */}
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            title="Cerrar sesión"
+            className="h-9 w-9 rounded-xl flex items-center justify-center text-[#616061] hover:bg-[#FFECF0] hover:text-[#E01E5A] transition-colors"
+          >
+            <LogOut className="h-[17px] w-[17px]" />
+          </button>
         </div>
       </div>
     </header>
