@@ -53,17 +53,41 @@ export interface AgentMessage {
 // ---------------------------------------------------------------------------
 
 export async function getPlatformAIConfig(): Promise<PlatformAIConfig | null> {
-  const config = await prisma.platformAIConfig.findFirst({
-    where: { isActive: true },
-  });
+  // Try DB first (managed via admin panel)
+  try {
+    const config = await prisma.platformAIConfig.findFirst({
+      where: { isActive: true },
+    });
 
-  if (!config) return null;
+    if (config) {
+      return {
+        provider: config.provider.toLowerCase() as "claude" | "openai",
+        apiKey: config.apiKey,
+        model: config.model ?? undefined,
+      };
+    }
+  } catch {
+    // Table may not exist yet in some environments — fall through to env vars
+  }
 
-  return {
-    provider: config.provider.toLowerCase() as "claude" | "openai",
-    apiKey: config.apiKey,
-    model: config.model ?? undefined,
-  };
+  // Fallback: use environment variables (ANTHROPIC_API_KEY or OPENAI_API_KEY)
+  if (process.env.ANTHROPIC_API_KEY) {
+    return {
+      provider: "claude",
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: "claude-3-5-sonnet-20241022",
+    };
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      provider: "openai",
+      apiKey: process.env.OPENAI_API_KEY,
+      model: "gpt-4o",
+    };
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -71,11 +95,16 @@ export async function getPlatformAIConfig(): Promise<PlatformAIConfig | null> {
 // ---------------------------------------------------------------------------
 
 export async function getPlatformHeygenKey(): Promise<string | null> {
-  const config = await prisma.platformAIConfig.findFirst({
-    where: { isActive: true },
-    select: { heygenApiKey: true },
-  });
-  return config?.heygenApiKey ?? process.env.HEYGEN_API_KEY ?? null;
+  try {
+    const config = await prisma.platformAIConfig.findFirst({
+      where: { isActive: true },
+      select: { heygenApiKey: true },
+    });
+    if (config?.heygenApiKey) return config.heygenApiKey;
+  } catch {
+    // fall through
+  }
+  return process.env.HEYGEN_API_KEY ?? null;
 }
 
 // ---------------------------------------------------------------------------
