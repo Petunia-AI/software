@@ -218,6 +218,12 @@ export default function SettingsPage() {
   const [fubSyncing, setFubSyncing] = useState(false);
   const [disconnectingFub, setDisconnectingFub] = useState(false);
 
+  // WhatsApp credentials state
+  const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState("");
+  const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [savingWhatsapp, setSavingWhatsapp] = useState(false);
+  const [disconnectingWhatsapp, setDisconnectingWhatsapp] = useState(false);
+
   // Auto-reply state
   const [whatsappAutoReply, setWhatsappAutoReply] = useState(false);
   const [instagramAutoReply, setInstagramAutoReply] = useState(false);
@@ -358,6 +364,58 @@ export default function SettingsPage() {
       // silent
     }
   }, []);
+
+  const fetchWhatsappCredentials = useCallback(async () => {
+    try {
+      const res = await fetch("/api/integrations/whatsapp");
+      if (res.ok) {
+        const data = await res.json();
+        setWhatsappPhoneNumberId(data.phoneNumberId ?? "");
+        setWhatsappConnected(data.connected ?? false);
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const handleSaveWhatsapp = async () => {
+    if (!whatsappPhoneNumberId.trim()) {
+      toast.error("Ingresa el Phone Number ID");
+      return;
+    }
+    setSavingWhatsapp(true);
+    try {
+      const res = await fetch("/api/integrations/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumberId: whatsappPhoneNumberId.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      setWhatsappConnected(true);
+      toast.success("WhatsApp configurado correctamente");
+    } catch {
+      toast.error("Error al guardar configuración de WhatsApp");
+    } finally {
+      setSavingWhatsapp(false);
+    }
+  };
+
+  const handleDisconnectWhatsapp = async () => {
+    if (!confirm("¿Desconectar WhatsApp? Se desactivará la auto-respuesta.")) return;
+    setDisconnectingWhatsapp(true);
+    try {
+      const res = await fetch("/api/integrations/whatsapp", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setWhatsappPhoneNumberId("");
+      setWhatsappConnected(false);
+      setWhatsappAutoReply(false);
+      toast.success("WhatsApp desconectado");
+    } catch {
+      toast.error("Error al desconectar WhatsApp");
+    } finally {
+      setDisconnectingWhatsapp(false);
+    }
+  };
 
   const saveAutoReply = async (
     field: "whatsappAutoReply" | "instagramAutoReply" | "messengerAutoReply",
@@ -825,7 +883,7 @@ export default function SettingsPage() {
       fetchFubCredentials();
       fetchAutoReply();
     }
-  }, [activeTab, fetchSlackStatus, fetchMetaStatus, fetchGoogleStatus, fetchMetaCredentials, fetchGoogleCredentials, fetchFubCredentials, fetchAutoReply]);
+  }, [activeTab, fetchSlackStatus, fetchMetaStatus, fetchGoogleStatus, fetchMetaCredentials, fetchGoogleCredentials, fetchFubCredentials, fetchAutoReply, fetchWhatsappCredentials]);
 
   const fetchAiUsage = useCallback(async () => {
     setLoadingAiUsage(true);
@@ -1815,40 +1873,51 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-sm font-semibold">WhatsApp Business</p>
                     <p className="text-xs text-muted-foreground">
-                      Crea leads automáticamente cuando un nuevo contacto te escribe
+                      Crea leads y responde automáticamente cuando alguien te escribe
                     </p>
                   </div>
                 </div>
-                <Badge className="bg-muted text-muted-foreground text-[10px]">Desconectado</Badge>
+                <Badge className={whatsappConnected ? "bg-green-100 text-green-700 text-[10px]" : "bg-muted text-muted-foreground text-[10px]"}>
+                  {whatsappConnected ? "✓ Conectado" : "Desconectado"}
+                </Badge>
               </div>
 
+              {/* Phone Number ID */}
               <div className="grid gap-2">
-                <Label>Webhook Verify Token</Label>
+                <Label>Phone Number ID <span className="text-muted-foreground font-normal">(de Meta Developer Portal)</span></Label>
                 <Input
-                  className="h-10 rounded-xl bg-white border border-[#E0E0E0] focus-visible:ring-1 focus-visible:ring-[#4A154B]/30"
-                  placeholder="Crea un token secreto para verificar el webhook"
+                  className="h-10 rounded-xl bg-white border border-[#E0E0E0] focus-visible:ring-1 focus-visible:ring-[#4A154B]/30 font-mono text-sm"
+                  placeholder="Ej: 123456789012345"
+                  value={whatsappPhoneNumberId}
+                  onChange={(e) => setWhatsappPhoneNumberId(e.target.value)}
                 />
+                <p className="text-[11px] text-muted-foreground">Lo encuentras en Meta Developer → tu app → WhatsApp → Configuración de API</p>
               </div>
 
-              <div className="rounded-xl bg-[#FAF5FA] border border-[#C4A0D4]/40 p-4 space-y-2">
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
-                  URL del Webhook (copia en Meta Developer)
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-muted/40 px-3 py-2 rounded-lg font-mono truncate">
-                    {typeof window !== "undefined" ? window.location.origin : "https://tu-dominio.com"}/api/webhooks/whatsapp
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-lg shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/whatsapp`);
-                      toast.success("URL copiada al portapapeles");
-                    }}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
+              {/* Webhook URL */}
+              <div className="rounded-xl bg-[#FAF5FA] border border-[#C4A0D4]/40 p-4 space-y-3">
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">Configuración del Webhook</p>
+                <div>
+                  <p className="text-[11px] text-muted-foreground mb-1">URL del Webhook</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-muted/40 px-3 py-2 rounded-lg font-mono truncate">
+                      {typeof window !== "undefined" ? window.location.origin : "https://app.aipetunia.com"}/api/webhooks/whatsapp
+                    </code>
+                    <Button variant="outline" size="sm" className="rounded-lg shrink-0" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/whatsapp`); toast.success("URL copiada"); }}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground mb-1">Verify Token (usa este valor en Meta)</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-muted/40 px-3 py-2 rounded-lg font-mono truncate text-purple-700">
+                      petunia_whatsapp_webhook_2026
+                    </code>
+                    <Button variant="outline" size="sm" className="rounded-lg shrink-0" onClick={() => { navigator.clipboard.writeText("petunia_whatsapp_webhook_2026"); toast.success("Token copiado"); }}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -1858,22 +1927,34 @@ export default function SettingsPage() {
                   Pasos para configurar
                 </summary>
                 <ol className="mt-3 space-y-1.5 text-xs text-muted-foreground pl-4 list-decimal">
-                  <li>Ve a <strong>developers.facebook.com</strong> → tu app</li>
-                  <li>Agrega el producto <strong>WhatsApp</strong></li>
-                  <li>En Configuración → Webhooks, pega la URL y el Verify Token</li>
+                  <li>Ve a <strong>developers.facebook.com</strong> → tu app → Agregar producto: <strong>WhatsApp</strong></li>
+                  <li>En <strong>WhatsApp → Configuración de API</strong> copia el <strong>Phone Number ID</strong> y pégalo arriba</li>
+                  <li>En <strong>Configuración → Webhooks</strong>, pega la URL y el Verify Token de arriba</li>
                   <li>Suscríbete al campo <strong>messages</strong></li>
-                  <li>Guarda la configuración aquí</li>
+                  <li>El token de acceso viene de tu conexión Meta Ads (conectar primero)</li>
                 </ol>
               </details>
 
-              <div className="pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <Button
                   className="gold-gradient text-white rounded-xl border-0 hover:opacity-90 transition-all shadow-md hover:shadow-lg"
-                  onClick={() => toast.success("Integración de WhatsApp guardada")}
+                  onClick={handleSaveWhatsapp}
+                  disabled={savingWhatsapp}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  Guardar WhatsApp
+                  {savingWhatsapp ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Guardar
                 </Button>
+                {whatsappConnected && (
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600"
+                    onClick={handleDisconnectWhatsapp}
+                    disabled={disconnectingWhatsapp}
+                  >
+                    {disconnectingWhatsapp ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Desconectar
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
