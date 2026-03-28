@@ -280,6 +280,15 @@ model Organization {
   fubApiKey            String?   @map("fub_api_key")
   fubLastSyncAt        DateTime? @map("fub_last_sync_at")
   fubLeadsSynced       Int       @default(0) @map("fub_leads_synced")
+  // SMTP personalizado por cliente (para envío desde su propio dominio)
+  smtpHost      String?  @map("smtp_host")
+  smtpPort      Int?     @map("smtp_port")
+  smtpUser      String?  @map("smtp_user")
+  smtpPass      String?  @map("smtp_pass") @db.Text
+  smtpFrom      String?  @map("smtp_from")
+  smtpFromName  String?  @map("smtp_from_name")
+  smtpSecure    Boolean  @default(true) @map("smtp_secure")
+  smtpVerified  Boolean  @default(false) @map("smtp_verified")
   // WhatsApp Business API — auto-respuesta
   whatsappPhoneNumberId  String?  @map("whatsapp_phone_number_id")
   whatsappAutoReply      Boolean  @default(false) @map("whatsapp_auto_reply")

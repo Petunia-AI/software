@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 // Lazy initialization to avoid build errors when RESEND_API_KEY is not set
 let _resend: Resend | null = null;
@@ -18,10 +19,72 @@ export interface SendEmailOptions {
 }
 
 /**
- * Sends a single email via Resend.
- * Falls back gracefully if RESEND_API_KEY is not set (dev mode).
+ * SMTP configuration per organization.
+ * When provided, emails are sent from the client's own SMTP server/domain.
  */
-export async function sendEmail(opts: SendEmailOptions): Promise<{ id?: string; error?: string }> {
+export interface OrgSmtpConfig {
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  smtpFrom: string;
+  smtpFromName?: string | null;
+  smtpSecure: boolean;
+}
+
+/**
+ * Sends an email using the organization's custom SMTP server.
+ */
+async function sendEmailViaSmtp(
+  opts: SendEmailOptions,
+  smtp: OrgSmtpConfig
+): Promise<{ id?: string; error?: string }> {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtp.smtpHost,
+      port: smtp.smtpPort,
+      secure: smtp.smtpSecure,
+      auth: {
+        user: smtp.smtpUser,
+        pass: smtp.smtpPass,
+      },
+      tls: { rejectUnauthorized: false },
+    });
+
+    const fromName = opts.fromName ?? smtp.smtpFromName ?? smtp.smtpUser;
+    const fromEmail = opts.from ?? smtp.smtpFrom;
+    const from = `${fromName} <${fromEmail}>`;
+
+    const info = await transporter.sendMail({
+      from,
+      to: Array.isArray(opts.to) ? opts.to.join(", ") : opts.to,
+      replyTo: opts.replyTo,
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text,
+    });
+
+    return { id: info.messageId };
+  } catch (err: any) {
+    return { error: err.message ?? "SMTP send failed" };
+  }
+}
+
+/**
+ * Sends a single email.
+ * - If `smtpConfig` is provided: sends via the org's own SMTP server (their domain).
+ * - Otherwise: sends via Resend (Petunia's centralized account).
+ */
+export async function sendEmail(
+  opts: SendEmailOptions,
+  smtpConfig?: OrgSmtpConfig | null
+): Promise<{ id?: string; error?: string }> {
+  // Use org's custom SMTP if configured
+  if (smtpConfig?.smtpHost && smtpConfig?.smtpUser && smtpConfig?.smtpPass) {
+    return sendEmailViaSmtp(opts, smtpConfig);
+  }
+
+  // Fall back to Resend
   if (!process.env.RESEND_API_KEY) {
     console.warn("[email] RESEND_API_KEY not set — skipping send");
     return { id: "dev-skipped" };
@@ -45,6 +108,25 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ id?: string; 
     return { id: data?.id };
   } catch (err: any) {
     return { error: err.message ?? "Email send failed" };
+  }
+}
+
+/**
+ * Verifies SMTP credentials by attempting a connection.
+ */
+export async function verifySmtpConfig(smtp: OrgSmtpConfig): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtp.smtpHost,
+      port: smtp.smtpPort,
+      secure: smtp.smtpSecure,
+      auth: { user: smtp.smtpUser, pass: smtp.smtpPass },
+      tls: { rejectUnauthorized: false },
+    });
+    await transporter.verify();
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message ?? "Verification failed" };
   }
 }
 

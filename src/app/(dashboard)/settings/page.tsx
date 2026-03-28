@@ -25,6 +25,10 @@ import {
   Unplug,
   Upload,
   Camera,
+  Mail,
+  Server,
+  ShieldCheck,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +60,7 @@ interface TeamMember {
 const tabs = [
   { id: "organization", label: "Organización", icon: Building2 },
   { id: "brand", label: "Marca", icon: Palette },
+  { id: "email", label: "Email", icon: Mail },
   { id: "integrations", label: "Integraciones", icon: Link2 },
   { id: "ai", label: "Uso de IA", icon: Bot },
   { id: "notifications", label: "Notificaciones", icon: Bell },
@@ -218,6 +223,127 @@ export default function SettingsPage() {
   const [instagramAutoReply, setInstagramAutoReply] = useState(false);
   const [messengerAutoReply, setMessengerAutoReply] = useState(false);
   const [savingAutoReply, setSavingAutoReply] = useState(false);
+
+  // SMTP state
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("587");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPass, setSmtpPass] = useState("");
+  const [smtpFrom, setSmtpFrom] = useState("");
+  const [smtpFromName, setSmtpFromName] = useState("");
+  const [smtpSecure, setSmtpSecure] = useState(true);
+  const [smtpPassConfigured, setSmtpPassConfigured] = useState(false);
+  const [smtpVerified, setSmtpVerified] = useState(false);
+  const [loadingSmtp, setLoadingSmtp] = useState(false);
+  const [savingSmtp, setSavingSmtp] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [verifyingSmtp, setVerifyingSmtp] = useState(false);
+
+  const fetchSmtpConfig = useCallback(async () => {
+    setLoadingSmtp(true);
+    try {
+      const res = await fetch("/api/settings/smtp");
+      if (res.ok) {
+        const data = await res.json();
+        setSmtpHost(data.smtpHost ?? "");
+        setSmtpPort(String(data.smtpPort ?? 587));
+        setSmtpUser(data.smtpUser ?? "");
+        setSmtpPass(data.smtpPassConfigured ? "••••••••" : "");
+        setSmtpPassConfigured(data.smtpPassConfigured ?? false);
+        setSmtpFrom(data.smtpFrom ?? "");
+        setSmtpFromName(data.smtpFromName ?? "");
+        setSmtpSecure(data.smtpSecure ?? true);
+        setSmtpVerified(data.smtpVerified ?? false);
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoadingSmtp(false);
+    }
+  }, []);
+
+  const handleSaveSmtp = async () => {
+    setSavingSmtp(true);
+    try {
+      const res = await fetch("/api/settings/smtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          smtpHost,
+          smtpPort: Number(smtpPort),
+          smtpUser,
+          smtpPass,
+          smtpFrom,
+          smtpFromName,
+          smtpSecure,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al guardar");
+      setSmtpVerified(false);
+      toast.success("Configuración SMTP guardada");
+    } catch (err: any) {
+      toast.error(err.message || "Error al guardar");
+    } finally {
+      setSavingSmtp(false);
+    }
+  };
+
+  const handleVerifySmtp = async () => {
+    setVerifyingSmtp(true);
+    try {
+      const res = await fetch("/api/settings/smtp/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify" }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSmtpVerified(true);
+        toast.success("✅ Conexión SMTP verificada correctamente");
+      } else {
+        toast.error(`Error de conexión: ${data.error}`);
+      }
+    } catch {
+      toast.error("Error al verificar SMTP");
+    } finally {
+      setVerifyingSmtp(false);
+    }
+  };
+
+  const handleTestSmtp = async () => {
+    setTestingSmtp(true);
+    try {
+      const res = await fetch("/api/settings/smtp/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test" }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success("📧 Correo de prueba enviado — revisa tu bandeja de entrada");
+      } else {
+        toast.error(`Error al enviar: ${data.error}`);
+      }
+    } catch {
+      toast.error("Error al enviar correo de prueba");
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  const handleDisconnectSmtp = async () => {
+    if (!confirm("¿Eliminar la configuración SMTP? Los correos se enviarán desde el servidor de Petunia.")) return;
+    try {
+      await fetch("/api/settings/smtp", { method: "DELETE" });
+      setSmtpHost(""); setSmtpPort("587"); setSmtpUser(""); setSmtpPass("");
+      setSmtpFrom(""); setSmtpFromName(""); setSmtpSecure(true);
+      setSmtpPassConfigured(false); setSmtpVerified(false);
+      toast.success("Configuración SMTP eliminada");
+    } catch {
+      toast.error("Error al eliminar");
+    }
+  };
 
   const fetchAutoReply = useCallback(async () => {
     try {
@@ -739,6 +865,10 @@ export default function SettingsPage() {
     if (activeTab === "team") fetchTeam();
   }, [activeTab, fetchTeam]);
 
+  useEffect(() => {
+    if (activeTab === "email") fetchSmtpConfig();
+  }, [activeTab, fetchSmtpConfig]);
+
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setInviting(true);
@@ -1031,6 +1161,202 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Email / SMTP */}
+      {activeTab === "email" && (
+        <div className="space-y-4">
+          {/* Status banner */}
+          {smtpVerified && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium">
+              <ShieldCheck className="h-4 w-4 shrink-0" />
+              SMTP verificado — los correos se envían desde tu dominio
+            </div>
+          )}
+          {!smtpVerified && smtpHost && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              Configuración guardada pero aún no verificada — haz clic en &ldquo;Verificar conexión&rdquo;
+            </div>
+          )}
+
+          <Card className="rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300" style={{ border: '1.5px solid transparent', background: 'linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #9B3FCB 0%, #4A154B 50%, #611f69 100%) border-box' }}>
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                  <Server className="h-5 w-5 text-[#4A154B]" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+                    Servidor SMTP
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Configura tu propio servidor para que los correos salgan de tu dominio
+                  </p>
+                </div>
+              </div>
+
+              {loadingSmtp ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Host + Port */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2 grid gap-2">
+                      <Label>Servidor SMTP (host)</Label>
+                      <Input
+                        className="h-10 rounded-xl bg-white border border-[#E0E0E0] focus-visible:ring-1 focus-visible:ring-[#4A154B]/30"
+                        placeholder="smtp.gmail.com"
+                        value={smtpHost}
+                        onChange={(e) => setSmtpHost(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Puerto</Label>
+                      <Select value={smtpPort} onValueChange={(v) => setSmtpPort(v ?? "587")}>
+                        <SelectTrigger className="h-10 rounded-xl bg-white border border-[#E0E0E0]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25 (SMTP)</SelectItem>
+                          <SelectItem value="465">465 (SSL)</SelectItem>
+                          <SelectItem value="587">587 (TLS)</SelectItem>
+                          <SelectItem value="2525">2525 (Alt)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* User + Pass */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label>Usuario / Email de autenticación</Label>
+                      <Input
+                        className="h-10 rounded-xl bg-white border border-[#E0E0E0] focus-visible:ring-1 focus-visible:ring-[#4A154B]/30"
+                        placeholder="you@tuempresa.com"
+                        value={smtpUser}
+                        onChange={(e) => setSmtpUser(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Contraseña / App Password</Label>
+                      <Input
+                        type="password"
+                        className="h-10 rounded-xl bg-white border border-[#E0E0E0] focus-visible:ring-1 focus-visible:ring-[#4A154B]/30"
+                        placeholder={smtpPassConfigured ? "••••••••" : "Contraseña SMTP"}
+                        value={smtpPass}
+                        onChange={(e) => setSmtpPass(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* From email + From name */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label>Email remitente (From)</Label>
+                      <Input
+                        className="h-10 rounded-xl bg-white border border-[#E0E0E0] focus-visible:ring-1 focus-visible:ring-[#4A154B]/30"
+                        placeholder="hola@tuempresa.com"
+                        value={smtpFrom}
+                        onChange={(e) => setSmtpFrom(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Nombre del remitente</Label>
+                      <Input
+                        className="h-10 rounded-xl bg-white border border-[#E0E0E0] focus-visible:ring-1 focus-visible:ring-[#4A154B]/30"
+                        placeholder="Tu empresa"
+                        value={smtpFromName}
+                        onChange={(e) => setSmtpFromName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* SSL/TLS toggle */}
+                  <div className="flex items-center gap-3 py-1">
+                    <Switch
+                      checked={smtpSecure}
+                      onCheckedChange={setSmtpSecure}
+                    />
+                    <div>
+                      <p className="text-sm font-medium">Usar SSL/TLS</p>
+                      <p className="text-xs text-muted-foreground">Activa para puerto 465. Para 587 usa STARTTLS (desactivado)</p>
+                    </div>
+                  </div>
+
+                  {/* Hint for common providers */}
+                  <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium text-slate-600">Configuraciones comunes:</p>
+                    <p>📧 <strong>Gmail:</strong> smtp.gmail.com · Puerto 587 · SSL off · Usar App Password</p>
+                    <p>🔵 <strong>Outlook/Office 365:</strong> smtp.office365.com · Puerto 587 · SSL off</p>
+                    <p>🟠 <strong>Amazon SES:</strong> email-smtp.us-east-1.amazonaws.com · Puerto 587</p>
+                    <p>🟣 <strong>Zoho:</strong> smtp.zoho.com · Puerto 465 · SSL on</p>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <Button
+                      className="gold-gradient text-white rounded-xl border-0 hover:opacity-90 shadow-md hover:shadow-lg"
+                      onClick={handleSaveSmtp}
+                      disabled={savingSmtp || !smtpHost || !smtpUser}
+                    >
+                      {savingSmtp ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                      Guardar configuración
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border border-[#E0E0E0]"
+                      onClick={handleVerifySmtp}
+                      disabled={verifyingSmtp || !smtpHost || !smtpUser || !smtpPassConfigured && !smtpPass}
+                    >
+                      {verifyingSmtp ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+                      Verificar conexión
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border border-[#E0E0E0]"
+                      onClick={handleTestSmtp}
+                      disabled={testingSmtp || !smtpVerified}
+                    >
+                      {testingSmtp ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                      Enviar correo de prueba
+                    </Button>
+
+                    {smtpHost && (
+                      <Button
+                        variant="ghost"
+                        className="rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={handleDisconnectSmtp}
+                      >
+                        <Unplug className="h-4 w-4 mr-2" />
+                        Desconectar SMTP
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Info card */}
+          <Card className="rounded-2xl border border-dashed border-purple-200 bg-purple-50/50">
+            <CardContent className="p-5">
+              <div className="flex gap-3">
+                <Mail className="h-5 w-5 text-[#4A154B] mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-[#4A154B]">¿Cómo funciona?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Al configurar tu propio servidor SMTP, todos los correos del sistema (Email Drip, notificaciones a leads, seguimientos) saldrán con tu dominio como remitente. Si no configuras SMTP, los correos se envían desde el servidor de Petunia.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Integrations */}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendEmail, buildEmailHtml } from "@/lib/email";
+import { sendEmail, buildEmailHtml, OrgSmtpConfig } from "@/lib/email";
 
 /**
  * GET /api/cron/process-drips
@@ -36,7 +36,18 @@ export async function GET(req: NextRequest) {
           replyTo: true,
           status: true,
           organization: {
-            select: { name: true, brandColor: true },
+            select: {
+              name: true,
+              brandColor: true,
+              smtpHost: true,
+              smtpPort: true,
+              smtpUser: true,
+              smtpPass: true,
+              smtpFrom: true,
+              smtpFromName: true,
+              smtpSecure: true,
+              smtpVerified: true,
+            },
           },
           steps: { orderBy: { stepNumber: "asc" } },
         },
@@ -85,25 +96,43 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    // Build org SMTP config if verified
+    const org = enrollment.drip.organization;
+    const smtpConfig: OrgSmtpConfig | null =
+      org.smtpVerified && org.smtpHost && org.smtpUser && org.smtpPass
+        ? {
+            smtpHost: org.smtpHost,
+            smtpPort: org.smtpPort ?? 587,
+            smtpUser: org.smtpUser,
+            smtpPass: org.smtpPass,
+            smtpFrom: org.smtpFrom ?? org.smtpUser,
+            smtpFromName: org.smtpFromName,
+            smtpSecure: org.smtpSecure,
+          }
+        : null;
+
     // Build and send email
     const html = buildEmailHtml({
       preheader: step.subject,
       body: step.bodyHtml
         .replace(/{{nombre}}/gi, enrollment.lead.name ?? "")
         .replace(/{{name}}/gi, enrollment.lead.name ?? ""),
-      orgName: enrollment.drip.organization.name,
-      brandColor: enrollment.drip.organization.brandColor ?? "#7c3aed",
+      orgName: org.name,
+      brandColor: org.brandColor ?? "#7c3aed",
     });
 
-    const result = await sendEmail({
-      to: enrollment.lead.email,
-      from: enrollment.drip.fromEmail ?? undefined,
-      fromName: enrollment.drip.fromName ?? enrollment.drip.organization.name,
-      replyTo: enrollment.drip.replyTo ?? undefined,
-      subject: step.subject.replace(/{{nombre}}/gi, enrollment.lead.name ?? ""),
-      html,
-      text: step.bodyText ?? undefined,
-    });
+    const result = await sendEmail(
+      {
+        to: enrollment.lead.email,
+        from: enrollment.drip.fromEmail ?? undefined,
+        fromName: enrollment.drip.fromName ?? org.name,
+        replyTo: enrollment.drip.replyTo ?? undefined,
+        subject: step.subject.replace(/{{nombre}}/gi, enrollment.lead.name ?? ""),
+        html,
+        text: step.bodyText ?? undefined,
+      },
+      smtpConfig
+    );
 
     if (result.error) {
       await prisma.emailDripEnrollment.update({
