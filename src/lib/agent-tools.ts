@@ -544,6 +544,71 @@ export const AGENT_TOOLS: AgentTool[] = [
       required: ["property_id"],
     },
   },
+  {
+    name: "analyze_ad_performance",
+    description:
+      "Analiza el rendimiento de campañas de Meta Ads y/o Google Ads y genera recomendaciones específicas de optimización: presupuesto, targeting, copy, CPL. Úsalo cuando el usuario quiera saber cómo están sus campañas o qué mejorar.",
+    input_schema: {
+      type: "object",
+      properties: {
+        platform: {
+          type: "string",
+          enum: ["meta", "google", "both"],
+          description: "Plataforma a analizar. Default: both",
+        },
+        campaign_id: {
+          type: "string",
+          description: "ID de campaña específica. Omitir para analizar todas las activas.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "enroll_lead_drip",
+    description:
+      "Inscribe un lead en una secuencia de email drip. Si se proporciona drip_id lo usa directamente; si no, selecciona automáticamente la secuencia más adecuada según el perfil del lead (estatus, fuente, score). El lead debe tener email.",
+    input_schema: {
+      type: "object",
+      properties: {
+        lead_id: {
+          type: "string",
+          description: "ID del lead a inscribir",
+        },
+        drip_id: {
+          type: "string",
+          description: "ID de la secuencia de drip específica. Omitir para selección automática.",
+        },
+      },
+      required: ["lead_id"],
+    },
+  },
+  {
+    name: "suggest_keywords_orlando",
+    description:
+      "Genera una lista curada de palabras clave de alto rendimiento para Google Ads en el mercado inmobiliario de Orlando, Florida. Incluye keywords en inglés y español, organizadas por zona, tipo de propiedad y buyer persona. No requiere conexión a Google Ads.",
+    input_schema: {
+      type: "object",
+      properties: {
+        zone: {
+          type: "string",
+          enum: ["kissimmee", "champions_gate", "lake_nona", "dr_phillips", "celebration", "windermere", "downtown", "clermont", "all"],
+          description: "Zona específica de Orlando. Default: all",
+        },
+        property_type: {
+          type: "string",
+          enum: ["single_family", "condo", "townhouse", "vacation_rental", "investment", "all"],
+          description: "Tipo de propiedad. Default: all",
+        },
+        language: {
+          type: "string",
+          enum: ["en", "es", "both"],
+          description: "Idioma de las keywords. Default: both",
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -607,6 +672,12 @@ export async function executeTool(
         return await execListFollowUps(input, context);
       case "get_property":
         return await execGetProperty(input, context);
+      case "analyze_ad_performance":
+        return await execAnalyzeAdPerformance(input, context);
+      case "enroll_lead_drip":
+        return await execEnrollLeadDrip(input, context);
+      case "suggest_keywords_orlando":
+        return await execSuggestKeywordsOrlando(input);
       default:
         return JSON.stringify({ error: `Herramienta desconocida: ${toolName}` });
     }
@@ -1853,5 +1924,454 @@ async function execGetProperty(
     features: Array.isArray(property.features) ? property.features : [],
     images: Array.isArray(property.images) ? property.images : [],
     createdAt: property.createdAt,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// New skill implementations
+// ---------------------------------------------------------------------------
+
+async function execAnalyzeAdPerformance(
+  input: Record<string, any>,
+  ctx: { organizationId: string },
+) {
+  const platform = input.platform || "both";
+  const results: any = { platform, campaigns: [] };
+
+  // Fetch Meta campaigns
+  if (platform === "meta" || platform === "both") {
+    const where: any = {
+      organizationId: ctx.organizationId,
+      status: { in: ["ACTIVE", "PAUSED", "COMPLETED"] },
+    };
+    if (input.campaign_id) where.id = input.campaign_id;
+
+    const metaCampaigns = await prisma.metaCampaign.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        objective: true,
+        dailyBudget: true,
+        impressions: true,
+        clicks: true,
+        leads: true,
+        spent: true,
+        cpl: true,
+        ctr: true,
+        lastSyncAt: true,
+        property: { select: { title: true } },
+      },
+      orderBy: { publishedAt: "desc" },
+      take: input.campaign_id ? 1 : 10,
+    });
+
+    for (const c of metaCampaigns) {
+      const spent = c.spent ? Number(c.spent) : 0;
+      const cpl = c.cpl ? Number(c.cpl) : (c.leads && c.leads > 0 ? spent / c.leads : null);
+      const ctr = c.ctr ? Number(c.ctr) : null;
+
+      const issues: string[] = [];
+      const recommendations: string[] = [];
+
+      if (cpl !== null && cpl > 30) {
+        issues.push(`CPL alto: $${cpl.toFixed(2)}`);
+        recommendations.push("Revisar el copy del anuncio y probar un nuevo hook visual");
+        recommendations.push("Ampliar el radio geográfico del targeting");
+      }
+      if (ctr !== null && ctr < 1) {
+        issues.push(`CTR bajo: ${ctr.toFixed(2)}%`);
+        recommendations.push("El creativo no está generando clicks — probar imagen de la propiedad vs lifestyle");
+        recommendations.push("Revisar si el headline menciona el precio o beneficio principal");
+      }
+      if (c.impressions && c.impressions > 5000 && (!c.leads || c.leads === 0)) {
+        issues.push("Muchas impresiones pero 0 leads");
+        recommendations.push("El formulario de lead puede estar fallando — verificar configuración en Meta");
+        recommendations.push("Cambiar objetivo a TRAFFIC con landing page propia");
+      }
+      if (c.status === "PAUSED" && spent === 0) {
+        issues.push("Campaña nunca gastó presupuesto");
+        recommendations.push("Verificar que el método de pago esté activo en Meta Business");
+      }
+      if (issues.length === 0) {
+        recommendations.push("Rendimiento dentro de parámetros normales");
+        if (c.leads && c.leads > 5) {
+          recommendations.push(`Buena captación (${c.leads} leads) — considera escalar presupuesto 20%`);
+        }
+      }
+
+      results.campaigns.push({
+        id: c.id,
+        name: c.name,
+        platform: "meta",
+        status: c.status,
+        objective: c.objective,
+        property: c.property?.title || null,
+        metrics: {
+          impressions: c.impressions || 0,
+          clicks: c.clicks || 0,
+          leads: c.leads || 0,
+          spent: `$${spent.toFixed(2)}`,
+          cpl: cpl ? `$${cpl.toFixed(2)}` : "N/A",
+          ctr: ctr ? `${ctr.toFixed(2)}%` : "N/A",
+          daily_budget: c.dailyBudget ? `$${Number(c.dailyBudget).toFixed(2)}/día` : "N/A",
+        },
+        issues,
+        recommendations,
+        last_sync: c.lastSyncAt,
+      });
+    }
+  }
+
+  // Fetch Google campaigns
+  if (platform === "google" || platform === "both") {
+    const where: any = {
+      organizationId: ctx.organizationId,
+      status: { in: ["ACTIVE", "PAUSED", "COMPLETED"] },
+    };
+    if (input.campaign_id) where.id = input.campaign_id;
+
+    const googleCampaigns = await prisma.googleCampaign.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        objective: true,
+        dailyBudget: true,
+        impressions: true,
+        clicks: true,
+        conversions: true,
+        spent: true,
+        cpl: true,
+        ctr: true,
+        lastSyncAt: true,
+        property: { select: { title: true } },
+      },
+      orderBy: { publishedAt: "desc" },
+      take: input.campaign_id ? 1 : 10,
+    });
+
+    for (const c of googleCampaigns) {
+      const spent = c.spent ? Number(c.spent) : 0;
+      const cpl = c.cpl ? Number(c.cpl) : (c.conversions && c.conversions > 0 ? spent / c.conversions : null);
+      const ctr = c.ctr ? Number(c.ctr) : null;
+
+      const issues: string[] = [];
+      const recommendations: string[] = [];
+
+      if (cpl !== null && cpl > 40) {
+        issues.push(`CPL alto: $${cpl.toFixed(2)}`);
+        recommendations.push("Revisar calidad de keywords — pausar las de baja conversión");
+        recommendations.push("Agregar negative keywords para excluir búsquedas no relevantes");
+      }
+      if (ctr !== null && ctr < 3) {
+        issues.push(`CTR bajo para Search: ${ctr.toFixed(2)}%`);
+        recommendations.push("Los headlines no están resonando — probar con precio y zona en el título");
+        recommendations.push("Revisar que el anuncio aparezca en las horas pico del mercado");
+      }
+      if (c.impressions && c.impressions > 1000 && (!c.conversions || c.conversions === 0)) {
+        issues.push("Impresiones sin conversiones");
+        recommendations.push("Revisar la landing page — tiempo de carga y formulario de contacto");
+        recommendations.push("Agregar extensiones de sitio y de llamada al anuncio");
+      }
+      if (issues.length === 0) {
+        recommendations.push("Rendimiento dentro de parámetros normales para el mercado de Orlando");
+        if (c.conversions && c.conversions > 3) {
+          recommendations.push(`Buena conversión (${c.conversions}) — considera subir bid o presupuesto`);
+        }
+      }
+
+      results.campaigns.push({
+        id: c.id,
+        name: c.name,
+        platform: "google",
+        status: c.status,
+        objective: c.objective,
+        property: c.property?.title || null,
+        metrics: {
+          impressions: c.impressions || 0,
+          clicks: c.clicks || 0,
+          conversions: c.conversions || 0,
+          spent: `$${spent.toFixed(2)}`,
+          cpl: cpl ? `$${cpl.toFixed(2)}` : "N/A",
+          ctr: ctr ? `${ctr.toFixed(2)}%` : "N/A",
+          daily_budget: c.dailyBudget ? `$${Number(c.dailyBudget).toFixed(2)}/día` : "N/A",
+        },
+        issues,
+        recommendations,
+        last_sync: c.lastSyncAt,
+      });
+    }
+  }
+
+  const totalIssues = results.campaigns.reduce((acc: number, c: any) => acc + c.issues.length, 0);
+  results.summary = {
+    total_campaigns: results.campaigns.length,
+    campaigns_with_issues: results.campaigns.filter((c: any) => c.issues.length > 0).length,
+    total_issues: totalIssues,
+    overall_status: totalIssues === 0 ? "✅ Todo en orden" : `⚠️ ${totalIssues} problema(s) detectado(s)`,
+  };
+
+  return JSON.stringify(results);
+}
+
+async function execEnrollLeadDrip(
+  input: Record<string, any>,
+  ctx: { organizationId: string },
+) {
+  // 1. Fetch the lead
+  const lead = await prisma.lead.findFirst({
+    where: { id: input.lead_id, organizationId: ctx.organizationId },
+  });
+
+  if (!lead) return JSON.stringify({ error: "Lead no encontrado" });
+  if (!lead.email) return JSON.stringify({ error: `El lead "${lead.name}" no tiene email registrado. Agrega el email primero.` });
+
+  // 2. Find the drip to enroll in
+  let drip: any = null;
+
+  if (input.drip_id) {
+    drip = await prisma.emailDrip.findFirst({
+      where: { id: input.drip_id, organizationId: ctx.organizationId },
+      include: { steps: { orderBy: { stepNumber: "asc" }, take: 1 } },
+    });
+    if (!drip) return JSON.stringify({ error: "Secuencia de drip no encontrada" });
+  } else {
+    // Auto-select: pick the best matching active drip based on lead profile
+    const allDrips = await prisma.emailDrip.findMany({
+      where: { organizationId: ctx.organizationId, status: "ACTIVE" },
+      include: { steps: { orderBy: { stepNumber: "asc" }, take: 1 } },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (allDrips.length === 0) {
+      return JSON.stringify({
+        error: "No hay secuencias de drip activas en esta organización. Crea una en la sección Email Drip.",
+      });
+    }
+
+    // Matching logic: look for keywords in drip name that match lead profile
+    const nameLower = (lead.name || "").toLowerCase();
+    const sourceLower = (lead.source || "").toLowerCase();
+    const statusLower = (lead.status || "").toLowerCase();
+
+    const scored = allDrips.map((d: any) => {
+      const dripName = d.name.toLowerCase();
+      let score = 0;
+      if (dripName.includes("inversi") && (sourceLower.includes("facebook") || sourceLower.includes("instagram"))) score += 2;
+      if (dripName.includes("primera") && statusLower === "new") score += 2;
+      if (dripName.includes("nurtur") || dripName.includes("frio")) score += 1;
+      if (dripName.includes("hot") && statusLower === "qualified") score += 3;
+      return { drip: d, score };
+    });
+
+    scored.sort((a: any, b: any) => b.score - a.score);
+    drip = scored[0].drip;
+  }
+
+  // 3. Check if already enrolled
+  const existing = await prisma.emailDripEnrollment.findUnique({
+    where: { dripId_leadId: { dripId: drip.id, leadId: lead.id } },
+  });
+
+  if (existing && existing.status === "ACTIVE") {
+    return JSON.stringify({
+      already_enrolled: true,
+      message: `"${lead.name}" ya está inscrito en la secuencia "${drip.name}" y está activa.`,
+      drip_name: drip.name,
+      current_step: existing.currentStep,
+      next_send_at: existing.nextSendAt,
+    });
+  }
+
+  // 4. Enroll
+  const firstStep = drip.steps[0];
+  const nextSendAt = firstStep
+    ? new Date(Date.now() + firstStep.delayDays * 24 * 60 * 60 * 1000)
+    : null;
+
+  const enrollment = await prisma.emailDripEnrollment.upsert({
+    where: { dripId_leadId: { dripId: drip.id, leadId: lead.id } },
+    create: { dripId: drip.id, leadId: lead.id, currentStep: 0, status: "ACTIVE", nextSendAt },
+    update: { status: "ACTIVE", currentStep: 0, nextSendAt, completedAt: null },
+  });
+
+  await prisma.emailDrip.update({
+    where: { id: drip.id },
+    data: { totalEnrolled: { increment: existing ? 0 : 1 } },
+  });
+
+  const nextSendFormatted = nextSendAt
+    ? nextSendAt.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })
+    : "inmediatamente";
+
+  return JSON.stringify({
+    success: true,
+    enrollment_id: enrollment.id,
+    lead_name: lead.name,
+    lead_email: lead.email,
+    drip_name: drip.name,
+    drip_id: drip.id,
+    steps_total: drip.steps?.length || "desconocido",
+    first_email_scheduled: nextSendFormatted,
+    message: `"${lead.name}" inscrito en "${drip.name}". Primer email programado para ${nextSendFormatted}.`,
+  });
+}
+
+async function execSuggestKeywordsOrlando(input: Record<string, any>) {
+  const zone = input.zone || "all";
+  const propType = input.property_type || "all";
+  const lang = input.language || "both";
+
+  type KwEntry = { keyword: string; match_type: string; lang: string; intent: string };
+  const keywords: KwEntry[] = [];
+
+  const addKws = (list: KwEntry[]) => keywords.push(...list);
+
+  // --- General Orlando real estate ---
+  if (lang !== "es") {
+    addKws([
+      { keyword: "homes for sale in orlando florida", match_type: "BROAD", lang: "en", intent: "buyer" },
+      { keyword: "orlando florida real estate", match_type: "BROAD", lang: "en", intent: "buyer" },
+      { keyword: "buy a house in orlando", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "orlando homes for sale", match_type: "EXACT", lang: "en", intent: "buyer" },
+      { keyword: "orlando investment property", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "florida vacation rental for sale", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "orlando short term rental property", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "airbnb property orlando", match_type: "PHRASE", lang: "en", intent: "investor" },
+    ]);
+  }
+  if (lang !== "en") {
+    addKws([
+      { keyword: "casas en venta orlando florida", match_type: "BROAD", lang: "es", intent: "buyer" },
+      { keyword: "propiedades en orlando florida", match_type: "BROAD", lang: "es", intent: "buyer" },
+      { keyword: "comprar casa en florida", match_type: "PHRASE", lang: "es", intent: "buyer" },
+      { keyword: "inversión inmobiliaria florida", match_type: "PHRASE", lang: "es", intent: "investor" },
+      { keyword: "renta vacacional orlando", match_type: "PHRASE", lang: "es", intent: "investor" },
+      { keyword: "bienes raices orlando", match_type: "BROAD", lang: "es", intent: "buyer" },
+      { keyword: "apartamentos en orlando florida", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ]);
+  }
+
+  // --- Zone-specific keywords ---
+  const zoneKeywords: Record<string, KwEntry[]> = {
+    kissimmee: [
+      { keyword: "homes for sale kissimmee fl", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "kissimmee vacation rental investment", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "casas en kissimmee florida", match_type: "PHRASE", lang: "es", intent: "buyer" },
+      { keyword: "short term rental kissimmee", match_type: "EXACT", lang: "en", intent: "investor" },
+    ],
+    champions_gate: [
+      { keyword: "champions gate homes for sale", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "champions gate vacation rental", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "champions gate resort community", match_type: "BROAD", lang: "en", intent: "investor" },
+      { keyword: "casas champions gate orlando", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ],
+    lake_nona: [
+      { keyword: "lake nona homes for sale", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "lake nona real estate", match_type: "BROAD", lang: "en", intent: "buyer" },
+      { keyword: "lake nona new construction", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "casas lake nona orlando", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ],
+    dr_phillips: [
+      { keyword: "dr phillips orlando homes", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "dr phillips luxury real estate", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "casas dr phillips orlando", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ],
+    celebration: [
+      { keyword: "celebration florida homes for sale", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "celebration fl real estate", match_type: "BROAD", lang: "en", intent: "buyer" },
+      { keyword: "casas celebration florida", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ],
+    windermere: [
+      { keyword: "windermere fl homes for sale", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "windermere luxury homes orlando", match_type: "PHRASE", lang: "en", intent: "buyer" },
+    ],
+    downtown: [
+      { keyword: "downtown orlando condos for sale", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "orlando downtown apartments for sale", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "condos downtown orlando", match_type: "BROAD", lang: "en", intent: "buyer" },
+    ],
+    clermont: [
+      { keyword: "clermont fl homes for sale", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "clermont florida real estate", match_type: "BROAD", lang: "en", intent: "buyer" },
+      { keyword: "casas en clermont florida", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ],
+  };
+
+  if (zone !== "all" && zoneKeywords[zone]) {
+    const zoneKws = zoneKeywords[zone].filter(
+      (k) => lang === "both" || k.lang === lang,
+    );
+    addKws(zoneKws);
+  } else if (zone === "all") {
+    for (const zoneKwList of Object.values(zoneKeywords)) {
+      addKws(zoneKwList.filter((k) => lang === "both" || k.lang === lang));
+    }
+  }
+
+  // --- Property type specific ---
+  const typeKeywords: Record<string, KwEntry[]> = {
+    vacation_rental: [
+      { keyword: "vacation home for sale near disney", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "disney area vacation rental investment", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "vrbo property for sale florida", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "propiedad renta vacacional cerca disney", match_type: "PHRASE", lang: "es", intent: "investor" },
+      { keyword: "casa vacacional kissimmee venta", match_type: "PHRASE", lang: "es", intent: "investor" },
+    ],
+    investment: [
+      { keyword: "orlando investment property cash flow", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "florida rental property for sale", match_type: "PHRASE", lang: "en", intent: "investor" },
+      { keyword: "orlando real estate investment opportunities", match_type: "BROAD", lang: "en", intent: "investor" },
+      { keyword: "invertir en bienes raices florida", match_type: "PHRASE", lang: "es", intent: "investor" },
+      { keyword: "propiedades de inversión orlando", match_type: "PHRASE", lang: "es", intent: "investor" },
+    ],
+    single_family: [
+      { keyword: "single family homes orlando florida", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "family homes for sale orlando", match_type: "BROAD", lang: "en", intent: "buyer" },
+      { keyword: "casas unifamiliares orlando", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ],
+    condo: [
+      { keyword: "condos for sale orlando fl", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "orlando condo for sale", match_type: "EXACT", lang: "en", intent: "buyer" },
+      { keyword: "condominios orlando florida venta", match_type: "PHRASE", lang: "es", intent: "buyer" },
+    ],
+    townhouse: [
+      { keyword: "townhomes for sale orlando florida", match_type: "PHRASE", lang: "en", intent: "buyer" },
+      { keyword: "orlando townhouse for sale", match_type: "EXACT", lang: "en", intent: "buyer" },
+      { keyword: "townhouses orlando florida", match_type: "BROAD", lang: "es", intent: "buyer" },
+    ],
+  };
+
+  if (propType !== "all" && typeKeywords[propType]) {
+    addKws(typeKeywords[propType].filter((k) => lang === "both" || k.lang === lang));
+  } else if (propType === "all") {
+    for (const typeKwList of Object.values(typeKeywords)) {
+      addKws(typeKwList.filter((k) => lang === "both" || k.lang === lang));
+    }
+  }
+
+  // Deduplicate
+  const seen = new Set<string>();
+  const unique = keywords.filter((k) => {
+    if (seen.has(k.keyword)) return false;
+    seen.add(k.keyword);
+    return true;
+  });
+
+  const byIntent = {
+    buyer: unique.filter((k) => k.intent === "buyer"),
+    investor: unique.filter((k) => k.intent === "investor"),
+  };
+
+  return JSON.stringify({
+    total: unique.length,
+    filters: { zone, property_type: propType, language: lang },
+    by_intent: byIntent,
+    all_keywords: unique,
+    usage_tip:
+      "Usa EXACT para keywords de alta intención (listos para comprar), PHRASE para consideración, BROAD para descubrimiento. Agrega negative keywords: 'rent', 'rental', 'free', 'cheap' para excluir tráfico no calificado.",
   });
 }
