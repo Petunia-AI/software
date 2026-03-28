@@ -2638,7 +2638,6 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { label: "Contenido", credits: 1, icon: "✍️" },
-                        { label: "Landing Page", credits: 3, icon: "🌐" },
                         { label: "Video IA", credits: 5, icon: "🎬" },
                         { label: "Avatar", credits: 5, icon: "👤" },
                       ].map((item) => (
@@ -2664,7 +2663,6 @@ export default function SettingsPage() {
                       {aiUsage.usageByType.map((u) => {
                         const typeLabels: Record<string, string> = {
                           CONTENT_GENERATION: "Generación de contenido",
-                          LANDING_PAGE: "Landing pages",
                           VIDEO_SCRIPT: "Videos IA",
                           ASSISTANT_CHAT: "Chat asistente",
                           AVATAR_GENERATION: "Avatares",
@@ -2695,7 +2693,6 @@ export default function SettingsPage() {
                       {aiUsage.recentUsage.map((u, i) => {
                         const typeLabels: Record<string, string> = {
                           CONTENT_GENERATION: "Contenido",
-                          LANDING_PAGE: "Landing Page",
                           VIDEO_SCRIPT: "Video IA",
                           ASSISTANT_CHAT: "Chat",
                           AVATAR_GENERATION: "Avatar",

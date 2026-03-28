@@ -16,7 +16,6 @@ export async function GET() {
     avgScore,
     totalLeads,
     metaCampaigns,
-    landingPages,
   ] = await Promise.all([
     // Leads grouped by status
     prisma.lead.groupBy({
@@ -66,21 +65,6 @@ export async function GET() {
       take: 10,
     }),
 
-    // Landing pages performance
-    prisma.landingPage.findMany({
-      where: { organizationId: orgId },
-      select: {
-        id: true,
-        title: true,
-        template: true,
-        status: true,
-        views: true,
-        leads: true,
-        conversionRate: true,
-      },
-      orderBy: { leads: "desc" },
-      take: 5,
-    }),
   ]);
 
   // Pipeline funnel conversion rates
@@ -131,6 +115,5 @@ export async function GET() {
         cpl: Number(c.cpl ?? 0),
       })),
     },
-    landingPages,
   });
 }

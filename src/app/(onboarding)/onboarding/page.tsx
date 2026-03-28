@@ -26,8 +26,7 @@ import {
   User,
   Users,
   Mic,
-  Globe,
-  Zap,
+  Zap,  Zap,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -785,7 +784,6 @@ export default function OnboardingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               ...(!tiktok.connected ? [{ icon: Zap, title: "Conectar TikTok", desc: "Captura leads del público joven", color: "bg-pink-500", href: "/settings" }] : []),
-              { icon: Globe, title: "Crear Landing Page", desc: "Página de captura con IA", color: "bg-blue-500", href: "/landing-pages" },
               { icon: Mic, title: "Activar Voice AI", desc: "Asistente de voz para llamadas", color: "bg-[#4A154B]", href: "/settings" },
             ].map((step) => (
               <button key={step.title} type="button" onClick={() => router.push(step.href)}

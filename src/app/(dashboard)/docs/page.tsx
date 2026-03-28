@@ -781,38 +781,6 @@ const categories: DocCategory[] = [
           ]},
         ],
       },
-      {
-        title: "Landing Pages",
-        description: "Crea páginas de captura",
-        time: "10 min",
-        difficulty: "Medio",
-        content: [
-          { heading: "¿Para qué sirven las Landing Pages?", body: [
-            "Las Landing Pages son páginas web dedicadas a una propiedad o campaña específica, diseñadas para captar datos de contacto de personas interesadas.",
-            "A diferencia de tu sitio web general, una landing page tiene un solo objetivo: convertir visitantes en leads.",
-          ]},
-          { heading: "Crear una Landing Page", type: "steps", body: [
-            "1. Ve a Landing Pages → Nueva Landing Page.",
-            "2. Selecciona un template: Propiedad Individual, Desarrollo Nuevo, Captación General, Open House.",
-            "3. La IA genera automáticamente el contenido basado en los datos de tu propiedad.",
-            "4. Personaliza: textos, imágenes, colores, formulario de contacto.",
-            "5. Publica con un solo clic — Petunia genera una URL única.",
-          ]},
-          { heading: "Templates Disponibles", body: [
-            "🏡 Propiedad Individual — Galería de fotos, descripción, mapa, formulario. Ideal para cada listado.",
-            "🏗️ Desarrollo Nuevo — Masterplan, renders, avance de obra, tabla de precios, apartado en línea.",
-            "📋 Captación General — Para campañas que promocionan tu servicio como agente/inmobiliaria.",
-            "🎉 Open House — Fecha del evento, dirección, RSVP, galería previa de la propiedad.",
-          ]},
-          { heading: "Optimización y Métricas", type: "info", body: [
-            "Cada landing page incluye tracking automático de: visitas, tasa de conversión, tiempo en página, fuente de tráfico.",
-            "Petunia te muestra qué propiedades generan más interés y sugiere optimizaciones en el copy y diseño.",
-          ]},
-          { heading: "Consejo", type: "tip", body: [
-            "Comparte el link de tu landing page en el copy de tus anuncios de Facebook/Instagram/TikTok para captar leads con más información que un simple formulario de lead ad.",
-          ]},
-        ],
-      },
     ],
   },
 
