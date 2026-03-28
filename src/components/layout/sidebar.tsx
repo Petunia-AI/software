@@ -57,7 +57,6 @@ const clientNavigation = [
       { name: "Contenido IA", href: "/content", icon: Sparkles },
       { name: "Avatar IA", href: "/avatar", icon: Camera, enterprise: true },
       { name: "Calendario", href: "/calendar", icon: CalendarDays },
-      { name: "Landing Pages", href: "/landing-pages", icon: Globe },
     ],
   },
   {
