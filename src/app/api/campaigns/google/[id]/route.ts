@@ -77,9 +77,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
     }
 
-    if (!["DRAFT", "ERROR"].includes(existing.status)) {
+    if (!["DRAFT", "ERROR", "PENDING_APPROVAL"].includes(existing.status)) {
       return NextResponse.json(
-        { error: "Solo se pueden editar campañas en borrador" },
+        { error: "Solo se pueden editar campañas en borrador o pendiente de aprobación" },
         { status: 400 },
       );
     }
