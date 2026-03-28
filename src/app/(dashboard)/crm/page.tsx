@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Lead {
   id: string;
@@ -644,22 +645,13 @@ export default function LeadsPage() {
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Users className="h-10 w-10 text-muted-foreground/20 mb-3" />
               {leads.length === 0 ? (
-                <>
-                  <p className="text-sm font-semibold text-foreground">Aún no tienes leads</p>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                    Importa desde CSV o crea tu primer lead manualmente.
-                  </p>
-                  <div className="flex gap-2 mt-4">
-                    <Button size="sm" className="rounded-xl bg-primary text-white" onClick={() => setShowNewDialog(true)}>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Crear lead
-                    </Button>
-                    <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setShowImportDialog(true)}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Importar CSV
-                    </Button>
-                  </div>
-                </>
+                <EmptyState
+                  icon={Users}
+                  titulo="No tienes leads todavía"
+                  descripcion="Agrega tu primer lead manualmente o importa desde CSV."
+                  botonTexto="Agregar lead"
+                  onBotonClick={() => setShowNewDialog(true)}
+                />
               ) : (
                 <p className="text-sm font-medium text-muted-foreground">No se encontraron leads con ese filtro</p>
               )}

@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface FollowUpTask {
   id: string;
@@ -396,20 +397,14 @@ export default function FollowUpPage() {
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-border/40">
-                <Clock className="h-10 w-10 text-muted-foreground/20 mb-3" />
-                <p className="text-sm font-semibold text-foreground">Sin seguimientos pendientes</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                  Crea una tarea de seguimiento para un lead o activa una secuencia automática.
-                </p>
-                <Button
-                  size="sm"
-                  className="mt-4 rounded-xl bg-primary text-white"
-                  onClick={handleOpenNewTask}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nueva tarea
-                </Button>
+              <div className="rounded-2xl border border-border/40">
+                <EmptyState
+                  icon={Clock}
+                  titulo="Sin seguimientos pendientes"
+                  descripcion="Crea una tarea de seguimiento para un lead o activa una secuencia automática."
+                  botonTexto="Nueva tarea"
+                  onBotonClick={handleOpenNewTask}
+                />
               </div>
             )}
           </div>

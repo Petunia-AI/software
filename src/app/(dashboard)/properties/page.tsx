@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Property {
   id: string;
@@ -398,20 +399,13 @@ export default function PropertiesPage() {
             <Building2 className="h-8 w-8 text-muted-foreground/40" />
           </div>
           {properties.length === 0 ? (
-            <>
-              <p className="text-sm font-semibold text-foreground">Aún no tienes propiedades</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                Agrega tu primera propiedad para comenzar a generar contenido y campañas con IA.
-              </p>
-              <Button
-                size="sm"
-                className="mt-4 rounded-xl bg-primary text-white"
-                onClick={() => setShowNewDialog(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar primera propiedad
-              </Button>
-            </>
+            <EmptyState
+              icon={Building2}
+              titulo="No tienes propiedades todavía"
+              descripcion="Agrega tu primera propiedad para comenzar a generar contenido y campañas con IA."
+              botonTexto="Agregar propiedad"
+              onBotonClick={() => setShowNewDialog(true)}
+            />
           ) : (
             <>
               <p className="text-sm font-medium text-muted-foreground">No se encontraron propiedades</p>

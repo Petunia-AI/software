@@ -739,8 +739,14 @@ export default function CampaignsPage() {
           <CardContent className="p-12 text-center">
             <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-semibold mb-2">No tienes campañas aún</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-2">
               Crea tu primera campaña de Meta o Google Ads, o pídele a Petunia que la cree por ti 🌸
+            </p>
+            <p className="text-xs text-muted-foreground/70 mb-6">
+              Para publicar campañas, primero conecta tu cuenta publicitaria en{" "}
+              <a href="/settings" className="text-primary underline underline-offset-2">
+                Configuración →
+              </a>
             </p>
             <div className="flex items-center justify-center gap-2">
               <Button className="bg-primary text-white rounded-xl" onClick={() => setShowCreate(true)}>
