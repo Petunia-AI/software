@@ -19,7 +19,10 @@ import {
   BarChart3,
   Mail,
   Globe,
-  Lock,
+  FileText,
+  Camera,
+  CalendarDays,
+  Brain,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
@@ -54,13 +57,16 @@ const automationGroup = {
   ],
 };
 
-// Items that exist but are not yet fully functional — shown with "Próximamente"
-const comingSoonItems = [
-  { name: "Reportes PDF", href: "/reports" },
-  { name: "Avatar IA", href: "/avatar" },
-  { name: "Calendario", href: "/calendar" },
-  { name: "Aprendizaje IA", href: "/knowledge" },
-];
+// Items that exist but are still being improved — still navigable
+const extrasGroup = {
+  label: "Más herramientas",
+  items: [
+    { name: "Reportes PDF", href: "/reports", icon: FileText },
+    { name: "Avatar IA", href: "/avatar", icon: Camera },
+    { name: "Calendario", href: "/calendar", icon: CalendarDays },
+    { name: "Aprendizaje IA", href: "/knowledge", icon: Brain },
+  ],
+};
 
 const bottomGroup = {
   items: [
@@ -260,25 +266,19 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Coming soon (collapsed into a single block) */}
-          {!collapsed && (
-            <div>
+          {/* Extras group */}
+          <div>
+            {!collapsed && (
               <p className="px-3 mb-1 text-[9px] font-semibold text-white/30 uppercase tracking-widest">
-                Próximamente
+                {extrasGroup.label}
               </p>
-              <div className="space-y-0.5">
-                {comingSoonItems.map((item) => (
-                  <div
-                    key={item.name}
-                    className="flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium text-white/25 cursor-default select-none"
-                  >
-                    <Lock className="h-[15px] w-[15px] shrink-0 text-white/20" />
-                    <span className="truncate">{item.name}</span>
-                  </div>
-                ))}
-              </div>
+            )}
+            <div className="space-y-0.5">
+              {extrasGroup.items.map((item) => (
+                <NavItem key={item.name} item={item} />
+              ))}
             </div>
-          )}
+          </div>
         </nav>
 
         {/* Bottom: billing + settings */}
