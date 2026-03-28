@@ -28,6 +28,8 @@ import {
   AlertCircle,
   Paintbrush,
   User,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -110,12 +113,14 @@ interface SavedAvatarItem {
 
 const statusColors: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
+  PENDING_APPROVAL: "bg-amber-100 text-amber-700",
   SCHEDULED: "bg-blue-100 text-blue-700",
   PUBLISHED: "bg-green-100 text-green-700",
 };
 
 const statusLabels: Record<string, string> = {
   DRAFT: "Borrador",
+  PENDING_APPROVAL: "Pendiente de aprobación",
   SCHEDULED: "Programado",
   PUBLISHED: "Publicado",
 };
@@ -145,6 +150,13 @@ export default function ContentPage() {
   const [history, setHistory] = useState<ContentPost[]>([]);
   const [savingContent, setSavingContent] = useState(false);
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<ContentPost | null>(null);
+
+  // Approval state
+  const [approvingContent, setApprovingContent] = useState<string | null>(null);
+  const [rejectingContent, setRejectingContent] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<ContentPost | null>(null);
+  const [editContentForm, setEditContentForm] = useState({ title: "", content: "", hashtags: "" });
+  const [savingContentEdit, setSavingContentEdit] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [previewImageLoading, setPreviewImageLoading] = useState(false);
 
@@ -477,7 +489,82 @@ export default function ContentPage() {
     toast.success("Copiado al portapapeles");
   };
 
-  const handleSave = async (status: "DRAFT" | "SCHEDULED") => {
+  const handleApproveContent = async (id: string) => {
+    setApprovingContent(id);
+    try {
+      const res = await fetch(`/api/content/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      if (res.ok) {
+        toast.success("Contenido aprobado y publicado");
+        loadHistory();
+      } else {
+        toast.error("Error aprobando contenido");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setApprovingContent(null);
+    }
+  };
+
+  const handleRejectContent = async (id: string) => {
+    setRejectingContent(id);
+    try {
+      const res = await fetch(`/api/content/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Contenido eliminado");
+        loadHistory();
+        if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null);
+      } else {
+        toast.error("Error eliminando contenido");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setRejectingContent(null);
+    }
+  };
+
+  const handleOpenEditContent = (item: ContentPost) => {
+    setEditingContent(item);
+    setEditContentForm({
+      title: item.title || "",
+      content: item.content || "",
+      hashtags: (item as any).hashtags || "",
+    });
+  };
+
+  const handleSaveContentEdit = async () => {
+    if (!editingContent) return;
+    setSavingContentEdit(true);
+    try {
+      const res = await fetch(`/api/content/${editingContent.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editContentForm.title,
+          content: editContentForm.content,
+          hashtags: editContentForm.hashtags,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Contenido actualizado");
+        setEditingContent(null);
+        loadHistory();
+      } else {
+        toast.error("Error guardando cambios");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setSavingContentEdit(false);
+    }
+  };
+
+  const handleSave = async (_status: "DRAFT" | "SCHEDULED") => {
     setSavingContent(true);
     try {
       const firstLine = generatedContent.split("\n")[0].replace(/[✨🏡🎬📱📊]/g, "").trim().slice(0, 100);
@@ -489,14 +576,13 @@ export default function ContentPage() {
           content: generatedContent,
           type: selectedType,
           platform: selectedPlatform,
-          status,
+          status: "PENDING_APPROVAL",
           propertyId: selectedProperty && selectedProperty !== "none" ? selectedProperty : null,
-          scheduledAt: status === "SCHEDULED" ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
           mediaUrls: previewImageUrl ? [previewImageUrl] : undefined,
         }),
       });
       if (res.ok) {
-        toast.success(status === "DRAFT" ? "Guardado como borrador" : "Publicación programada");
+        toast.success("Contenido guardado — pendiente de aprobación");
         loadHistory();
       } else {
         toast.error("Error al guardar");
@@ -969,10 +1055,10 @@ export default function ContentPage() {
                         disabled={savingContent}
                       >
                         {savingContent ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                        Guardar carrusel
+                        Enviar a aprobación
                       </Button>
                       <Button variant="outline" className="rounded-2xl h-12 border-[#C4A0D4] text-[#4A154B] hover:bg-[#FAF5FA] font-semibold px-4" onClick={() => handleSave("DRAFT")} disabled={savingContent}>
-                        Borrador
+                        Guardar
                       </Button>
                     </div>
                   </div>
@@ -1060,10 +1146,10 @@ export default function ContentPage() {
                         disabled={savingContent}
                       >
                         {savingContent ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                        Programar publicación
+                        Enviar a aprobación
                       </Button>
                       <Button variant="outline" className="flex-1 rounded-2xl h-12 border-[#C4A0D4] text-[#4A154B] hover:bg-[#FAF5FA] hover:border-[#4A154B] font-semibold" onClick={() => handleSave("DRAFT")} disabled={savingContent}>
-                        Guardar como borrador
+                        Enviar a aprobación
                       </Button>
                     </div>
                   </div>
@@ -2021,21 +2107,24 @@ export default function ContentPage() {
         </TabsContent>
 
         <TabsContent value="history">
-          <div className="rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)]" style={{ border: '1.5px solid transparent', background: 'linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #9B3FCB 0%, #4A154B 50%, #611f69 100%) border-box' }}>
-            <div className="p-5 pb-3">
-              <h3 className="text-base font-semibold">Contenido generado</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Haz clic en cualquier elemento para ver el detalle completo</p>
-            </div>
-            <div className="px-5 pb-5">
-              {history.length > 0 ? (
-                <div className="space-y-2">
-                  {history.map((item) => (
-                    <button
+          <div className="space-y-4">
+            {/* Pending Approval section */}
+            {history.filter((i) => i.status === "PENDING_APPROVAL").length > 0 && (
+              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/50 p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-amber-600" />
+                  <h3 className="text-sm font-semibold text-amber-800">
+                    Pendientes de aprobación ({history.filter((i) => i.status === "PENDING_APPROVAL").length})
+                  </h3>
+                </div>
+                {history
+                  .filter((i) => i.status === "PENDING_APPROVAL")
+                  .map((item) => (
+                    <div
                       key={item.id}
-                      onClick={() => setSelectedHistoryItem(item)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-[#C4A0D4]/40 hover:bg-[#FAF5FA] hover:-translate-y-0.5 hover:shadow-md hover:border-[#4A154B]/30 transition-all duration-200 text-left cursor-pointer"
+                      className="bg-white rounded-2xl border border-amber-200 p-4 space-y-3"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <div className="h-9 w-9 rounded-xl overflow-hidden bg-[#F5EFF5] flex items-center justify-center shrink-0">
                           {(item.mediaUrls as string[] | null)?.[0] ? (
                             <img src={(item.mediaUrls as string[])[0]} alt="" className="w-full h-full object-cover" />
@@ -2043,29 +2132,108 @@ export default function ContentPage() {
                             <Sparkles className="h-4 w-4 text-[#4A154B]/60" />
                           )}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate max-w-[280px]">{item.title || "Sin título"}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">{item.title || "Sin título"}</p>
                           <div className="flex gap-1.5 mt-0.5 flex-wrap">
                             <Badge variant="outline" className="text-[10px] rounded-full">{contentTypes.find(t => t.value === item.type)?.label || item.type}</Badge>
                             <Badge variant="outline" className="text-[10px] rounded-full">{platformsList.find(p => p.value === item.platform)?.label || item.platform}</Badge>
-                            {item.property?.title && <Badge variant="outline" className="text-[10px] rounded-full text-[#4A154B] border-[#C4A0D4]">{item.property.title}</Badge>}
                           </div>
+                          {item.content && (
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-3 whitespace-pre-line">{item.content}</p>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <Badge className={`text-[10px] rounded-full ${statusColors[item.status]}`}>{statusLabels[item.status]}</Badge>
-                        <span className="text-[11px] text-muted-foreground">{timeAgo(item.createdAt)}</span>
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/40" />
+                      <div className="flex items-center gap-2 pt-1 border-t border-amber-100">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg text-xs h-7 px-3 border-amber-300 text-amber-700 hover:bg-amber-100"
+                          onClick={() => handleOpenEditContent(item)}
+                        >
+                          <Pencil className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="rounded-lg text-xs h-7 px-3 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => handleApproveContent(item.id)}
+                          disabled={approvingContent === item.id}
+                        >
+                          {approvingContent === item.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Aprobar y Publicar
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-lg text-xs h-7 px-2 text-red-500 hover:text-red-700 ml-auto"
+                          onClick={() => handleRejectContent(item.id)}
+                          disabled={rejectingContent === item.id}
+                        >
+                          {rejectingContent === item.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
                       </div>
-                    </button>
+                    </div>
                   ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Aún no has generado contenido</p>
-                </div>
-              )}
+              </div>
+            )}
+
+            {/* All history */}
+            <div className="rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)]" style={{ border: '1.5px solid transparent', background: 'linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #9B3FCB 0%, #4A154B 50%, #611f69 100%) border-box' }}>
+              <div className="p-5 pb-3">
+                <h3 className="text-base font-semibold">Historial de contenido</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Haz clic en cualquier elemento para ver el detalle completo</p>
+              </div>
+              <div className="px-5 pb-5">
+                {history.length > 0 ? (
+                  <div className="space-y-2">
+                    {history.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setSelectedHistoryItem(item)}
+                        className="w-full flex items-center justify-between p-4 rounded-2xl border border-[#C4A0D4]/40 hover:bg-[#FAF5FA] hover:-translate-y-0.5 hover:shadow-md hover:border-[#4A154B]/30 transition-all duration-200 text-left cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl overflow-hidden bg-[#F5EFF5] flex items-center justify-center shrink-0">
+                            {(item.mediaUrls as string[] | null)?.[0] ? (
+                              <img src={(item.mediaUrls as string[])[0]} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Sparkles className="h-4 w-4 text-[#4A154B]/60" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate max-w-[280px]">{item.title || "Sin título"}</p>
+                            <div className="flex gap-1.5 mt-0.5 flex-wrap">
+                              <Badge variant="outline" className="text-[10px] rounded-full">{contentTypes.find(t => t.value === item.type)?.label || item.type}</Badge>
+                              <Badge variant="outline" className="text-[10px] rounded-full">{platformsList.find(p => p.value === item.platform)?.label || item.platform}</Badge>
+                              {item.property?.title && <Badge variant="outline" className="text-[10px] rounded-full text-[#4A154B] border-[#C4A0D4]">{item.property.title}</Badge>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <Badge className={`text-[10px] rounded-full ${statusColors[item.status] ?? ""}`}>{statusLabels[item.status] ?? item.status}</Badge>
+                          <span className="text-[11px] text-muted-foreground">{timeAgo(item.createdAt)}</span>
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/40" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Aún no has generado contenido</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </TabsContent>
@@ -2165,6 +2333,60 @@ export default function ContentPage() {
           </div>
         </div>
       )}
+
+      {/* ── Edit Content Dialog ── */}
+      <Dialog open={!!editingContent} onOpenChange={(open) => { if (!open) setEditingContent(null); }}>
+        <DialogContent className="max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Editar Contenido
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="grid gap-2">
+              <Label>Título</Label>
+              <Input
+                className="rounded-xl"
+                value={editContentForm.title}
+                onChange={(e) => setEditContentForm({ ...editContentForm, title: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Contenido</Label>
+              <Textarea
+                className="rounded-xl resize-none"
+                rows={8}
+                value={editContentForm.content}
+                onChange={(e) => setEditContentForm({ ...editContentForm, content: e.target.value })}
+              />
+              <p className="text-[10px] text-muted-foreground text-right">{editContentForm.content.length} caracteres</p>
+            </div>
+            <div className="grid gap-2">
+              <Label>Hashtags (opcional)</Label>
+              <Input
+                className="rounded-xl"
+                placeholder="#bienesraices #propiedades"
+                value={editContentForm.hashtags}
+                onChange={(e) => setEditContentForm({ ...editContentForm, hashtags: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" className="rounded-xl" onClick={() => setEditingContent(null)}>
+                Cancelar
+              </Button>
+              <Button
+                className="bg-primary text-white rounded-xl hover:bg-foreground/90"
+                onClick={handleSaveContentEdit}
+                disabled={savingContentEdit}
+              >
+                {savingContentEdit ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Guardar cambios
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

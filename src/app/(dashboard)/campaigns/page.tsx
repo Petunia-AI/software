@@ -20,6 +20,8 @@ import {
   Sparkles,
   RefreshCw,
   Search,
+  Pencil,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -130,6 +132,19 @@ export default function CampaignsPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState<"all" | "meta" | "google">("all");
   const [createPlatform, setCreatePlatform] = useState<"meta" | "google">("meta");
+
+  // Edit / approval state
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editMetaForm, setEditMetaForm] = useState({
+    name: "", objective: "LEAD_GENERATION", dailyBudget: "20",
+    headline: "", primaryText: "", description: "", callToAction: "LEARN_MORE",
+  });
+  const [editGoogleForm, setEditGoogleForm] = useState({
+    name: "", objective: "LEAD_GENERATION", dailyBudget: "20",
+    headline1: "", headline2: "", headline3: "",
+    description1: "", description2: "", finalUrl: "",
+  });
 
   const [metaForm, setMetaForm] = useState({
     name: "",
@@ -337,6 +352,79 @@ export default function CampaignsPage() {
     }
   };
 
+  const handleEditOpen = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    if (campaign.platform === "meta") {
+      setEditMetaForm({
+        name: campaign.name,
+        objective: campaign.objective,
+        dailyBudget: campaign.dailyBudget ? parseFloat(campaign.dailyBudget).toFixed(0) : "20",
+        headline: campaign.headline || "",
+        primaryText: campaign.primaryText || "",
+        description: campaign.description || "",
+        callToAction: campaign.callToAction || "LEARN_MORE",
+      });
+    } else {
+      const headlines = (campaign.headlines as string[] | null) || [];
+      const descs = (campaign.descriptions as string[] | null) || [];
+      setEditGoogleForm({
+        name: campaign.name,
+        objective: campaign.objective,
+        dailyBudget: campaign.dailyBudget ? parseFloat(campaign.dailyBudget).toFixed(0) : "20",
+        headline1: headlines[0] || "",
+        headline2: headlines[1] || "",
+        headline3: headlines[2] || "",
+        description1: descs[0] || "",
+        description2: descs[1] || "",
+        finalUrl: campaign.finalUrl || "",
+      });
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editingCampaign) return;
+    setSavingEdit(true);
+    const basePath = editingCampaign.platform === "google" ? "/api/campaigns/google" : "/api/campaigns";
+    const body =
+      editingCampaign.platform === "meta"
+        ? {
+            name: editMetaForm.name,
+            objective: editMetaForm.objective,
+            dailyBudget: parseFloat(editMetaForm.dailyBudget),
+            headline: editMetaForm.headline,
+            primaryText: editMetaForm.primaryText,
+            description: editMetaForm.description,
+            callToAction: editMetaForm.callToAction,
+          }
+        : {
+            name: editGoogleForm.name,
+            objective: editGoogleForm.objective,
+            dailyBudget: parseFloat(editGoogleForm.dailyBudget),
+            headlines: [editGoogleForm.headline1, editGoogleForm.headline2, editGoogleForm.headline3].filter(Boolean),
+            descriptions: [editGoogleForm.description1, editGoogleForm.description2].filter(Boolean),
+            finalUrl: editGoogleForm.finalUrl || undefined,
+          };
+    try {
+      const res = await fetch(`${basePath}/${editingCampaign.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        toast.success("Cambios guardados");
+        setEditingCampaign(null);
+        fetchCampaigns();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Error guardando cambios");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   // ─── Filtered campaigns ──────────────────────────────────────────────
 
   const campaigns = platformFilter === "all"
@@ -515,12 +603,138 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      {/* Campaigns list */}
+      {/* ── Pending Approval section ─────────────────────────────────── */}
+      {!loading && campaigns.filter((c) => c.status === "DRAFT" || c.status === "ERROR").length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <ShieldCheck className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-semibold text-amber-800">
+              Pendientes de aprobación ({campaigns.filter((c) => c.status === "DRAFT" || c.status === "ERROR").length})
+            </h2>
+            <span className="text-xs text-amber-600">— Revisa y aprueba antes de publicar</span>
+          </div>
+          {campaigns
+            .filter((c) => c.status === "DRAFT" || c.status === "ERROR")
+            .map((campaign) => {
+              const statusConfig = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.DRAFT;
+              const StatusIcon = statusConfig.icon;
+              return (
+                <Card
+                  key={"draft-" + campaign.platform + "-" + campaign.id}
+                  className="rounded-2xl border-2 border-amber-200 bg-amber-50/50"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold truncate">{campaign.name}</h3>
+                          <Badge className={statusConfig.color + " text-[10px] shrink-0"}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {statusConfig.label}
+                          </Badge>
+                          {campaign.platform === "meta" ? (
+                            <Badge className="bg-blue-100 text-blue-700 text-[10px] shrink-0">📱 Meta</Badge>
+                          ) : (
+                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px] shrink-0">
+                              <Search className="h-2.5 w-2.5 mr-0.5" />Google
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                          <span>{OBJECTIVES[campaign.objective] || campaign.objective}</span>
+                          {campaign.dailyBudget && (
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              {parseFloat(campaign.dailyBudget).toFixed(0)}/día
+                            </span>
+                          )}
+                          {campaign.property && (
+                            <span className="truncate max-w-[200px]">🏠 {campaign.property.title}</span>
+                          )}
+                        </div>
+                        {campaign.platform === "meta" && campaign.headline && (
+                          <div className="rounded-xl bg-white border border-amber-200 p-3 mt-2 max-w-md">
+                            <p className="text-xs font-semibold">{campaign.headline}</p>
+                            {campaign.primaryText && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{campaign.primaryText}</p>
+                            )}
+                          </div>
+                        )}
+                        {campaign.platform === "google" && campaign.headlines && (campaign.headlines as string[]).length > 0 && (
+                          <div className="rounded-xl bg-white border border-amber-200 p-3 mt-2 max-w-md">
+                            <p className="text-xs font-semibold text-blue-700">
+                              {(campaign.headlines as string[]).slice(0, 3).join(" | ")}
+                            </p>
+                            {campaign.descriptions && (campaign.descriptions as string[]).length > 0 && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {(campaign.descriptions as string[])[0]}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {campaign.status === "ERROR" && campaign.errorMessage && (
+                          <div className="mt-2 rounded-lg bg-red-50 p-2 text-xs text-red-700">
+                            <AlertCircle className="h-3 w-3 inline mr-1" />
+                            {campaign.errorMessage}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-lg text-xs h-7 px-3 border-amber-300 text-amber-700 hover:bg-amber-100"
+                            onClick={() => handleEditOpen(campaign)}
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="rounded-lg text-xs h-7 px-3 bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => handlePublish(campaign)}
+                            disabled={publishing === campaign.id || isPublishDisabled(campaign)}
+                          >
+                            {publishing === campaign.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <ShieldCheck className="h-3 w-3 mr-1" />
+                                Aprobar y Publicar
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="rounded-lg text-xs h-7 px-2 text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(campaign)}
+                            disabled={deleting === campaign.id}
+                          >
+                            {deleting === campaign.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+        </div>
+      )}
+
+      {/* ── Published / Active Campaigns list ──────────────────────────── */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : campaigns.length === 0 ? (
+      ) : campaigns.filter((c) => c.status !== "DRAFT" && c.status !== "ERROR").length === 0 &&
+        campaigns.filter((c) => c.status === "DRAFT" || c.status === "ERROR").length === 0 ? (
         <Card className="rounded-2xl">
           <CardContent className="p-12 text-center">
             <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -549,144 +763,231 @@ export default function CampaignsPage() {
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : campaigns.filter((c) => c.status !== "DRAFT" && c.status !== "ERROR").length > 0 ? (
         <div className="space-y-3">
-          {campaigns.map((campaign) => {
-            const statusConfig = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.DRAFT;
-            const StatusIcon = statusConfig.icon;
-            return (
-              <Card
-                key={campaign.platform + "-" + campaign.id}
-                className="rounded-2xl border border-border/40 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold truncate">{campaign.name}</h3>
-                        <Badge className={statusConfig.color + " text-[10px] shrink-0"}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusConfig.label}
-                        </Badge>
-                        {campaign.platform === "meta" ? (
-                          <Badge className="bg-blue-100 text-blue-700 text-[10px] shrink-0">📱 Meta</Badge>
-                        ) : (
-                          <Badge className="bg-emerald-100 text-emerald-700 text-[10px] shrink-0">
-                            <Search className="h-2.5 w-2.5 mr-0.5" />Google
+          {campaigns
+            .filter((c) => c.status !== "DRAFT" && c.status !== "ERROR")
+            .map((campaign) => {
+              const statusConfig = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.DRAFT;
+              const StatusIcon = statusConfig.icon;
+              return (
+                <Card
+                  key={campaign.platform + "-" + campaign.id}
+                  className="rounded-2xl border border-border/40 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold truncate">{campaign.name}</h3>
+                          <Badge className={statusConfig.color + " text-[10px] shrink-0"}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {statusConfig.label}
                           </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                        <span>{OBJECTIVES[campaign.objective] || campaign.objective}</span>
-                        {campaign.dailyBudget && (
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            {parseFloat(campaign.dailyBudget).toFixed(0)}/día
-                          </span>
-                        )}
-                        {campaign.property && (
-                          <span className="truncate max-w-[200px]">🏠 {campaign.property.title}</span>
-                        )}
-                      </div>
-                      {campaign.platform === "meta" && campaign.headline && (
-                        <div className="rounded-xl bg-muted/30 p-3 mt-2 max-w-md">
-                          <p className="text-xs font-semibold">{campaign.headline}</p>
-                          {campaign.primaryText && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{campaign.primaryText}</p>
+                          {campaign.platform === "meta" ? (
+                            <Badge className="bg-blue-100 text-blue-700 text-[10px] shrink-0">📱 Meta</Badge>
+                          ) : (
+                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px] shrink-0">
+                              <Search className="h-2.5 w-2.5 mr-0.5" />Google
+                            </Badge>
                           )}
                         </div>
-                      )}
-                      {campaign.platform === "google" && campaign.headlines && (campaign.headlines as string[]).length > 0 && (
-                        <div className="rounded-xl bg-muted/30 p-3 mt-2 max-w-md">
-                          <p className="text-xs font-semibold text-blue-700">
-                            {(campaign.headlines as string[]).slice(0, 3).join(" | ")}
-                          </p>
-                          {campaign.descriptions && (campaign.descriptions as string[]).length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {(campaign.descriptions as string[])[0]}
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                          <span>{OBJECTIVES[campaign.objective] || campaign.objective}</span>
+                          {campaign.dailyBudget && (
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              {parseFloat(campaign.dailyBudget).toFixed(0)}/día
+                            </span>
+                          )}
+                          {campaign.property && (
+                            <span className="truncate max-w-[200px]">🏠 {campaign.property.title}</span>
+                          )}
+                        </div>
+                        {campaign.platform === "meta" && campaign.headline && (
+                          <div className="rounded-xl bg-muted/30 p-3 mt-2 max-w-md">
+                            <p className="text-xs font-semibold">{campaign.headline}</p>
+                            {campaign.primaryText && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{campaign.primaryText}</p>
+                            )}
+                          </div>
+                        )}
+                        {campaign.platform === "google" && campaign.headlines && (campaign.headlines as string[]).length > 0 && (
+                          <div className="rounded-xl bg-muted/30 p-3 mt-2 max-w-md">
+                            <p className="text-xs font-semibold text-blue-700">
+                              {(campaign.headlines as string[]).slice(0, 3).join(" | ")}
                             </p>
-                          )}
-                          {campaign.finalUrl && (
-                            <p className="text-[10px] text-green-700 mt-1 truncate">{campaign.finalUrl}</p>
-                          )}
-                        </div>
-                      )}
-                      {campaign.status === "ERROR" && campaign.errorMessage && (
-                        <div className="mt-2 rounded-lg bg-red-50 p-2 text-xs text-red-700">
-                          <AlertCircle className="h-3 w-3 inline mr-1" />
-                          {campaign.errorMessage}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      {campaign.publishedAt && (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-right text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Impresiones</span>
-                            <p className="font-semibold">{(campaign.impressions || 0).toLocaleString()}</p>
+                            {campaign.descriptions && (campaign.descriptions as string[]).length > 0 && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {(campaign.descriptions as string[])[0]}
+                              </p>
+                            )}
+                            {campaign.finalUrl && (
+                              <p className="text-[10px] text-green-700 mt-1 truncate">{campaign.finalUrl}</p>
+                            )}
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Clics</span>
-                            <p className="font-semibold">{campaign.clicks || 0}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Leads</span>
-                            <p className="font-semibold">{campaign.leads || 0}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Gastado</span>
-                            <p className="font-semibold">{"$" + (campaign.spent ? parseFloat(campaign.spent).toFixed(2) : "0.00")}</p>
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {(campaign.status === "DRAFT" || campaign.status === "ERROR") && (
-                          <>
-                            <Button
-                              size="sm"
-                              className="rounded-lg bg-primary text-white text-xs h-7 px-3"
-                              onClick={() => handlePublish(campaign)}
-                              disabled={publishing === campaign.id || isPublishDisabled(campaign)}
-                            >
-                              {publishing === campaign.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <>
-                                  <ExternalLink className="h-3 w-3 mr-1" />
-                                  Publicar
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="rounded-lg text-xs h-7 px-2 text-red-500 hover:text-red-700"
-                              onClick={() => handleDelete(campaign)}
-                              disabled={deleting === campaign.id}
-                            >
-                              {deleting === campaign.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </>
-                        )}
-                        {campaign.status === "ACTIVE" && (
-                          <Button size="sm" variant="outline" className="rounded-lg text-xs h-7 px-3" onClick={() => handlePause(campaign)}>
-                            <Pause className="h-3 w-3 mr-1" />
-                            Pausar
-                          </Button>
                         )}
                       </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        {campaign.publishedAt && (
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-right text-xs">
+                            <div>
+                              <span className="text-muted-foreground">Impresiones</span>
+                              <p className="font-semibold">{(campaign.impressions || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Clics</span>
+                              <p className="font-semibold">{campaign.clicks || 0}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Leads</span>
+                              <p className="font-semibold">{campaign.leads || 0}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Gastado</span>
+                              <p className="font-semibold">{"$" + (campaign.spent ? parseFloat(campaign.spent).toFixed(2) : "0.00")}</p>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {campaign.status === "ACTIVE" && (
+                            <Button size="sm" variant="outline" className="rounded-lg text-xs h-7 px-3" onClick={() => handlePause(campaign)}>
+                              <Pause className="h-3 w-3 mr-1" />
+                              Pausar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })}
         </div>
-      )}
+      ) : null}
+
+      {/* ── Edit Campaign Dialog ──────────────────────────────────────── */}
+      <Dialog open={!!editingCampaign} onOpenChange={(open) => { if (!open) setEditingCampaign(null); }}>
+        <DialogContent className="max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Editar Campaña
+            </DialogTitle>
+          </DialogHeader>
+
+          {editingCampaign?.platform === "meta" && (
+            <div className="space-y-4 mt-2">
+              <div className="grid gap-2">
+                <Label>Nombre</Label>
+                <Input className="rounded-xl" value={editMetaForm.name} onChange={(e) => setEditMetaForm({ ...editMetaForm, name: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>Objetivo</Label>
+                  <Select value={editMetaForm.objective} onValueChange={(v) => v && setEditMetaForm({ ...editMetaForm, objective: v })}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LEAD_GENERATION">Generación de Leads</SelectItem>
+                      <SelectItem value="TRAFFIC">Tráfico</SelectItem>
+                      <SelectItem value="BRAND_AWARENESS">Reconocimiento</SelectItem>
+                      <SelectItem value="ENGAGEMENT">Engagement</SelectItem>
+                      <SelectItem value="MESSAGES">Mensajes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Presupuesto diario (USD)</Label>
+                  <Input className="rounded-xl" type="number" min="1" step="1" value={editMetaForm.dailyBudget} onChange={(e) => setEditMetaForm({ ...editMetaForm, dailyBudget: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Headline del Anuncio</Label>
+                <Input className="rounded-xl" maxLength={40} value={editMetaForm.headline} onChange={(e) => setEditMetaForm({ ...editMetaForm, headline: e.target.value })} />
+                <p className="text-[10px] text-muted-foreground text-right">{editMetaForm.headline.length}/40</p>
+              </div>
+              <div className="grid gap-2">
+                <Label>Texto Principal</Label>
+                <Textarea className="rounded-xl resize-none" rows={4} maxLength={125} value={editMetaForm.primaryText} onChange={(e) => setEditMetaForm({ ...editMetaForm, primaryText: e.target.value })} />
+                <p className="text-[10px] text-muted-foreground text-right">{editMetaForm.primaryText.length}/125</p>
+              </div>
+              <div className="grid gap-2">
+                <Label>Descripción (opcional)</Label>
+                <Input className="rounded-xl" maxLength={30} value={editMetaForm.description} onChange={(e) => setEditMetaForm({ ...editMetaForm, description: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Botón de Acción</Label>
+                <Select value={editMetaForm.callToAction} onValueChange={(v) => v && setEditMetaForm({ ...editMetaForm, callToAction: v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LEARN_MORE">Más Información</SelectItem>
+                    <SelectItem value="CONTACT_US">Contáctanos</SelectItem>
+                    <SelectItem value="SIGN_UP">Registrarse</SelectItem>
+                    <SelectItem value="GET_QUOTE">Obtener Cotización</SelectItem>
+                    <SelectItem value="SEND_WHATSAPP_MESSAGE">WhatsApp</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" className="rounded-xl" onClick={() => setEditingCampaign(null)}>Cancelar</Button>
+                <Button className="bg-primary text-white rounded-xl" onClick={handleEditSave} disabled={savingEdit}>
+                  {savingEdit ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  Guardar cambios
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {editingCampaign?.platform === "google" && (
+            <div className="space-y-4 mt-2">
+              <div className="grid gap-2">
+                <Label>Nombre</Label>
+                <Input className="rounded-xl" value={editGoogleForm.name} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, name: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>Objetivo</Label>
+                  <Select value={editGoogleForm.objective} onValueChange={(v) => v && setEditGoogleForm({ ...editGoogleForm, objective: v })}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LEAD_GENERATION">Generación de Leads</SelectItem>
+                      <SelectItem value="TRAFFIC">Tráfico</SelectItem>
+                      <SelectItem value="BRAND_AWARENESS">Reconocimiento</SelectItem>
+                      <SelectItem value="CONVERSIONS">Conversiones</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Presupuesto diario (USD)</Label>
+                  <Input className="rounded-xl" type="number" min="1" step="1" value={editGoogleForm.dailyBudget} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, dailyBudget: e.target.value })} />
+                </div>
+              </div>
+              <div className="rounded-xl bg-muted/20 p-3 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Headlines (máx 30 caracteres)</p>
+                <Input className="rounded-xl" placeholder="Headline 1 *" maxLength={30} value={editGoogleForm.headline1} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, headline1: e.target.value })} />
+                <Input className="rounded-xl" placeholder="Headline 2" maxLength={30} value={editGoogleForm.headline2} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, headline2: e.target.value })} />
+                <Input className="rounded-xl" placeholder="Headline 3" maxLength={30} value={editGoogleForm.headline3} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, headline3: e.target.value })} />
+              </div>
+              <div className="rounded-xl bg-muted/20 p-3 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Descripciones (máx 90 caracteres)</p>
+                <Textarea className="rounded-xl resize-none" rows={2} maxLength={90} value={editGoogleForm.description1} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, description1: e.target.value })} />
+                <Textarea className="rounded-xl resize-none" rows={2} maxLength={90} value={editGoogleForm.description2} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, description2: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>URL de Destino (opcional)</Label>
+                <Input className="rounded-xl" value={editGoogleForm.finalUrl} onChange={(e) => setEditGoogleForm({ ...editGoogleForm, finalUrl: e.target.value })} />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" className="rounded-xl" onClick={() => setEditingCampaign(null)}>Cancelar</Button>
+                <Button className="bg-primary text-white rounded-xl" onClick={handleEditSave} disabled={savingEdit}>
+                  {savingEdit ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  Guardar cambios
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Create Campaign Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
