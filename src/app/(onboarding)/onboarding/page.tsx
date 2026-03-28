@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ import {
   User,
   Users,
   Mic,
-  Zap,  Zap,
+  Zap,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -193,12 +193,44 @@ export default function OnboardingPage() {
     }));
   }, []);
 
-  const saveProgress = useCallback(async (step: number, data: Record<string, unknown>) => {
+  // Load saved progress on mount so going back restores state
+  useEffect(() => {
+    fetch("/api/onboarding/progress")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data || data.error) return;
+        if (data.currentStep > 0) setCurrentStep(data.currentStep + 1);
+        if (data.status === "COMPLETED" || data.status === "SKIPPED") {
+          setCompleted(true);
+          return;
+        }
+        if (data.data?.businessName) {
+          setProfile({
+            name: data.data.businessName || "",
+            businessType: data.data.businessType || "",
+            markets: data.data.markets || [],
+            buyerBudget: data.data.buyerBudget || "",
+          });
+        }
+        if (data.data?.whatsappConnected) {
+          setWhatsapp((w) => ({ ...w, connected: true }));
+        }
+        if (data.data?.metaConnected) {
+          setLeadChannel((l) => ({ ...l, connected: true }));
+        }
+        if (data.data?.tiktokConnected) {
+          setTikTok((t) => ({ ...t, connected: true }));
+        }
+      })
+      .catch(() => { /* silently fail */ });
+  }, []);
+
+  const saveProgress = useCallback(async (step: number, data: Record<string, unknown>, isCompleted = true) => {
     try {
       await fetch("/api/onboarding/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step, data }),
+        body: JSON.stringify({ step, data, completed: isCompleted }),
       });
     } catch { /* best-effort */ }
   }, []);
@@ -211,7 +243,7 @@ export default function OnboardingPage() {
       2: { metaConnected: leadChannel.connected, metaAdAccountId: leadChannel.adAccountId, tiktokConnected: tiktok.connected, tiktokAdvertiserId: tiktok.advertiserId },
       3: { pipelineConfigured: true, pipelineStages: crm.useDefaultPipeline === "default" ? PIPELINE_STAGES.map(s => s.name) : null },
     };
-    await saveProgress(apiStep, stepDataMap[apiStep]);
+    await saveProgress(apiStep, stepDataMap[apiStep], true);
     if (currentStep < 4) setCurrentStep((s) => s + 1);
     else setCompleted(true);
   }, [currentStep, profile, whatsapp, leadChannel, crm, saveProgress]);
