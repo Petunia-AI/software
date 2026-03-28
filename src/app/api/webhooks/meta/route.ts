@@ -117,12 +117,6 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
-  const organizationId = process.env.META_ORGANIZATION_ID;
-  if (!organizationId) {
-    console.error("[Meta Webhook] META_ORGANIZATION_ID is not configured");
-    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
-  }
-
   let payload: MetaWebhookPayload;
   try {
     payload = (await request.json()) as MetaWebhookPayload;
@@ -148,7 +142,25 @@ export async function POST(request: NextRequest) {
         // Skip messages from the page itself (echo)
         if (senderId === pageId) continue;
 
-        // Create or update lead
+        // Resolve organization by their connected Meta page ID (multi-tenant)
+        const org = await prisma.organization.findFirst({
+          where: { metaPageId: pageId },
+          select: {
+            id: true,
+            instagramAutoReply: true,
+            messengerAutoReply: true,
+            metaAccessToken: true,
+          },
+        });
+
+        if (!org) {
+          console.warn(`[Meta Webhook] No organization found for pageId: ${pageId}`);
+          continue;
+        }
+
+        const organizationId = org.id;
+
+        // Create lead if new
         const source: LeadSource =
           platform === "instagram" ? LeadSource.INSTAGRAM : LeadSource.FACEBOOK;
 
@@ -173,21 +185,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Auto-reply if enabled for this platform
-        const org = await prisma.organization.findUnique({
-          where: { id: organizationId },
-          select: {
-            instagramAutoReply: true,
-            messengerAutoReply: true,
-            metaAccessToken: true,
-          },
-        });
-
         const autoReplyEnabled =
           platform === "instagram"
-            ? (org?.instagramAutoReply ?? false)
-            : (org?.messengerAutoReply ?? false);
+            ? (org.instagramAutoReply ?? false)
+            : (org.messengerAutoReply ?? false);
 
-        const accessToken = org?.metaAccessToken ?? process.env.META_ACCESS_TOKEN ?? "";
+        const accessToken = org.metaAccessToken ?? process.env.META_ACCESS_TOKEN ?? "";
 
         if (autoReplyEnabled && accessToken) {
           // Fire-and-forget
@@ -208,10 +211,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
-  // ── Lead form submissions (existing logic) ───────────────────────────────
+  // ── Lead form submissions ────────────────────────────────────────────────
   const results: { leadgenId: string; status: string }[] = [];
 
   for (const entry of payload.entry ?? []) {
+    // Resolve organization by their connected Meta page ID (multi-tenant)
+    const pageId = entry.id;
+    const orgForEntry = await prisma.organization.findFirst({
+      where: { metaPageId: pageId },
+      select: { id: true, metaAccessToken: true },
+    });
+
+    // Fallback to env var for backwards compatibility / single-tenant setups
+    const organizationId =
+      orgForEntry?.id ?? process.env.META_ORGANIZATION_ID ?? null;
+
+    if (!organizationId) {
+      console.warn(`[Meta Webhook] No organization found for pageId: ${pageId} — skipping leadgen entry`);
+      continue;
+    }
+
     for (const change of (entry as MetaWebhookEntry).changes ?? []) {
       if (change.field !== "leadgen") continue;
 
