@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 /**
  * GET /api/integrations/meta/credentials
  * Devuelve si la organización tiene credenciales de Meta configuradas (sin exponer el secret).
+ * Si la organización no tiene las suyas, verifica si la plataforma tiene Meta App configurada.
  */
 export async function GET() {
   try {
@@ -16,8 +17,12 @@ export async function GET() {
       select: { metaAppId: true, metaAppSecret: true },
     });
 
+    const orgHasOwn = !!(org?.metaAppId && org?.metaAppSecret);
+    const platformHas = !!(process.env.META_APP_ID && process.env.META_APP_SECRET);
+
     return NextResponse.json({
-      configured: !!(org?.metaAppId && org?.metaAppSecret),
+      configured: orgHasOwn || platformHas,
+      usingPlatformCredentials: platformHas && !orgHasOwn,
       appId: org?.metaAppId || "",
       // Solo mostramos los últimos 4 caracteres del secret
       appSecretHint: org?.metaAppSecret

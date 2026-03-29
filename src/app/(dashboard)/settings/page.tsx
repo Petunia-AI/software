@@ -170,6 +170,7 @@ export default function SettingsPage() {
   const [metaAppId, setMetaAppId] = useState("");
   const [metaAppSecret, setMetaAppSecret] = useState("");
   const [metaCredConfigured, setMetaCredConfigured] = useState(false);
+  const [metaUsingPlatformCreds, setMetaUsingPlatformCreds] = useState(false);
   const [metaSecretHint, setMetaSecretHint] = useState("");
   const [savingMetaCreds, setSavingMetaCreds] = useState(false);
 
@@ -499,6 +500,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setMetaCredConfigured(data.configured);
+        setMetaUsingPlatformCreds(data.usingPlatformCredentials || false);
         setMetaAppId(data.appId || "");
         setMetaSecretHint(data.appSecretHint || "");
       }
@@ -1545,6 +1547,80 @@ export default function SettingsPage() {
                 </>
               ) : (
                 <>
+                  {/* ── If platform has Meta App → skip Step 1, show direct connect ── */}
+                  {metaUsingPlatformCreds ? (
+                    <div className="space-y-4">
+                      <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 flex items-start gap-3">
+                        <span className="text-2xl">🚀</span>
+                        <div>
+                          <p className="text-sm font-semibold text-blue-900">Conexión directa disponible</p>
+                          <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                            Petunia tiene una app de Meta configurada. Solo necesitas autorizar el acceso a tu cuenta de Facebook Business — sin crear apps ni copiar credenciales.
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        className="bg-[#1877F2] text-white rounded-xl hover:bg-[#166FE5] w-full"
+                        onClick={handleMetaConnect}
+                        disabled={metaConnecting}
+                      >
+                        {metaConnecting ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                        )}
+                        Conectar con Facebook
+                      </Button>
+
+                      <details className="group">
+                        <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-1.5">
+                          <Key className="h-3 w-3" />
+                          Usar mi propia app de Meta (avanzado)
+                        </summary>
+                        <div className="mt-3 rounded-xl bg-muted/30 border p-4 space-y-3">
+                          <p className="text-xs text-muted-foreground">
+                            Si prefieres usar tus propias credenciales, crea una app en{" "}
+                            <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-[#1877F2] underline">developers.facebook.com</a>{" "}
+                            (tipo Business) y pega el App ID y App Secret aquí.
+                          </p>
+                          <div className="grid gap-2">
+                            <Input
+                              className="h-9 rounded-xl text-xs font-mono"
+                              placeholder="App ID"
+                              value={metaAppId}
+                              onChange={(e) => setMetaAppId(e.target.value)}
+                            />
+                            <Input
+                              type="password"
+                              className="h-9 rounded-xl text-xs font-mono"
+                              placeholder="App Secret"
+                              value={metaAppSecret}
+                              onChange={(e) => setMetaAppSecret(e.target.value)}
+                            />
+                            <Button size="sm" className="rounded-xl w-fit" onClick={handleSaveMetaCredentials} disabled={savingMetaCreds}>
+                              {savingMetaCreds ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                              Guardar mis credenciales
+                            </Button>
+                          </div>
+                        </div>
+                      </details>
+
+                      <details className="group">
+                        <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-1.5">
+                          <ExternalLink className="h-3 w-3" />
+                          ¿Qué permisos se solicitan?
+                        </summary>
+                        <ul className="mt-2 space-y-1 text-xs text-muted-foreground pl-4 list-disc">
+                          <li><strong>ads_management</strong> — Crear y gestionar campañas</li>
+                          <li><strong>ads_read</strong> — Leer métricas de rendimiento</li>
+                          <li><strong>pages_show_list</strong> — Ver tus páginas de Facebook</li>
+                          <li><strong>leads_retrieval</strong> — Obtener leads de formularios</li>
+                        </ul>
+                      </details>
+                    </div>
+                  ) : (
+                  <>
                   {/* Disconnected state — Step 1: Credentials */}
                   <div className="rounded-xl bg-[#FAF5FA] border border-[#C4A0D4]/40 p-4 space-y-3">
                     <div className="flex items-center gap-2">
@@ -1643,6 +1719,8 @@ export default function SettingsPage() {
                       </Button>
                     </div>
                   </div>
+                  </>
+                  )}
                 </>
               )}
             </CardContent>
