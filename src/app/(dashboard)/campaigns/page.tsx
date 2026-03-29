@@ -1128,6 +1128,312 @@ export default function CampaignsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ── AI Campaign Wizard ─────────────────────────────────────────── */}
+      <Dialog
+        open={showAiWizard}
+        onOpenChange={(open) => {
+          if (!open) { setShowAiWizard(false); setWizardStep(1); setWizardResult(null); }
+        }}
+      >
+        <DialogContent className="max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              {wizardStep === 1 && "¿Cuál es tu objetivo?"}
+              {wizardStep === 2 && "Detalles de la campaña"}
+              {wizardStep === 3 && "Presupuesto diario"}
+              {wizardStep === 4 && "Tu campaña está lista ✨"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Progress pills */}
+          <div className="flex items-center gap-1.5 justify-center py-1">
+            {[1, 2, 3, 4].map((step) => (
+              <div
+                key={step}
+                className={`rounded-full transition-all ${
+                  wizardStep >= step
+                    ? "w-6 h-2 bg-primary"
+                    : "w-2 h-2 bg-muted-foreground/25"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* ── Step 1: Goal ── */}
+          {wizardStep === 1 && (
+            <div className="space-y-3 mt-1">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: "captar compradores", icon: "🏠", label: "Captar compradores", desc: "Personas buscando comprar" },
+                  { id: "captar vendedores",  icon: "💰", label: "Captar vendedores",  desc: "Propietarios que quieren vender" },
+                  { id: "generar tráfico",    icon: "🔗", label: "Generar tráfico",    desc: "Visitas a tu sitio web" },
+                  { id: "reconocimiento de marca", icon: "⭐", label: "Brand awareness", desc: "Dar a conocer tu marca" },
+                ].map((goal) => (
+                  <button
+                    key={goal.id}
+                    onClick={() => { setWizardGoal(goal.id); setWizardStep(2); }}
+                    className={`flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all hover:border-primary/50 hover:bg-primary/5 cursor-pointer ${
+                      wizardGoal === goal.id ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <span className="text-2xl mb-2">{goal.icon}</span>
+                    <span className="font-semibold text-sm">{goal.label}</span>
+                    <span className="text-xs text-muted-foreground mt-1">{goal.desc}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="text-center pt-1">
+                <button
+                  onClick={() => { setShowAiWizard(false); setShowCreate(true); }}
+                  className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                >
+                  Prefiero crear la campaña manualmente →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Details ── */}
+          {wizardStep === 2 && (
+            <div className="space-y-4 mt-2">
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-1.5 text-sm">
+                  <MapPin className="h-3.5 w-3.5" /> Ubicación *
+                </Label>
+                <Input
+                  className="rounded-xl"
+                  placeholder="Ej: Miami, Florida"
+                  value={wizardLocation}
+                  onChange={(e) => setWizardLocation(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-sm">Tipo de propiedad</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["Casas", "Condos", "Terrenos", "Comercial", "Lujo", "Multifamiliar"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setWizardPropertyType(wizardPropertyType === type ? "" : type)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
+                        wizardPropertyType === type
+                          ? "bg-primary text-white border-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-sm">Rango de precio <span className="text-muted-foreground">(opcional)</span></Label>
+                <Input
+                  className="rounded-xl"
+                  placeholder="Ej: $300,000 – $600,000"
+                  value={wizardPriceRange}
+                  onChange={(e) => setWizardPriceRange(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-between pt-2">
+                <Button variant="outline" className="rounded-xl" onClick={() => setWizardStep(1)}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Atrás
+                </Button>
+                <Button
+                  className="bg-primary text-white rounded-xl"
+                  onClick={() => setWizardStep(3)}
+                  disabled={!wizardLocation.trim()}
+                >
+                  Continuar <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Budget ── */}
+          {wizardStep === 3 && (
+            <div className="space-y-4 mt-2">
+              <p className="text-sm text-muted-foreground">Selecciona tu presupuesto diario en USD</p>
+              <div className="grid grid-cols-4 gap-2">
+                {["10", "20", "50", "100"].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => { setWizardBudget(amount); setWizardCustomBudget(""); }}
+                    className={`flex flex-col items-center justify-center py-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      wizardBudget === amount && wizardCustomBudget === ""
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <span className="font-bold text-base">${amount}</span>
+                    <span className="text-[10px] text-muted-foreground">/día</span>
+                  </button>
+                ))}
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">O ingresa un monto personalizado</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">$</span>
+                  <Input
+                    className="rounded-xl pl-7"
+                    type="number"
+                    min="5"
+                    placeholder="Monto personalizado"
+                    value={wizardCustomBudget}
+                    onChange={(e) => {
+                      setWizardCustomBudget(e.target.value);
+                      if (e.target.value) setWizardBudget("custom");
+                      else setWizardBudget("20");
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between pt-2">
+                <Button variant="outline" className="rounded-xl" onClick={() => setWizardStep(2)}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Atrás
+                </Button>
+                <Button
+                  className="bg-primary text-white rounded-xl"
+                  onClick={handleAiGenerate}
+                  disabled={wizardGenerating || (!wizardBudget || (wizardBudget === "custom" && !wizardCustomBudget))}
+                >
+                  {wizardGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generar con IA
+                    </>
+                  )}
+                </Button>
+              </div>
+              {wizardGenerating && (
+                <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-center animate-pulse">
+                  <p className="text-xs text-primary font-medium">✨ Petunia está diseñando tu campaña perfecta...</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 4: AI Preview ── */}
+          {wizardStep === 4 && wizardResult && (
+            <div className="space-y-4 mt-2">
+
+              {/* Ad copy preview */}
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Vista previa del anuncio</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium ml-auto">📱 Meta Ads</span>
+                </div>
+                <div className="p-4 space-y-2">
+                  <p className="font-bold text-sm leading-snug">{wizardResult.headline}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{wizardResult.primaryText}</p>
+                  {wizardResult.description && (
+                    <p className="text-xs text-muted-foreground">{wizardResult.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 flex-wrap mt-2">
+                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                      {wizardResult.callToAction}
+                    </span>
+                    {(wizardResult.targetPlatforms as string[]).map((p: string) => (
+                      <span key={p} className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground capitalize">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Estimates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-green-50 border border-green-100 p-3 text-center">
+                  <TrendingUp className="h-4 w-4 text-green-600 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-green-700">{wizardResult.estimatedLeadsPerDay}</p>
+                  <p className="text-[10px] text-green-600">leads/día estimados</p>
+                </div>
+                <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-center">
+                  <DollarSign className="h-4 w-4 text-blue-600 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-blue-700">{wizardResult.estimatedCostPerLead}</p>
+                  <p className="text-[10px] text-blue-600">costo por lead est.</p>
+                </div>
+              </div>
+
+              {/* Targeting summary */}
+              <div className="rounded-xl bg-muted/30 p-3 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Segmentación automática</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-xs bg-background px-2 py-0.5 rounded-full border">
+                    👥 {wizardResult.targetAgeMin}–{wizardResult.targetAgeMax} años
+                  </span>
+                  {(wizardResult.targetLocations as string[]).map((loc: string) => (
+                    <span key={loc} className="text-xs bg-background px-2 py-0.5 rounded-full border">
+                      📍 {loc}
+                    </span>
+                  ))}
+                  {(wizardResult.targetInterests as string[]).slice(0, 3).map((interest: string) => (
+                    <span key={interest} className="text-xs bg-background px-2 py-0.5 rounded-full border">
+                      🎯 {interest}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rationale */}
+              <div className="rounded-xl bg-primary/5 border border-primary/20 p-3">
+                <p className="text-[10px] font-semibold text-primary uppercase tracking-widest mb-1.5">¿Por qué va a funcionar?</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{wizardResult.rationale}</p>
+              </div>
+
+              {/* Campaign name + budget */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground px-0.5">
+                <span className="font-medium truncate mr-2">{wizardResult.campaignName}</span>
+                <span className="shrink-0">${wizardResult.dailyBudget}/día</span>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  className="rounded-xl text-xs px-3"
+                  onClick={() => setWizardStep(3)}
+                  disabled={!!wizardLaunching}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                  Cambiar
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl text-xs"
+                  onClick={() => handleAiLaunch(false)}
+                  disabled={!!wizardLaunching}
+                >
+                  {wizardLaunching === "draft" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                  ) : null}
+                  Guardar borrador
+                </Button>
+                {metaStatus?.connected && (
+                  <Button
+                    className="flex-1 bg-primary text-white rounded-xl text-xs"
+                    onClick={() => handleAiLaunch(true)}
+                    disabled={!!wizardLaunching}
+                  >
+                    {wizardLaunching === "publish" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                    ) : (
+                      <Zap className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Lanzar ahora
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
