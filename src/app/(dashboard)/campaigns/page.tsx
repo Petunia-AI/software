@@ -22,6 +22,12 @@ import {
   Search,
   Pencil,
   ShieldCheck,
+  Brain,
+  MapPin,
+  TrendingUp,
+  Zap,
+  ArrowRight,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -167,6 +173,20 @@ export default function CampaignsPage() {
     description2: "",
     finalUrl: "",
   });
+
+  // ─── AI Wizard state ─────────────────────────────────────────────────
+  const [showAiWizard, setShowAiWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardGoal, setWizardGoal] = useState("");
+  const [wizardLocation, setWizardLocation] = useState("");
+  const [wizardPropertyType, setWizardPropertyType] = useState("");
+  const [wizardPriceRange, setWizardPriceRange] = useState("");
+  const [wizardBudget, setWizardBudget] = useState("20");
+  const [wizardCustomBudget, setWizardCustomBudget] = useState("");
+  const [wizardGenerating, setWizardGenerating] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [wizardResult, setWizardResult] = useState<Record<string, any> | null>(null);
+  const [wizardLaunching, setWizardLaunching] = useState<"draft" | "publish" | null>(null);
 
   const fetchCampaigns = useCallback(async () => {
     try {
@@ -422,6 +442,87 @@ export default function CampaignsPage() {
       toast.error("Error de conexión");
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  // ─── AI Wizard handlers ──────────────────────────────────────────────
+
+  const handleAiGenerate = async () => {
+    const effectiveBudget = wizardBudget === "custom" ? wizardCustomBudget : wizardBudget;
+    setWizardGenerating(true);
+    try {
+      const res = await fetch("/api/ai/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal: wizardGoal,
+          location: wizardLocation,
+          budget: effectiveBudget,
+          propertyType: wizardPropertyType || undefined,
+          priceRange: wizardPriceRange || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error generando campaña");
+      setWizardResult(data.campaign);
+      setWizardStep(4);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Error generando campaña");
+    } finally {
+      setWizardGenerating(false);
+    }
+  };
+
+  const handleAiLaunch = async (publishNow: boolean) => {
+    if (!wizardResult) return;
+    setWizardLaunching(publishNow ? "publish" : "draft");
+    try {
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: wizardResult.campaignName,
+          objective: wizardResult.objective,
+          dailyBudget: wizardResult.dailyBudget,
+          headline: wizardResult.headline,
+          primaryText: wizardResult.primaryText,
+          description: wizardResult.description,
+          callToAction: wizardResult.callToAction,
+          targetAgeMin: wizardResult.targetAgeMin,
+          targetAgeMax: wizardResult.targetAgeMax,
+          targetGenders: wizardResult.targetGenders,
+          targetLocations: wizardResult.targetLocations,
+          targetInterests: wizardResult.targetInterests,
+          targetPlatforms: wizardResult.targetPlatforms,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error creando campaña");
+
+      const campaignId = data.campaign?.id;
+      if (publishNow && campaignId) {
+        const pubRes = await fetch(`/api/campaigns/${campaignId}/publish`, { method: "POST" });
+        const pubData = await pubRes.json();
+        if (!pubRes.ok) throw new Error(pubData.error || "Error publicando campaña");
+        toast.success("¡Campaña lanzada en Meta Ads! 🚀");
+      } else {
+        toast.success("Borrador guardado ✓");
+      }
+
+      setShowAiWizard(false);
+      setWizardStep(1);
+      setWizardResult(null);
+      setWizardGoal("");
+      setWizardLocation("");
+      setWizardPropertyType("");
+      setWizardPriceRange("");
+      setWizardBudget("20");
+      setWizardCustomBudget("");
+      fetchCampaigns();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Error");
+    } finally {
+      setWizardLaunching(null);
     }
   };
 

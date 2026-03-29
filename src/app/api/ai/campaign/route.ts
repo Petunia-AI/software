@@ -111,7 +111,8 @@ Reglas:
       userId: user.id,
       type: "CAMPAIGN_CREATION",
       creditsUsed: 2,
-      metadata: { goal, location, budget, propertyType, priceRange },
+      provider: aiConfig.provider,
+      model: aiConfig.model,
     });
 
     return NextResponse.json({ campaign });
