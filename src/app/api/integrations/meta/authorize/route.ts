@@ -21,14 +21,24 @@ export async function GET() {
       return NextResponse.json({ error: "Sin organización" }, { status: 400 });
     }
 
-    // Leer credenciales de la BD (prioridad) o env vars (fallback)
+    // Leer credenciales: org propia → plataforma BD → env vars
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { metaAppId: true, metaAppSecret: true },
     });
 
-    const appId = org?.metaAppId || process.env.META_APP_ID;
-    const appSecret = org?.metaAppSecret || process.env.META_APP_SECRET;
+    let appId = org?.metaAppId;
+    let appSecret = org?.metaAppSecret;
+
+    if (!appId || !appSecret) {
+      // Fallback: credenciales de plataforma en la BD
+      const platformConfig = await prisma.platformAIConfig.findFirst({
+        where: { isActive: true },
+        select: { metaAppId: true, metaAppSecret: true },
+      });
+      appId = appId || platformConfig?.metaAppId || process.env.META_APP_ID;
+      appSecret = appSecret || platformConfig?.metaAppSecret || process.env.META_APP_SECRET;
+    }
 
     if (!appId || !appSecret) {
       return NextResponse.json(

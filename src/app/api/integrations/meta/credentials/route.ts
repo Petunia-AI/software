@@ -18,7 +18,16 @@ export async function GET() {
     });
 
     const orgHasOwn = !!(org?.metaAppId && org?.metaAppSecret);
-    const platformHas = !!(process.env.META_APP_ID && process.env.META_APP_SECRET);
+
+    // Fallback: plataforma BD → env vars
+    const platformConfig = await prisma.platformAIConfig.findFirst({
+      where: { isActive: true },
+      select: { metaAppId: true, metaAppSecret: true },
+    });
+    const platformHas = !!(
+      (platformConfig?.metaAppId && platformConfig?.metaAppSecret) ||
+      (process.env.META_APP_ID && process.env.META_APP_SECRET)
+    );
 
     return NextResponse.json({
       configured: orgHasOwn || platformHas,

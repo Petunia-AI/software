@@ -589,6 +589,9 @@ model PlatformAIConfig {
   // Third-party API keys (centralized)
   heygenApiKey  String?    @map("heygen_api_key") @db.Text
   falApiKey     String?    @map("fal_api_key") @db.Text
+  // Meta platform-level credentials (shared across all orgs)
+  metaAppId     String?    @map("meta_app_id") @db.Text
+  metaAppSecret String?    @map("meta_app_secret") @db.Text
   isActive      Boolean    @default(true) @map("is_active")
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
