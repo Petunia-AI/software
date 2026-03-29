@@ -43,14 +43,26 @@ export async function GET(req: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const redirectUri = `${baseUrl}/api/integrations/meta/callback`;
 
-    // Leer credenciales de la BD (prioridad) o env vars (fallback)
+    // Leer credenciales: org propia → plataforma BD → env vars
     const org = await prisma.organization.findUnique({
       where: { id: state.organizationId },
       select: { metaAppId: true, metaAppSecret: true },
     });
 
-    const credentials = (org?.metaAppId && org?.metaAppSecret)
-      ? { appId: org.metaAppId, appSecret: org.metaAppSecret }
+    let credAppId = org?.metaAppId;
+    let credAppSecret = org?.metaAppSecret;
+
+    if (!credAppId || !credAppSecret) {
+      const platformConfig = await prisma.platformAIConfig.findFirst({
+        where: { isActive: true },
+        select: { metaAppId: true, metaAppSecret: true },
+      });
+      credAppId = credAppId || platformConfig?.metaAppId || process.env.META_APP_ID;
+      credAppSecret = credAppSecret || platformConfig?.metaAppSecret || process.env.META_APP_SECRET;
+    }
+
+    const credentials = (credAppId && credAppSecret)
+      ? { appId: credAppId, appSecret: credAppSecret }
       : undefined;
 
     // 1. Exchange code for short-lived token
