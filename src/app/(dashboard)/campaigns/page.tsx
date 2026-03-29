@@ -579,9 +579,9 @@ export default function CampaignsPage() {
           </Button>
           <Button
             className="bg-primary text-white rounded-xl hover:bg-foreground/90"
-            onClick={() => setShowCreate(true)}
+            onClick={() => { setWizardStep(1); setWizardResult(null); setShowAiWizard(true); }}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Sparkles className="h-4 w-4 mr-1" />
             Nueva Campaña
           </Button>
         </div>
