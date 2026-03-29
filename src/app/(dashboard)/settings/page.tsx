@@ -1679,7 +1679,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Step 2: Connect */}
-                  <div className={`space-y-3 ${!metaCredConfigured ? "opacity-50 pointer-events-none" : ""}`}>
+                  <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <ExternalLink className="h-4 w-4 text-[#4A154B]" />
                       <p className="text-xs font-semibold text-[#4A154B]">
@@ -1708,7 +1708,7 @@ export default function SettingsPage() {
                       <Button
                         className="bg-[#1877F2] text-white rounded-xl hover:bg-[#166FE5]"
                         onClick={handleMetaConnect}
-                        disabled={metaConnecting || !metaCredConfigured}
+                        disabled={metaConnecting}
                       >
                         {metaConnecting ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1719,7 +1719,7 @@ export default function SettingsPage() {
                       </Button>
                     </div>
                   </div>
-                  </>
+                  </>  
                   )}
                 </>
               )}
