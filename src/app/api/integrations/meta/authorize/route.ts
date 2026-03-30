@@ -47,7 +47,7 @@ export async function GET() {
       );
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "");
     const redirectUri = `${baseUrl}/api/integrations/meta/callback`;
     const state = Buffer.from(
       JSON.stringify({ organizationId, userId: (session.user as any).id }),
@@ -55,7 +55,7 @@ export async function GET() {
 
     const url = buildMetaOAuthUrl(redirectUri, state, appId);
 
-    return NextResponse.json({ url });
+    return NextResponse.json({ url, redirectUri });
   } catch (error) {
     console.error("[meta/authorize]", error);
     return NextResponse.json(

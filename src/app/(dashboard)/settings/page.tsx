@@ -466,7 +466,9 @@ export default function SettingsPage() {
         toast.error(data.error || "Error al conectar Meta");
         return;
       }
-      window.location.href = data.url;
+      // DEBUG TEMPORAL — muestra el redirect_uri exacto que se envía a Facebook
+      toast.info(`redirect_uri: ${data.redirectUri}`, { duration: 10000 });
+      setTimeout(() => { window.location.href = data.url; }, 3000);
     } catch {
       toast.error("Error al iniciar conexión con Meta");
     } finally {
