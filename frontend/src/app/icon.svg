@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" fill="none">
+  <!-- Sparkle crown at top -->
+  <g opacity="0.85">
+    <circle cx="60" cy="5" r="1.8" fill="#fff"/>
+    <line x1="60" y1="0" x2="60" y2="10" stroke="url(#sparkle)" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="55" y1="5" x2="65" y2="5" stroke="url(#sparkle)" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="56" y1="1" x2="64" y2="9" stroke="url(#sparkle)" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="64" y1="1" x2="56" y2="9" stroke="url(#sparkle)" stroke-width="0.6" stroke-linecap="round"/>
+    <!-- Side sparkles -->
+    <circle cx="42" cy="14" r="1" fill="#e9d5ff" opacity="0.7"/>
+    <circle cx="78" cy="14" r="1" fill="#e9d5ff" opacity="0.7"/>
+  </g>
+
+  <!-- Left outer tentacle - elegant upward spiral -->
+  <path d="M38 68 C34 58, 26 48, 20 38 C14 28, 10 18, 14 12 C18 6, 26 6, 30 12 C34 18, 30 24, 26 22 C22 20, 24 16, 28 16"
+        stroke="url(#tentUp)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Left mid tentacle - graceful curl -->
+  <path d="M44 66 C42 56, 36 46, 32 36 C28 26, 30 18, 34 16 C38 14, 40 18, 38 22 C36 26, 34 24, 34 20"
+        stroke="url(#tentUp)" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Left inner tentacle -->
+  <path d="M50 64 C48 54, 44 44, 42 34 C40 24, 42 16, 46 14 C50 12, 52 16, 50 20"
+        stroke="url(#tentUp)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+
+  <!-- Center crown tentacle -->
+  <path d="M60 62 L60 14" stroke="url(#tentUp)" stroke-width="2.8" stroke-linecap="round"/>
+
+  <!-- Right inner tentacle -->
+  <path d="M70 64 C72 54, 76 44, 78 34 C80 24, 78 16, 74 14 C70 12, 68 16, 70 20"
+        stroke="url(#tentUp)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+
+  <!-- Right mid tentacle - graceful curl -->
+  <path d="M76 66 C78 56, 84 46, 88 36 C92 26, 90 18, 86 16 C82 14, 80 18, 82 22 C84 26, 86 24, 86 20"
+        stroke="url(#tentUp)" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Right outer tentacle - elegant upward spiral -->
+  <path d="M82 68 C86 58, 94 48, 100 38 C106 28, 110 18, 106 12 C102 6, 94 6, 90 12 C86 18, 90 24, 94 22 C98 20, 96 16, 92 16"
+        stroke="url(#tentUp)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Main bell / body - round and soft -->
+  <ellipse cx="60" cy="82" rx="34" ry="22"
+           fill="url(#bodyGrad)" stroke="url(#bodyStroke)" stroke-width="1.5"/>
+
+  <!-- Inner bell glow - feminine softness -->
+  <ellipse cx="60" cy="80" rx="26" ry="16"
+           fill="url(#innerGlow)" opacity="0.45"/>
+
+  <!-- Eyes - cute feminine style -->
+  <ellipse cx="50" cy="80" rx="3" ry="3.5" fill="#4c1d95" opacity="0.8"/>
+  <ellipse cx="70" cy="80" rx="3" ry="3.5" fill="#4c1d95" opacity="0.8"/>
+  <!-- Eye shine -->
+  <circle cx="51.2" cy="78.8" r="1.2" fill="#fff" opacity="0.9"/>
+  <circle cx="71.2" cy="78.8" r="1.2" fill="#fff" opacity="0.9"/>
+
+  <!-- Subtle smile -->
+  <path d="M54 87 C56 90, 64 90, 66 87" stroke="#6d28d9" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+
+  <!-- Blush marks - cute touch -->
+  <ellipse cx="44" cy="85" rx="3.5" ry="2" fill="#f9a8d4" opacity="0.35"/>
+  <ellipse cx="76" cy="85" rx="3.5" ry="2" fill="#f9a8d4" opacity="0.35"/>
+
+  <!-- Bottom ruffled edge - like a skirt -->
+  <path d="M26 94 C30 100, 36 98, 40 102 C44 106, 48 104, 52 108 C56 112, 60 110, 64 108 C68 104, 72 106, 76 102 C80 98, 86 100, 90 96 C94 92, 94 94, 94 94"
+        stroke="url(#ruffleGrad)" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Tiny flowing trails at bottom -->
+  <path d="M40 104 C38 110, 36 116, 38 120" stroke="url(#trailGrad)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M52 110 C50 116, 52 122, 54 126" stroke="url(#trailGrad)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+  <path d="M68 110 C70 116, 68 122, 66 126" stroke="url(#trailGrad)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+  <path d="M80 104 C82 110, 84 116, 82 120" stroke="url(#trailGrad)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M60 112 C60 118, 60 124, 60 130" stroke="url(#trailGrad)" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.3"/>
+
+  <defs>
+    <linearGradient id="sparkle" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e9d5ff"/>
+    </linearGradient>
+
+    <linearGradient id="tentUp" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="40%" stop-color="#a78bfa"/>
+      <stop offset="80%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#e9d5ff"/>
+    </linearGradient>
+
+    <linearGradient id="bodyGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ddd6fe"/>
+      <stop offset="30%" stop-color="#c4b5fd"/>
+      <stop offset="70%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+
+    <linearGradient id="bodyStroke" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ede9fe"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+
+    <linearGradient id="innerGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#f5f3ff"/>
+      <stop offset="100%" stop-color="#c4b5fd"/>
+    </linearGradient>
+
+    <linearGradient id="ruffleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+
+    <linearGradient id="trailGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+</svg>

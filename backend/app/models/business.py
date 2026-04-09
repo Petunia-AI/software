@@ -1,0 +1,64 @@
+from sqlalchemy import String, Text, JSON, DateTime, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
+from app.database import Base
+import uuid
+
+
+class Business(Base):
+    __tablename__ = "businesses"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    industry: Mapped[str] = mapped_column(String(100), nullable=True)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    website: Mapped[str] = mapped_column(String(500), nullable=True)
+    logo_url: Mapped[str] = mapped_column(String(500), nullable=True)
+
+    # Configuración del negocio para el agente
+    product_description: Mapped[str] = mapped_column(Text, nullable=True)
+    pricing_info: Mapped[str] = mapped_column(Text, nullable=True)
+    target_customer: Mapped[str] = mapped_column(Text, nullable=True)
+    value_proposition: Mapped[str] = mapped_column(Text, nullable=True)
+    objection_handling: Mapped[dict] = mapped_column(JSON, default=dict)
+    faqs: Mapped[dict] = mapped_column(JSON, default=dict)
+
+    # Canales habilitados
+    whatsapp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    instagram_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    webchat_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # WhatsApp config
+    whatsapp_phone: Mapped[str] = mapped_column(String(20), nullable=True)
+    whatsapp_token: Mapped[str] = mapped_column(String(500), nullable=True)
+
+    # Instagram config
+    instagram_account_id:  Mapped[str] = mapped_column(String(100), nullable=True)
+    instagram_page_id:     Mapped[str] = mapped_column(String(100), nullable=True)
+
+    # Meta WhatsApp Business Cloud API
+    meta_phone_number_id: Mapped[str] = mapped_column(String(100), nullable=True)
+    meta_wa_token:        Mapped[str] = mapped_column(String(1000), nullable=True)
+
+    # Meta Instagram DMs + Facebook Messenger (shared Page Access Token)
+    meta_page_token: Mapped[str] = mapped_column(String(1000), nullable=True)
+    messenger_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    @property
+    def meta_wa_token_set(self) -> bool:
+        return bool(self.meta_wa_token)
+
+    @property
+    def meta_page_token_set(self) -> bool:
+        return bool(self.meta_page_token)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    # Relationships
+    users: Mapped[list["User"]] = relationship("User", back_populates="business")
+    leads: Mapped[list["Lead"]] = relationship("Lead", back_populates="business")
+    conversations: Mapped[list["Conversation"]] = relationship("Conversation", back_populates="business")
+    agent_configs: Mapped[list["AgentConfig"]] = relationship("AgentConfig", back_populates="business")
+    subscription: Mapped["Subscription"] = relationship("Subscription", back_populates="business", uselist=False)  # type: ignore

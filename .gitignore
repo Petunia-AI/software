@@ -1,0 +1,35 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/.env
+*.egg-info/
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/.env*.local
+
+# Secrets / env
+.env
+*.env
+!.env.example
+!backend/.env.example
+
+# OS
+.DS_Store
+*.DS_Store
+
+# Logs
+*.log
+/tmp/
+
+# Docker volumes
+postgres_data/
+
+# Runtime
+.pids/
+.claude/
