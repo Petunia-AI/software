@@ -18,8 +18,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Agrega nuevo valor al enum Channel (PostgreSQL lo permite con IF NOT EXISTS)
-    op.execute("ALTER TYPE channel ADD VALUE IF NOT EXISTS 'messenger'")
+    # Agregar 'messenger' al enum channel SI existe como tipo PostgreSQL.
+    # (En instalaciones frescas la columna puede ser String(50), en ese caso no hacer nada)
+    op.execute("""
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'channel') THEN
+        ALTER TYPE channel ADD VALUE IF NOT EXISTS 'messenger';
+    END IF;
+END $$;
+""")
 
     op.add_column(
         "businesses",
