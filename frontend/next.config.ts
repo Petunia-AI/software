@@ -47,12 +47,18 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",          // necesario para Docker multi-stage
+  output: "standalone",
   experimental: {
     typedRoutes: false,
   },
   images: {
-    domains: ["localhost"],
+    remotePatterns: [
+      { protocol: "http",  hostname: "localhost" },
+      { protocol: "https", hostname: "**.fal.media" },
+      { protocol: "https", hostname: "v3b.fal.media" },
+      { protocol: "https", hostname: "**.railway.app" },
+      { protocol: "https", hostname: "**.up.railway.app" },
+    ],
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
