@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { conversationsApi } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
@@ -27,11 +28,8 @@ function TypingIndicator() {
   );
 }
 
-export default function ConversationDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ConversationDetailPage() {
+  const params = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [input, setInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
