@@ -12,6 +12,11 @@ CMD ["npm", "run", "dev"]
 # ── Builder (para producción) ────────────────────────────────────────────────
 FROM base AS builder
 COPY . .
+# Variables públicas de Next.js deben estar disponibles durante el build
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 RUN npm run build
 
 # ── Production ──────────────────────────────────────────────────────────────
