@@ -23,5 +23,4 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 FROM base AS production
 ENV APP_ENV=production
 ENV DEBUG=false
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
-     "--workers", "4", "--loop", "uvloop", "--access-log"]
+CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --loop uvloop --access-log"
