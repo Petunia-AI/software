@@ -94,6 +94,29 @@ export const businessApi = {
     }),
 };
 
+// ============ META OAUTH ============
+export const metaApi = {
+  /** Obtiene la URL de Meta OAuth a la que redirigir al usuario */
+  getConnectUrl: () => api.get<{ url: string; redirect_uri: string }>("/meta/connect"),
+  /** Estado de conexión + páginas + números WA */
+  getStatus: () => api.get("/meta/status"),
+  /** Selecciona qué página usar para Messenger + Instagram */
+  selectPage: (page_id: string) =>
+    api.post("/meta/select-page", null, { params: { page_id } }),
+  /** Selecciona qué número de WA usar */
+  selectWhatsApp: (phone_number_id: string) =>
+    api.post("/meta/select-whatsapp", null, { params: { phone_number_id } }),
+  /** Desconecta la cuenta de Meta */
+  disconnect: () => api.post("/meta/disconnect"),
+  /** Renueva el long-lived token antes de expirar */
+  refreshToken: () => api.post("/meta/refresh-token"),
+  /** Prueba un canal: 'wa' | 'instagram' | 'messenger' */
+  testChannel: (channel: "wa" | "instagram" | "messenger") =>
+    api.post<{ ok: boolean; message: string }>(`/meta/test/${channel}`),
+  /** Re-suscribe webhooks de páginas */
+  resubscribeWebhooks: () => api.post("/meta/resubscribe-webhooks"),
+};
+
 // ============ PROPERTIES ============
 export const propertiesApi = {
   list: (params?: { status?: string; property_type?: string; operation?: string }) =>

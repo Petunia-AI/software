@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { businessApi } from "@/lib/api";
+import { useSearchParams, useRouter } from "next/navigation";
+import { businessApi, metaApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
+import { MetaConnect } from "@/components/meta-connect";
 import toast from "react-hot-toast";
-import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, Instagram, ExternalLink, AlertCircle, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Link2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "http://localhost:3000";
@@ -80,20 +82,61 @@ function Toggle({ label, desc, checked, onChange }: {
 }
 
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 max-w-3xl mx-auto space-y-4">{Array.from({length:3}).map((_,i)=><div key={i} className="card-stripe h-48 shimmer" />)}</div>}>
+      <SettingsContent />
+    </Suspense>
+  );
+}
+
+function SettingsContent() {
   const qc = useQueryClient();
   const { user } = useAuthStore();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Manejar redirección de vuelta desde Meta OAuth
+  useEffect(() => {
+    const metaParam = searchParams.get("meta");
+    if (!metaParam) return;
+    if (metaParam === "connected") {
+      const pages = searchParams.get("pages") || "0";
+      const waPhones = searchParams.get("wa_phones") || "0";
+      toast.success(
+        `✅ Meta conectado. ${pages} página(s) encontrada(s)${
+          parseInt(waPhones) > 0 ? ` y ${waPhones} número(s) de WhatsApp` : ""
+        }.`,
+        { duration: 5000 }
+      );
+      qc.invalidateQueries({ queryKey: ["meta-status"] });
+      qc.invalidateQueries({ queryKey: ["business"] });
+    } else if (metaParam === "error") {
+      const reason = searchParams.get("reason") || "desconocido";
+      if (reason !== "cancelled") {
+        toast.error(`Error al conectar con Meta: ${reason}`);
+      }
+    }
+    // Limpiar query params de la URL
+    router.replace("/settings", { scroll: false });
+  }, [searchParams, router, qc]);
 
   const { data: business, isLoading } = useQuery({
     queryKey: ["business"],
     queryFn: () => businessApi.get().then((r) => r.data),
   });
 
-  const [igSaved, setIgSaved] = useState(false);
+  const { data: metaStatus, refetch: refetchMeta } = useQuery({
+    queryKey: ["meta-status"],
+    queryFn: () => metaApi.getStatus().then((r) => r.data),
+    staleTime: 30_000,
+  });
+
+  const [igSaved, setIgSaved] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [testingWa, setTestingWa] = useState(false);
   const [showMetaToken, setShowMetaToken] = useState(false);
-  const [showPageToken, setShowPageToken] = useState(false);
+  const [showPageToken, setShowPageToken] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   const [form, setForm] = useState({
     name: "", industry: "", description: "",
@@ -237,31 +280,39 @@ export default function SettingsPage() {
           </div>
         </Section>
 
-        {/* WhatsApp config */}
+        {/* Meta Connect — reemplaza config manual de Instagram + Messenger */}
+        {(form.instagram_enabled || form.messenger_enabled || form.whatsapp_enabled) && (
+          <Section icon={Link2} title="Conectar con Meta"
+            subtitle="WhatsApp Business · Instagram DMs · Facebook Messenger" delay={0.18}>
+            <MetaConnect
+              status={metaStatus}
+              onUpdate={() => {
+                refetchMeta();
+                qc.invalidateQueries({ queryKey: ["business"] });
+              }}
+            />
+          </Section>
+        )}
+
+        {/* WhatsApp extra config — solo se muestra si WA está habilitado */}
         {form.whatsapp_enabled && (
           <Section icon={Smartphone} title="Configuración de WhatsApp Business"
-            subtitle="Meta WhatsApp Business Cloud API" delay={0.2}>
+            subtitle="Phone Number ID y token (si no se auto-configuró vía Meta)" delay={0.2}>
             <div className="space-y-5">
 
-              {/* Step 1 — Phone Number */}
+              {/* Phone */}
               <div className="flex items-start gap-3">
                 <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground mb-1.5">Tu número de WhatsApp Business</p>
-                  <input
-                    type="text"
-                    value={form.whatsapp_phone}
+                  <input type="text" value={form.whatsapp_phone}
                     onChange={(e) => setForm((p) => ({ ...p, whatsapp_phone: e.target.value }))}
-                    placeholder="+521234567890"
-                    className="input-stripe font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    El número real con código de país. Es el número al que llegarán los mensajes de prueba.
-                  </p>
+                    placeholder="+521234567890" className="input-stripe font-mono" />
+                  <p className="text-xs text-muted-foreground mt-1">El número real con código de país.</p>
                 </div>
               </div>
 
-              {/* Step 2 — Phone Number ID */}
+              {/* Phone Number ID */}
               <div className="flex items-start gap-3">
                 <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
                 <div className="flex-1">
@@ -272,314 +323,67 @@ export default function SettingsPage() {
                       Meta Business Manager <ExternalLink size={10} />
                     </a>
                   </p>
-                  <input
-                    type="text"
-                    value={form.meta_phone_number_id}
+                  <input type="text" value={form.meta_phone_number_id}
                     onChange={(e) => setForm((p) => ({ ...p, meta_phone_number_id: e.target.value }))}
-                    placeholder="123456789012345"
-                    className="input-stripe font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    En Meta Business Manager → WhatsApp → Números de teléfono → columna <strong>ID del número</strong>.
-                  </p>
+                    placeholder="123456789012345" className="input-stripe font-mono" />
+                  <p className="text-xs text-muted-foreground mt-1">Solo necesario si configuraste WA manualmente (sin OAuth).</p>
                 </div>
               </div>
 
-              {/* Step 3 — Access Token */}
+              {/* WA Token */}
               <div className="flex items-start gap-3">
                 <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">Access Token permanente</p>
+                  <p className="text-sm font-medium text-foreground mb-1.5">Access Token</p>
                   {business?.meta_wa_token_set && !form.meta_wa_token && (
                     <div className="flex items-center gap-1.5 mb-2 text-xs text-green-600">
-                      <CheckCircle2 size={12} /> Token configurado — ingresa uno nuevo para actualizar
+                      <CheckCircle2 size={12} /> Token configurado
                     </div>
                   )}
                   <div className="relative">
-                    <input
-                      type={showMetaToken ? "text" : "password"}
-                      value={form.meta_wa_token}
+                    <input type={showMetaToken ? "text" : "password"} value={form.meta_wa_token}
                       onChange={(e) => setForm((p) => ({ ...p, meta_wa_token: e.target.value }))}
                       placeholder={business?.meta_wa_token_set ? "••••••••••••••••" : "EAAxxxxxxxxxxxxxxxx..."}
-                      className="input-stripe font-mono pr-10"
-                    />
+                      className="input-stripe font-mono pr-10" />
                     <button type="button" onClick={() => setShowMetaToken(!showMetaToken)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       {showMetaToken ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    En Meta Business Manager → Configuración → Usuarios del sistema → Genera un token permanente con permisos <code className="bg-muted px-1 rounded text-[10px]">whatsapp_business_messaging</code>.
-                  </p>
                 </div>
               </div>
 
-              {/* Step 4 — Webhook URL */}
+              {/* Webhook URL */}
               <div className="flex items-start gap-3">
                 <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground mb-1.5">
-                    URL del Webhook{" "}
-                    <span className="text-xs text-green-600 font-normal">✓ Ya configurada por la plataforma</span>
+                    URL del Webhook <span className="text-xs text-green-600 font-normal">✓ Configurada por la plataforma</span>
                   </p>
                   <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
                     <code className="text-xs font-mono text-foreground break-all flex-1">{webhookUrl}</code>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(webhookUrl); toast.success("URL copiada"); }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-xs font-medium rounded-lg transition text-muted-foreground hover:text-foreground flex-shrink-0"
-                    >
-                      <Copy size={11} /> Copiar
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    El administrador de la plataforma la configura en Meta App Dashboard → WhatsApp → Configuración. Tú no necesitas hacer nada aquí.
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 5 — Save + Test */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-3">Guarda y prueba la conexión</p>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => mutation.mutate()}
-                      disabled={mutation.isPending || (!form.meta_phone_number_id && !form.whatsapp_phone)}
-                      className="btn-primary disabled:opacity-40"
-                    >
-                      {mutation.isPending
-                        ? <><RefreshCw size={13} className="animate-spin" /> Guardando...</>
-                        : <><Check size={13} /> Guardar configuración</>}
-                    </button>
-                    <button
-                      onClick={testWhatsApp}
-                      disabled={testingWa || !form.whatsapp_phone}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 text-sm font-semibold disabled:opacity-40 transition"
-                    >
-                      {testingWa
-                        ? <><RefreshCw size={13} className="animate-spin" /> Enviando...</>
-                        : <><Phone size={13} /> Enviar mensaje de prueba</>}
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Guarda primero, luego envía un mensaje de prueba para verificar que tu agente responde.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-          </Section>
-        )}
-
-        {/* Instagram config */}
-        {form.instagram_enabled && (
-          <Section icon={Instagram} title="Configuración de Instagram DMs"
-            subtitle="Recibe y responde mensajes directos de tu cuenta Business" delay={0.2}>
-            <div className="space-y-5">
-
-              {/* Step 1 — Account ID */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">Instagram Account ID</p>
-                  <input
-                    type="text"
-                    value={form.instagram_account_id}
-                    onChange={(e) => setForm((p) => ({ ...p, instagram_account_id: e.target.value }))}
-                    placeholder="17841400000000000"
-                    className="input-stripe font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    El ID numérico de tu cuenta de Instagram Business. Lo encuentras en Meta Business Manager.
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 2 — Page ID */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">Facebook Page ID</p>
-                  <input
-                    type="text"
-                    value={form.instagram_page_id}
-                    onChange={(e) => setForm((p) => ({ ...p, instagram_page_id: e.target.value }))}
-                    placeholder="123456789012345"
-                    className="input-stripe font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    El ID de la Página de Facebook vinculada a tu cuenta de Instagram.
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 3 — Page Access Token */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">Page Access Token permanente</p>
-                  {business?.meta_page_token_set && !form.meta_page_token && (
-                    <div className="flex items-center gap-1.5 mb-2 text-xs text-green-600">
-                      <CheckCircle2 size={12} /> Token configurado — ingresa uno nuevo para actualizar
-                    </div>
-                  )}
-                  <div className="relative">
-                    <input
-                      type={showPageToken ? "text" : "password"}
-                      value={form.meta_page_token}
-                      onChange={(e) => setForm((p) => ({ ...p, meta_page_token: e.target.value }))}
-                      placeholder={business?.meta_page_token_set ? "••••••••••••••••" : "EAAxxxxxxxxxxxxxxxx..."}
-                      className="input-stripe font-mono pr-10"
-                    />
-                    <button type="button" onClick={() => setShowPageToken(!showPageToken)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showPageToken ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    En Meta Business Manager → Configuración → Usuarios del sistema → Genera un token permanente con permisos{" "}
-                    <code className="bg-muted px-1 rounded text-[10px]">instagram_manage_messages</code>{" + "}
-                    <code className="bg-muted px-1 rounded text-[10px]">pages_messaging</code>.
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 4 — Webhook URL */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">
-                    URL del Webhook{" "}
-                    <span className="text-xs text-pink-600 font-normal">✓ Ya configurada por la plataforma</span>
-                  </p>
-                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                    <code className="text-xs font-mono text-foreground break-all flex-1">
-                      {`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "https://tu-dominio.com"}/api/webhooks/instagram`}
-                    </code>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(
-                          `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "https://tu-dominio.com"}/api/webhooks/instagram`
-                        );
-                        toast.success("URL copiada");
-                      }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-xs font-medium rounded-lg transition text-muted-foreground hover:text-foreground flex-shrink-0"
-                    >
+                    <button onClick={() => { navigator.clipboard.writeText(webhookUrl); toast.success("URL copiada"); }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-xs font-medium rounded-lg transition text-muted-foreground hover:text-foreground flex-shrink-0">
                       <Copy size={11} /> Copiar
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Step 5 — Save */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-3">Guarda la configuración</p>
-                  <button
-                    onClick={() => {
-                      mutation.mutate();
-                      setIgSaved(true);
-                      setTimeout(() => setIgSaved(false), 2500);
-                    }}
-                    disabled={mutation.isPending || (!form.instagram_account_id && !form.meta_page_token)}
-                    className="btn-primary text-sm px-4 py-2 disabled:opacity-40"
-                  >
-                    {igSaved
-                      ? <span className="flex items-center gap-2"><Check size={14} /> Configuración guardada</span>
-                      : "Guardar configuración de Instagram"}
-                  </button>
-                </div>
+              <div className="flex gap-2 flex-wrap">
+                <button onClick={() => mutation.mutate()} disabled={mutation.isPending}
+                  className="btn-primary disabled:opacity-40">
+                  {mutation.isPending
+                    ? <><RefreshCw size={13} className="animate-spin" /> Guardando...</>
+                    : <><Check size={13} /> Guardar WhatsApp</>}
+                </button>
+                <button onClick={testWhatsApp} disabled={testingWa || !form.whatsapp_phone}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 text-sm font-semibold disabled:opacity-40 transition">
+                  {testingWa
+                    ? <><RefreshCw size={13} className="animate-spin" /> Enviando...</>
+                    : <><Phone size={13} /> Enviar mensaje de prueba</>}
+                </button>
               </div>
-
-            </div>
-          </Section>
-        )}
-
-        {/* Messenger config */}
-        {form.messenger_enabled && (
-          <Section icon={MessageSquare} title="Configuración de Facebook Messenger"
-            subtitle="El agente responde mensajes de tu página de Facebook" delay={0.22}>
-            <div className="space-y-4">
-
-              <div className="flex items-start gap-3 p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
-                <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                <span>
-                  Messenger usa el mismo <strong>Facebook Page ID</strong> y <strong>Page Access Token</strong> que Instagram DMs.
-                  Si ya configuraste Instagram DMs, Messenger usará los mismos datos automáticamente.
-                </span>
-              </div>
-
-              {!business?.meta_page_token_set && (
-                <div className="space-y-4">
-                  <Field label="Facebook Page ID" value={form.instagram_page_id}
-                    onChange={set("instagram_page_id") as (v: string) => void}
-                    placeholder="123456789012345"
-                    hint="El ID de tu página de Facebook" />
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">Page Access Token permanente</label>
-                    <div className="relative">
-                      <input
-                        type={showPageToken ? "text" : "password"}
-                        value={form.meta_page_token}
-                        onChange={(e) => setForm((p) => ({ ...p, meta_page_token: e.target.value }))}
-                        placeholder="EAAxxxxxxxxxxxxxxxx..."
-                        className="input-stripe font-mono pr-10"
-                      />
-                      <button type="button" onClick={() => setShowPageToken(!showPageToken)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {showPageToken ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      El mismo token que para Instagram DMs. Permisos requeridos:{" "}
-                      <code className="bg-muted px-1 rounded text-[10px]">pages_messaging</code>.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {business?.meta_page_token_set && (
-                <div className="flex items-center gap-2 p-3.5 bg-green-50 border border-green-200 rounded-xl">
-                  <CheckCircle2 size={14} className="text-green-600 flex-shrink-0" />
-                  <p className="text-sm text-green-700">
-                    Page Access Token configurado. Messenger está listo para responder mensajes.
-                  </p>
-                </div>
-              )}
-
-              {/* Webhook URL */}
-              <div>
-                <p className="text-sm font-medium text-foreground mb-1.5">
-                  URL del Webhook de Messenger{" "}
-                  <span className="text-xs text-blue-600 font-normal">✓ Ya configurada por la plataforma</span>
-                </p>
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                  <code className="text-xs font-mono text-foreground break-all flex-1">
-                    {`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "https://tu-dominio.com"}/api/webhooks/messenger`}
-                  </code>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "https://tu-dominio.com"}/api/webhooks/messenger`
-                      );
-                      toast.success("URL copiada");
-                    }}
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-xs font-medium rounded-lg transition text-muted-foreground hover:text-foreground flex-shrink-0"
-                  >
-                    <Copy size={11} /> Copiar
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={() => mutation.mutate()}
-                disabled={mutation.isPending}
-                className="btn-primary text-sm px-4 py-2"
-              >
-                {mutation.isPending ? "Guardando..." : "Guardar configuración de Messenger"}
-              </button>
 
             </div>
           </Section>
