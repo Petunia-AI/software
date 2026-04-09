@@ -138,3 +138,20 @@ async def me(
         "plan_name": plan_name,
     }
 
+
+@router.post("/bootstrap-superuser", include_in_schema=False)
+async def bootstrap_superuser(db: AsyncSession = Depends(get_db)):
+    """Endpoint de un solo uso: promueve al primer usuario registrado a superuser.
+    Solo funciona si todavía no existe ningún superuser."""
+    from sqlalchemy import update
+    result = await db.execute(select(User).where(User.is_superuser == True))  # noqa
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Ya existe un superuser")
+    # Promover al primer usuario (por fecha de creación)
+    result2 = await db.execute(select(User).order_by(User.created_at).limit(1))
+    user = result2.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="No hay usuarios")
+    await db.execute(update(User).where(User.id == user.id).values(is_superuser=True))
+    await db.commit()
+    return {"ok": True, "promoted": user.email}
