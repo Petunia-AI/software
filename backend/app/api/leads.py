@@ -210,6 +210,14 @@ async def import_leads(
             skipped += 1
             continue
 
+        # name es NOT NULL — usar fallback: email, teléfono o "Sin nombre"
+        name = (
+            row.get("name") or
+            row.get("email") or
+            row.get("phone") or
+            f"Lead fila {i}"
+        ).strip() or f"Lead fila {i}"
+
         stage  = row.get("stage", "new").strip().lower()
         source = row.get("source", "manual").strip().lower()
         if stage  not in VALID_STAGES:  stage  = "new"
@@ -228,7 +236,7 @@ async def import_leads(
         lead = Lead(
             id=str(uuid.uuid4()),
             business_id=current_user.business_id,
-            name=row.get("name") or None,
+            name=name,
             email=row.get("email") or None,
             phone=row.get("phone") or None,
             company=row.get("company") or None,

@@ -254,7 +254,7 @@ export default function BillingPage() {
 
   if (isLoading || !mounted) {
     return (
-      <div className="p-8 max-w-3xl mx-auto space-y-4">
+      <div className="p-8 max-w-[1280px] mx-auto space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="rounded-2xl h-36 animate-pulse bg-secondary" />
         ))}
@@ -271,7 +271,7 @@ export default function BillingPage() {
 
   return (
     <Elements stripe={stripePromise}>
-      <div className="p-8 max-w-3xl mx-auto space-y-5">
+      <div className="p-8 max-w-[1280px] mx-auto space-y-5">
 
         {/* ── Alert banners ── */}
         <AnimatePresence>

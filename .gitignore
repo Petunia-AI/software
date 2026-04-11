@@ -33,3 +33,4 @@ postgres_data/
 # Runtime
 .pids/
 .claude/
+backend/.venv/

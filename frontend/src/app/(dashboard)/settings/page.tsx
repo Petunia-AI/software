@@ -83,7 +83,7 @@ function Toggle({ label, desc, checked, onChange }: {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="p-8 max-w-3xl mx-auto space-y-4">{Array.from({length:3}).map((_,i)=><div key={i} className="card-stripe h-48 shimmer" />)}</div>}>
+    <Suspense fallback={<div className="p-8 max-w-[1280px] mx-auto space-y-4">{Array.from({length:3}).map((_,i)=><div key={i} className="card-stripe h-48 shimmer" />)}</div>}>
       <SettingsContent />
     </Suspense>
   );
@@ -219,7 +219,7 @@ function SettingsContent() {
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-3xl mx-auto space-y-4">
+      <div className="p-8 max-w-[1280px] mx-auto space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="card-stripe h-48 shimmer" />
         ))}
@@ -228,7 +228,7 @@ function SettingsContent() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-8 max-w-[1280px] mx-auto">
       <PageHeader title="Configuración" subtitle="Define el contexto que usarán tus agentes de IA" />
 
       <div className="space-y-5">
