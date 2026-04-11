@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/auth";
+import { useAdminAuthStore } from "@/store/admin-auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -22,10 +22,10 @@ const adminNav = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, token, logout, loadUser } = useAuthStore();
+  const { user, token, logout, loadUser } = useAdminAuthStore();
 
   useEffect(() => {
-    if (!token) { router.replace("/login"); return; }
+    if (!token) { router.replace("/admin/login"); return; }
     loadUser();
   }, [token]);
 
@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (user && !user.is_superuser) router.replace("/dashboard");
   }, [user]);
 
-  const handleLogout = () => { logout(); router.push("/login"); };
+  const handleLogout = () => { logout(); router.push("/admin/login"); };
 
   return (
     <div className="flex h-screen bg-[hsl(0,0%,98%)]">
