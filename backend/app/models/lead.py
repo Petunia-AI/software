@@ -47,14 +47,8 @@ class Lead(Base):
     qualification_score: Mapped[float] = mapped_column(Float, default=0.0)
 
     # Estado y fuente
-    stage: Mapped[str] = mapped_column(
-        Enum(LeadStage, name="leadstage", values_callable=lambda obj: [e.value for e in obj]),
-        default=LeadStage.NEW
-    )
-    source: Mapped[str] = mapped_column(
-        Enum(LeadSource, name="leadsource", values_callable=lambda obj: [e.value for e in obj]),
-        default=LeadSource.WEBCHAT
-    )
+    stage: Mapped[str] = mapped_column(String(50), default="new")
+    source: Mapped[str] = mapped_column(String(100), default="webchat")
 
     # Metadatos
     tags: Mapped[dict] = mapped_column(JSON, default=list)
