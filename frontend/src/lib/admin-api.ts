@@ -26,4 +26,7 @@ export const adminApi = {
     adminAxios.post("/admin/whatsapp-meta/test", null, { params: { phone_number_id, access_token } }),
   testMessenger:  (page_id: string, access_token: string) =>
     adminAxios.post("/admin/messenger/test", null, { params: { page_id, access_token } }),
+  // Plans
+  getPlans:    () => adminAxios.get("/admin/plans"),
+  updatePlan:  (id: string, data: Record<string, unknown>) => adminAxios.put(`/admin/plans/${id}`, data),
 };

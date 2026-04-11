@@ -1,6 +1,7 @@
 """
 Panel Super Admin — solo accesible para usuarios con is_superuser=True.
 """
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
@@ -10,10 +11,11 @@ from app.models.business import Business
 from app.models.conversation import Conversation
 from app.models.lead import Lead, LeadStage
 from app.models.message import Message
+from app.models.plan_config import PlanConfig, DEFAULT_PLANS
 from app.api.auth import get_current_user
 from app.core.security import get_password_hash
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 import uuid
 import os
 import re
@@ -417,3 +419,63 @@ async def test_messenger_connection(
         "message": f"Conexión exitosa: Página '{page_name}'"
                    + (f" — IG Account ID: {ig_id}" if ig_id else ""),
     }
+
+
+# ── Plans CRUD ─────────────────────────────────────────────────────────────
+
+class PlanUpdateBody(BaseModel):
+    name:        Optional[str]       = None
+    price_usd:   Optional[int]       = None
+    description: Optional[str]       = None
+    features:    Optional[List[str]] = None
+    limits:      Optional[dict]      = None
+    highlight:   Optional[bool]      = None
+    cta:         Optional[str]       = None
+
+
+async def _seed_plans_if_empty(db: AsyncSession) -> None:
+    """Insert default plans if the table is empty."""
+    count = await db.scalar(select(func.count(PlanConfig.id)))
+    if count == 0:
+        for p in DEFAULT_PLANS:
+            db.add(PlanConfig(**p))
+        await db.commit()
+
+
+@router.get("/plans")
+async def list_plans(
+    _: User = Depends(require_superuser),
+    db: AsyncSession = Depends(get_db),
+):
+    """Devuelve los 3 planes configurables."""
+    await _seed_plans_if_empty(db)
+    result = await db.execute(select(PlanConfig).order_by(PlanConfig.price_usd))
+    return [p.to_dict() for p in result.scalars().all()]
+
+
+@router.put("/plans/{plan_id}")
+async def update_plan(
+    plan_id: str,
+    body: PlanUpdateBody,
+    _: User = Depends(require_superuser),
+    db: AsyncSession = Depends(get_db),
+):
+    """Actualiza precio, características y límites de un plan."""
+    await _seed_plans_if_empty(db)
+    result = await db.execute(select(PlanConfig).where(PlanConfig.id == plan_id))
+    plan = result.scalar_one_or_none()
+    if not plan:
+        raise HTTPException(404, f"Plan '{plan_id}' no encontrado")
+
+    if body.name        is not None: plan.name        = body.name
+    if body.price_usd   is not None: plan.price_usd   = body.price_usd
+    if body.description is not None: plan.description = body.description
+    if body.features    is not None: plan.features    = body.features
+    if body.limits      is not None: plan.limits      = body.limits
+    if body.highlight   is not None: plan.highlight   = body.highlight
+    if body.cta         is not None: plan.cta         = body.cta
+    plan.updated_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    await db.refresh(plan)
+    return plan.to_dict()

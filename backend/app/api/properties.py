@@ -18,6 +18,7 @@ from app.database import get_db
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.models.property import Property, PropertyImage, PropertyType, OperationType, PropertyStatus
+from app.config import get_settings
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
@@ -299,7 +300,6 @@ async def delete_property(
 
 @router.post("/{property_id}/images")
 async def upload_image(
-    request:      Request,
     property_id:  str,
     file:         UploadFile = File(...),
     caption:      str = Form(None),
@@ -327,8 +327,9 @@ async def upload_image(
     upload_path.mkdir(parents=True, exist_ok=True)
     (upload_path / filename).write_bytes(content)
 
-    # Build URL
-    base_url = str(request.base_url).rstrip("/")
+    # Build URL — usar BACKEND_URL del config para evitar URLs internas de Docker
+    settings = get_settings()
+    base_url = settings.backend_url.rstrip("/")
     image_url = f"{base_url}/uploads/properties/{property_id}/{filename}"
 
     # Determine if first image → set as cover

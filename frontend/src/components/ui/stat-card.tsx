@@ -14,20 +14,35 @@ interface StatCardProps {
   trend?: number;
   delay?: number;
   onClick?: () => void;
+  variant?: "default" | "admin";
 }
 
-function resolveIcon(iconColor = "text-violet-600") {
+// Maps iconColor → gradient background for the icon container
+function resolveGrad(iconColor = "text-violet-600"): { grad: string; textGrad: string } {
   if (iconColor.includes("violet") || iconColor.includes("purple"))
-    return { bg: "bg-violet-100", color: "text-violet-600", grad: "gradient-text-violet" };
+    return { grad: "linear-gradient(135deg,#635BFF,#8B5CF6)", textGrad: "gradient-text-violet" };
   if (iconColor.includes("blue") || iconColor.includes("indigo"))
-    return { bg: "bg-blue-100", color: "text-blue-600", grad: "gradient-text-blue" };
+    return { grad: "linear-gradient(135deg,#3B82F6,#6366F1)", textGrad: "gradient-text-blue" };
   if (iconColor.includes("green") || iconColor.includes("emerald"))
-    return { bg: "bg-emerald-100", color: "text-emerald-600", grad: "gradient-text-green" };
+    return { grad: "linear-gradient(135deg,#10B981,#059669)", textGrad: "gradient-text-green" };
   if (iconColor.includes("amber") || iconColor.includes("yellow"))
-    return { bg: "bg-amber-100", color: "text-amber-600", grad: "gradient-text-amber" };
+    return { grad: "linear-gradient(135deg,#F59E0B,#D97706)", textGrad: "gradient-text-amber" };
   if (iconColor.includes("red") || iconColor.includes("rose"))
-    return { bg: "bg-red-100", color: "text-red-600", grad: "gradient-text-violet" };
-  return { bg: "bg-violet-100", color: "text-violet-600", grad: "gradient-text-violet" };
+    return { grad: "linear-gradient(135deg,#F43F5E,#EF4444)", textGrad: "gradient-text-violet" };
+  if (iconColor.includes("orange"))
+    return { grad: "linear-gradient(135deg,#F97316,#EF4444)", textGrad: "gradient-text-amber" };
+  return { grad: "linear-gradient(135deg,#635BFF,#8B5CF6)", textGrad: "gradient-text-violet" };
+}
+
+// Decorative blur color per theme
+function resolveBlur(iconColor = "text-violet-600"): string {
+  if (iconColor.includes("violet") || iconColor.includes("purple")) return "rgba(99,91,255,0.1)";
+  if (iconColor.includes("blue") || iconColor.includes("indigo"))   return "rgba(59,130,246,0.1)";
+  if (iconColor.includes("green") || iconColor.includes("emerald")) return "rgba(16,185,129,0.1)";
+  if (iconColor.includes("amber") || iconColor.includes("yellow"))  return "rgba(245,158,11,0.1)";
+  if (iconColor.includes("red") || iconColor.includes("rose"))      return "rgba(244,63,94,0.1)";
+  if (iconColor.includes("orange"))                                  return "rgba(249,115,22,0.1)";
+  return "rgba(99,91,255,0.1)";
 }
 
 export function StatCard({
@@ -37,22 +52,38 @@ export function StatCard({
   trend,
   delay = 0,
   onClick,
+  variant = "default",
 }: StatCardProps) {
   const trendUp   = trend !== undefined && trend > 0;
   const trendDown = trend !== undefined && trend < 0;
-  const { bg, color, grad } = resolveIcon(iconColor);
+  const { grad, textGrad } = resolveGrad(iconColor);
+  const blurColor = resolveBlur(iconColor);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       onClick={onClick}
-      className={cn("stat-card", onClick && "cursor-pointer")}
+      className={cn(
+        variant === "admin" ? "admin-stat-card" : "stat-card",
+        onClick && "cursor-pointer"
+      )}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", bg)}>
-          <Icon size={18} className={color} />
+      {/* Decorative blur circle top-right */}
+      <div
+        className="absolute top-0 right-0 w-24 h-24 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${blurColor} 0%, transparent 70%)` }}
+      />
+
+      <div className="relative flex items-start justify-between mb-4">
+        {/* Gradient icon container */}
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+          style={{ background: grad }}
+        >
+          <Icon size={18} className="text-white" />
         </div>
 
         {trend !== undefined && (
@@ -70,7 +101,7 @@ export function StatCard({
         )}
       </div>
 
-      <p className={cn("text-2xl font-bold tracking-tight tabular-nums", grad)}>{value}</p>
+      <p className={cn("text-2xl font-bold tracking-tight tabular-nums", textGrad)}>{value}</p>
       <p className="text-sm font-semibold text-foreground mt-0.5">{title}</p>
       {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
     </motion.div>

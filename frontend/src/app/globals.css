@@ -401,6 +401,106 @@
 }
 
 /* ================================================================
+   TOP HEADER — Sticky top bar for dashboard layout
+   ================================================================ */
+.top-header {
+  @apply flex items-center justify-between px-6 flex-shrink-0 bg-white;
+  height: 52px;
+  border-bottom: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+/* ================================================================
+   ADMIN SIDEBAR — Deep purple → black gradient with orange accents
+   ================================================================ */
+.admin-sidebar {
+  background: linear-gradient(170deg, #1C0A3A 0%, #120028 55%, #0D001E 100%);
+  border-right: 1px solid rgba(255,255,255,0.07);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.admin-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(249,115,22,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 20% 100%, rgba(239,68,68,0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ================================================================
+   GLASS CARD — For cards on gradient/colored backgrounds
+   ================================================================ */
+.glass-card {
+  @apply rounded-2xl;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.65);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+}
+
+/* ================================================================
+   METRIC BANNER — Hero gradient card (dashboard welcome strip)
+   ================================================================ */
+.metric-banner {
+  @apply relative overflow-hidden rounded-2xl p-6 text-white;
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #9333EA 100%);
+  box-shadow: 0 8px 32px rgba(99,91,255,0.22), 0 2px 8px rgba(99,91,255,0.14);
+}
+.metric-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 10% 20%, rgba(255,255,255,0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 80%, rgba(255,255,255,0.06) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+/* ================================================================
+   ADMIN STAT CARD — Versión del stat-card con acento naranja
+   ================================================================ */
+.admin-stat-card {
+  @apply bg-white rounded-xl p-5;
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.25s ease, border-color 0.2s ease, transform 0.22s ease;
+  position: relative;
+  overflow: hidden;
+}
+.admin-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #F97316, #EF4444);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  border-radius: 12px 12px 0 0;
+}
+.admin-stat-card:hover {
+  box-shadow: 0 4px 20px rgba(249,115,22,0.18), 0 1px 4px rgba(249,115,22,0.12);
+  border-color: rgba(249,115,22,0.2);
+  transform: translateY(-2px);
+}
+.admin-stat-card:hover::after { opacity: 1; }
+
+/* ================================================================
+   PAGE HEADER ACCENT — Gradient line under page headers
+   ================================================================ */
+.page-header-accent {
+  @apply inline-block h-0.5 rounded-full mt-1;
+  background: linear-gradient(90deg, hsl(var(--primary)), transparent);
+  width: 2.5rem;
+}
+
+/* ================================================================
    ANIMATIONS
    ================================================================ */
 @keyframes fade-up {

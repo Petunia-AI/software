@@ -7,5 +7,6 @@ from app.models.agent_config import AgentConfig
 from app.models.subscription import Subscription
 from app.models.content import SocialPost
 from app.models.property import Property, PropertyImage
+from app.models.followup import FollowUp, LeadActivity
 
-__all__ = ["User", "Business", "Lead", "Conversation", "Message", "AgentConfig", "Subscription", "SocialPost", "Property", "PropertyImage"]
+__all__ = ["User", "Business", "Lead", "Conversation", "Message", "AgentConfig", "Subscription", "SocialPost", "Property", "PropertyImage", "FollowUp", "LeadActivity"]

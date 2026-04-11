@@ -5,7 +5,7 @@ import stripe
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from pydantic import BaseModel
 
 from app.database import get_db
@@ -16,6 +16,7 @@ from app.models.subscription import (
     Subscription, SubscriptionStatus, PlanTier,
     PLAN_LIMITS, PLAN_PRICES_USD,
 )
+from app.models.plan_config import PlanConfig, DEFAULT_PLANS
 from app.services import email_service
 
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -90,17 +91,20 @@ async def get_subscription(
     }
 
 
-# ── GET /billing/plans ─────────────────────────────────────────────────────
+# ── GET /billing/plans  (public — no auth required) ───────────────────────
 @router.get("/plans")
-async def list_plans():
-    plans = []
-    for tier in ["starter", "pro", "enterprise"]:
-        plans.append({
-            "id":    tier,
-            "price": PLAN_PRICES_USD[tier],
-            "limits": PLAN_LIMITS[tier],
-        })
-    return plans
+async def list_plans(db: AsyncSession = Depends(get_db)):
+    """Returns plan configs from DB; falls back to defaults if table is empty."""
+    try:
+        count = await db.scalar(select(func.count(PlanConfig.id)))
+        if count and count > 0:
+            result = await db.execute(select(PlanConfig).order_by(PlanConfig.price_usd))
+            configs = result.scalars().all()
+            return [p.to_dict() for p in configs]
+    except Exception:
+        pass  # DB table might not exist yet (before migration)
+    # Fallback to hardcoded defaults
+    return DEFAULT_PLANS
 
 
 # ── POST /billing/checkout ─────────────────────────────────────────────────
@@ -169,6 +173,115 @@ async def create_portal_session(
         return_url=body.return_url,
     )
     return {"url": portal.url}
+
+
+# ── POST /billing/setup-intent ────────────────────────────────────────────
+@router.post("/setup-intent")
+async def create_setup_intent(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Creates a Stripe SetupIntent so the frontend can collect a card securely."""
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    sub = await _get_or_create_subscription(db, current_user.business_id)
+
+    # Ensure Stripe customer exists
+    if not sub.stripe_customer_id:
+        customer = stripe.Customer.create(
+            email=current_user.email,
+            name=current_user.full_name,
+            metadata={"business_id": current_user.business_id},
+        )
+        sub.stripe_customer_id = customer.id
+        await db.commit()
+
+    intent = stripe.SetupIntent.create(
+        customer=sub.stripe_customer_id,
+        payment_method_types=["card"],
+        usage="off_session",
+    )
+    return {
+        "client_secret": intent.client_secret,
+        "customer_id": sub.stripe_customer_id,
+    }
+
+
+# ── POST /billing/attach-payment-method ───────────────────────────────────
+class AttachPaymentMethodBody(BaseModel):
+    payment_method_id: str
+
+
+@router.post("/attach-payment-method")
+async def attach_payment_method(
+    body: AttachPaymentMethodBody,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Attaches a confirmed PaymentMethod to the customer as default."""
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    sub = await _get_or_create_subscription(db, current_user.business_id)
+    if not sub.stripe_customer_id:
+        raise HTTPException(status_code=400, detail="no_stripe_customer")
+
+    # Attach and set as default
+    stripe.PaymentMethod.attach(
+        body.payment_method_id,
+        customer=sub.stripe_customer_id,
+    )
+    stripe.Customer.modify(
+        sub.stripe_customer_id,
+        invoice_settings={"default_payment_method": body.payment_method_id},
+    )
+
+    # Retrieve card details for the response
+    pm = stripe.PaymentMethod.retrieve(body.payment_method_id)
+    card = pm.get("card", {})
+
+    return {
+        "ok": True,
+        "brand": card.get("brand", "card"),
+        "last4": card.get("last4", "****"),
+        "exp_month": card.get("exp_month"),
+        "exp_year": card.get("exp_year"),
+    }
+
+
+# ── GET /billing/payment-method ────────────────────────────────────────────
+@router.get("/payment-method")
+async def get_payment_method(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns the current default payment method info."""
+    if not settings.stripe_secret_key:
+        return {"has_card": False}
+
+    sub = await _get_or_create_subscription(db, current_user.business_id)
+    if not sub.stripe_customer_id:
+        return {"has_card": False}
+
+    try:
+        customer = stripe.Customer.retrieve(
+            sub.stripe_customer_id,
+            expand=["invoice_settings.default_payment_method"],
+        )
+        pm = customer.get("invoice_settings", {}).get("default_payment_method")
+        if pm and isinstance(pm, dict):
+            card = pm.get("card", {})
+            return {
+                "has_card": True,
+                "brand": card.get("brand", "card"),
+                "last4": card.get("last4", "****"),
+                "exp_month": card.get("exp_month"),
+                "exp_year": card.get("exp_year"),
+            }
+    except Exception:
+        pass
+    return {"has_card": False}
 
 
 # ── POST /billing/webhook ──────────────────────────────────────────────────

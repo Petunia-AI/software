@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Zap, MessageSquare, Users, TrendingUp, Bot, Check,
   ArrowRight, Star, Globe, Phone, Instagram,
   BarChart3, Shield, Sparkles, ChevronRight,
 } from "lucide-react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 // ── Data ───────────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -54,12 +57,24 @@ const FEATURES = [
   },
 ];
 
-const PLANS = [
+// ── Plan type ──────────────────────────────────────────────────────────────
+interface Plan {
+  id: string;
+  name: string;
+  price_usd: number;
+  description: string;
+  features: string[];
+  highlight: boolean;
+  cta: string;
+}
+
+// Fallback hardcoded (used while loading / if API fails)
+const DEFAULT_PLANS: Plan[] = [
   {
     id: "starter",
     name: "Starter",
-    price: 49,
-    desc: "Para equipos que empiezan a automatizar ventas.",
+    price_usd: 49,
+    description: "Para equipos que empiezan a automatizar ventas.",
     features: [
       "500 conversaciones / mes",
       "200 leads / mes",
@@ -74,8 +89,8 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: 149,
-    desc: "El favorito de equipos de ventas en crecimiento.",
+    price_usd: 149,
+    description: "El favorito de equipos de ventas en crecimiento.",
     features: [
       "2,000 conversaciones / mes",
       "1,000 leads / mes",
@@ -92,8 +107,8 @@ const PLANS = [
   {
     id: "enterprise",
     name: "Enterprise",
-    price: 399,
-    desc: "Para empresas con volumen alto y necesidades custom.",
+    price_usd: 399,
+    description: "Para empresas con volumen alto y necesidades custom.",
     features: [
       "Conversaciones ilimitadas",
       "Leads ilimitados",
@@ -181,6 +196,14 @@ function Navbar() {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
+
+  useEffect(() => {
+    fetch(`${API}/billing/plans`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (Array.isArray(data) && data.length > 0) setPlans(data); })
+      .catch(() => {/* keep defaults */});
+  }, []);
   return (
     <div className="min-h-screen bg-[hsl(258,47%,8%)] text-white overflow-x-hidden">
       <Navbar />
@@ -403,7 +426,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-            {PLANS.map((plan, i) => (
+            {plans.map((plan, i) => (
               <motion.div
                 key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -426,12 +449,12 @@ export default function LandingPage() {
 
                 <div className="mb-5">
                   <h3 className="font-bold text-white text-lg">{plan.name}</h3>
-                  <p className="text-white/50 text-sm mt-1">{plan.desc}</p>
+                  <p className="text-white/50 text-sm mt-1">{plan.description}</p>
                 </div>
 
                 <div className="mb-6">
                   <div className="flex items-end gap-1">
-                    <span className="text-4xl font-bold text-white">${plan.price}</span>
+                    <span className="text-4xl font-bold text-white">${plan.price_usd}</span>
                     <span className="text-white/40 mb-1">/mes</span>
                   </div>
                   <p className="text-white/40 text-xs mt-1">USD · facturación mensual</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { conversationsApi } from "@/lib/api";
@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
-export default function ConversationsPage() {
+function ConversationsInner() {
   const qc = useQueryClient();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
@@ -158,7 +158,7 @@ export default function ConversationsPage() {
                     <span className="text-sm font-semibold text-foreground font-mono">
                       #{(conv.id as string).slice(0, 8)}
                     </span>
-                    {conv.is_human_takeover && (
+                    {!!conv.is_human_takeover && (
                       <span className="badge badge-orange text-[10px]">
                         👤 Humano activo
                       </span>
@@ -199,5 +199,13 @@ export default function ConversationsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConversationsPage() {
+  return (
+    <Suspense>
+      <ConversationsInner />
+    </Suspense>
   );
 }

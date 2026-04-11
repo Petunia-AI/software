@@ -62,6 +62,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "v3b.fal.media" },
       { protocol: "https", hostname: "**.railway.app" },
       { protocol: "https", hostname: "**.up.railway.app" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "**.unsplash.com" },
     ],
     formats: ["image/avif", "image/webp"],
   },

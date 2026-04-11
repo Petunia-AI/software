@@ -13,6 +13,9 @@ import toast from "react-hot-toast";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
+// Placeholder para imágenes rotas
+const IMG_FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23f1f5f9'/%3E%3Ctext x='200' y='140' text-anchor='middle' font-family='sans-serif' font-size='40' fill='%23cbd5e1'%3E%F0%9F%8F%A0%3C/text%3E%3Ctext x='200' y='185' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2394a3b8'%3ESin imagen%3C/text%3E%3C/svg%3E";
+
 // ── Types ─────────────────────────────────────────────────────────────────
 
 type PropertyType = "casa" | "departamento" | "terreno" | "local" | "oficina" | "bodega";
@@ -166,7 +169,7 @@ function PropertyCard({ prop, onEdit, onDelete, onViewImages }: {
       <div className="relative bg-slate-100 overflow-hidden" style={{ aspectRatio: "4/3" }}>
         {prop.cover_image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={prop.cover_image_url} alt={prop.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img src={prop.cover_image_url} alt={prop.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onError={e => { (e.target as HTMLImageElement).src = IMG_FALLBACK; }} />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-300">
             <Building2 size={40} />
@@ -537,7 +540,7 @@ function PropertyFormModal({ property, onClose, onSaved, token }: {
                         <div key={img.id} className="relative group rounded-xl overflow-hidden border-2 border-transparent hover:border-indigo-300 transition-all">
                           <div style={{ aspectRatio: "4/3" }}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={img.url} alt={img.caption ?? "Imagen"} className="w-full h-full object-cover" />
+                            <img src={img.url} alt={img.caption ?? "Imagen"} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = IMG_FALLBACK; }} />
                           </div>
                           {img.is_cover && (
                             <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
@@ -706,7 +709,7 @@ function ImageGalleryModal({ property, onClose, onUpdated, token }: {
                   onClick={() => setSelected(selected === img.id ? null : img.id)}>
                   <div style={{ aspectRatio: "4/3" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.url} alt={img.caption ?? "Imagen"} className="w-full h-full object-cover" />
+                    <img src={img.url} alt={img.caption ?? "Imagen"} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = IMG_FALLBACK; }} />
                   </div>
                   {/* Cover badge */}
                   {img.is_cover && (

@@ -69,3 +69,5 @@ class Lead(Base):
     # Relationships
     business: Mapped["Business"] = relationship("Business", back_populates="leads")
     conversations: Mapped[list["Conversation"]] = relationship("Conversation", back_populates="lead")
+    activities: Mapped[list["LeadActivity"]] = relationship("LeadActivity", back_populates="lead", order_by="desc(LeadActivity.created_at)")
+    followups: Mapped[list["FollowUp"]] = relationship("FollowUp", back_populates="lead", order_by="FollowUp.scheduled_at")

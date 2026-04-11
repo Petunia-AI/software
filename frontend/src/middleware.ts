@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Rutas que requieren autenticación de cliente
-const CLIENT_PROTECTED = ["/dashboard", "/analytics", "/leads", "/conversations", "/agents", "/content", "/properties", "/settings", "/billing"];
+const CLIENT_PROTECTED = ["/dashboard", "/analytics", "/leads", "/seguimiento", "/conversations", "/agents", "/content", "/properties", "/settings", "/billing"];
 // Rutas admin protegidas (usan cookie separada)
 const ADMIN_PROTECTED = ["/admin"];
 // Rutas de auth que redirigen al dashboard si ya hay sesión

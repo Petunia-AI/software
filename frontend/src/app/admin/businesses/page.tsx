@@ -91,7 +91,7 @@ export default function AdminBusinessesPage() {
                 </td>
                 <td className="text-center">
                   <div className="flex items-center justify-center gap-1.5">
-                    {biz.whatsapp_enabled && <span title="WhatsApp" className="text-base">💬</span>}
+                    {!!biz.whatsapp_enabled && <span title="WhatsApp" className="text-base">💬</span>}
                     <span title="Webchat" className="text-base">🌐</span>
                   </div>
                 </td>

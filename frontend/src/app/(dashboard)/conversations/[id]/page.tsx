@@ -135,7 +135,7 @@ export default function ConversationDetailPage() {
         </Link>
 
         <div className="w-9 h-9 rounded-xl bg-violet-50 border border-violet-200 flex items-center justify-center text-base flex-shrink-0">
-          {{ whatsapp: "💬", instagram: "📸", webchat: "🌐" }[conv?.channel] ?? "💬"}
+          {({ whatsapp: "💬", instagram: "📸", webchat: "🌐" } as Record<string, string>)[conv?.channel as string] ?? "💬"}
         </div>
 
         <div className="flex-1">
@@ -217,7 +217,7 @@ export default function ConversationDetailPage() {
                   </div>
 
                   <div className={`max-w-[72%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
-                    {!isUser && msg.agent_type && (
+                    {!isUser && !!msg.agent_type && (
                       <p className="text-[10px] text-muted-foreground mb-1 ml-1 font-medium">
                         Agente · <span className="capitalize">{msg.agent_type as string}</span>
                       </p>

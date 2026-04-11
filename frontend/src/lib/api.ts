@@ -64,7 +64,7 @@ export const leadsApi = {
   updateStage: (id: string, stage: string) =>
     api.patch(`/leads/${id}/stage`, { stage }),
   exportUrl: (format: "csv" | "xlsx", stage?: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     const base = process.env.NEXT_PUBLIC_API_URL ?? "/api";
     const params = new URLSearchParams({ format });
     if (stage) params.set("stage", stage);
@@ -73,9 +73,39 @@ export const leadsApi = {
   import: (file: File) => {
     const form = new FormData();
     form.append("file", file);
-    // NO fijar Content-Type manualmente: Axios necesita añadir el boundary automáticamente
-    return api.post("/leads/import", form);
+    // Eliminar Content-Type para que el browser ponga multipart/form-data con el boundary correcto
+    return api.post("/leads/import", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      transformRequest: [(data) => data],
+    });
   },
+};
+
+// ============ FOLLOWUPS ============
+export const followupsApi = {
+  stats: () => api.get("/followups/stats"),
+  calendar: (year?: number, month?: number) =>
+    api.get("/followups/calendar", { params: { year, month } }),
+  list: (params?: {
+    status?: string; priority?: string; followup_type?: string;
+    lead_id?: string; assigned_to?: string; period?: string;
+    date_from?: string; date_to?: string; limit?: number;
+  }) => api.get("/followups/", { params }),
+  create: (data: {
+    lead_id: string; followup_type?: string; title: string;
+    description?: string; priority?: string; scheduled_at: string;
+    assigned_to?: string; notify_email?: boolean; notify_whatsapp?: boolean;
+  }) => api.post("/followups/", data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/followups/${id}`, data),
+  complete: (id: string, outcome?: string) =>
+    api.patch(`/followups/${id}/complete`, null, { params: { outcome } }),
+  cancel: (id: string) => api.delete(`/followups/${id}`),
+  // Lead activities
+  getActivities: (leadId: string) => api.get(`/leads/${leadId}/activities`),
+  createActivity: (leadId: string, data: {
+    activity_type?: string; title: string; description?: string;
+    outcome?: string; scheduled_at?: string; completed_at?: string;
+  }) => api.post(`/leads/${leadId}/activities`, data),
 };
 
 // ============ ANALYTICS ============
@@ -90,12 +120,16 @@ export const analyticsApi = {
 
 // ============ BILLING ============
 export const billingApi = {
-  getSubscription: () => api.get("/billing/subscription"),
-  getPlans:        () => api.get("/billing/plans"),
+  getSubscription:     () => api.get("/billing/subscription"),
+  getPlans:            () => api.get("/billing/plans"),
   createCheckout: (plan: string, successUrl: string, cancelUrl: string) =>
     api.post("/billing/checkout", { plan, success_url: successUrl, cancel_url: cancelUrl }),
   createPortalSession: (returnUrl: string) =>
     api.post("/billing/portal", { return_url: returnUrl }),
+  createSetupIntent:   () => api.post("/billing/setup-intent"),
+  attachPaymentMethod: (payment_method_id: string) =>
+    api.post("/billing/attach-payment-method", { payment_method_id }),
+  getPaymentMethod:    () => api.get("/billing/payment-method"),
 };
 
 // ============ BUSINESS ============

@@ -16,6 +16,7 @@ from app.models.user import User
 from app.models.business import Business
 from app.models.conversation import Conversation
 from app.models.lead import Lead, LeadStage
+from app.models.followup import FollowUp
 from app.models.content import SocialPost, ContentStatus
 from app.services import email_service
 from app.services.social_publisher import publish_post
@@ -189,6 +190,85 @@ async def job_publish_scheduled_posts():
             await db.commit()
 
 
+# ── Followup notifications ───────────────────────────────────────────────
+async def job_followup_notifications():
+    """Cada 5 min: marca vencidos, envía email si notify_email=True."""
+    from app.models.user import User as UserModel
+    now = datetime.now(timezone.utc)
+    async with AsyncSessionLocal() as db:
+        # 1. Marcar como overdue los pending vencidos
+        overdue_res = await db.execute(
+            select(FollowUp).where(
+                FollowUp.status == "pending",
+                FollowUp.scheduled_at < now,
+            )
+        )
+        overdue = overdue_res.scalars().all()
+        for fu in overdue:
+            fu.status = "overdue"
+        if overdue:
+            await db.commit()
+            logger.info("scheduler.followups.marked_overdue", count=len(overdue))
+
+        # 2. Enviar notificaciones de seguimientos en los próximos 15 min
+        window_end = now + timedelta(minutes=15)
+        due_res = await db.execute(
+            select(FollowUp).where(
+                FollowUp.status == "pending",
+                FollowUp.scheduled_at >= now,
+                FollowUp.scheduled_at <= window_end,
+                FollowUp.notification_sent_at.is_(None),
+                FollowUp.notify_email == True,
+            )
+        )
+        due = due_res.scalars().all()
+
+        for fu in due:
+            try:
+                # Obtener lead y dueño del business
+                lead_res = await db.execute(select(Lead).where(Lead.id == fu.lead_id))
+                lead = lead_res.scalar_one_or_none()
+                owner_res = await db.execute(
+                    select(UserModel).where(UserModel.business_id == fu.business_id)
+                    .order_by(UserModel.created_at)
+                    .limit(1)
+                )
+                owner = owner_res.scalar_one_or_none()
+                if not owner:
+                    continue
+
+                lead_name = lead.name or lead.email or "Lead sin nombre" if lead else "Lead"
+                scheduled_str = fu.scheduled_at.strftime("%d/%m/%Y %H:%M UTC")
+
+                await email_service.send_email(
+                    to=owner.email,
+                    subject=f"⏰ Seguimiento pendiente: {fu.title}",
+                    html=f"""
+                    <div style='font-family:sans-serif;max-width:500px;margin:auto;padding:24px'>
+                      <h2 style='color:#6d28d9'>⏰ Seguimiento programado</h2>
+                      <p><strong>{fu.title}</strong></p>
+                      <p>Lead: <strong>{lead_name}</strong></p>
+                      <p>Tipo: {fu.followup_type.capitalize()}</p>
+                      <p>Fecha: {scheduled_str}</p>
+                      <p>Prioridad: {fu.priority.capitalize()}</p>
+                      {'<p>Descripción: ' + fu.description + '</p>' if fu.description else ''}
+                      <a href='http://localhost:3000/seguimiento'
+                         style='display:inline-block;background:#6d28d9;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;margin-top:12px'>
+                        Ver seguimientos
+                      </a>
+                    </div>
+                    """,
+                )
+                fu.notification_sent_at = now
+                fu.reminder_count += 1
+                logger.info("scheduler.followup.notification_sent", followup_id=fu.id)
+            except Exception as exc:
+                logger.warning("scheduler.followup.notification_failed", followup_id=fu.id, error=str(exc))
+
+        if due:
+            await db.commit()
+
+
 # ── Setup ─────────────────────────────────────────────────────────────────
 def start_scheduler():
     scheduler.add_job(
@@ -209,8 +289,14 @@ def start_scheduler():
         id="publish_scheduled_posts",
         replace_existing=True,
     )
+    scheduler.add_job(
+        job_followup_notifications,
+        CronTrigger(minute="*/5"),  # every 5 minutes
+        id="followup_notifications",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts"])
+    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts", "followup_notifications"])
 
 
 def stop_scheduler():

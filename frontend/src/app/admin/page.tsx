@@ -6,7 +6,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { StatCardSkeleton } from "@/components/ui/skeleton";
 import {
   Building2, Users, MessageSquare, TrendingUp,
-  Bot, Activity, ShieldCheck,
+  Bot, Activity, Zap, DollarSign,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -20,7 +20,10 @@ const CHART_STYLE = {
     border: "1px solid hsl(220,13%,91%)",
     borderRadius: "10px",
     fontSize: "12px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
   },
+  labelStyle: { color: "hsl(220,9%,46%)", fontWeight: 500 },
+  cursor: { fill: "rgba(249,115,22,0.05)" },
 };
 
 export default function AdminOverviewPage() {
@@ -38,16 +41,49 @@ export default function AdminOverviewPage() {
   return (
     <div className="p-8 max-w-[1200px] mx-auto">
 
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-md">
-          <ShieldCheck size={18} className="text-white" />
+      {/* ── Hero banner ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="metric-banner mb-8"
+      >
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">
+              Agente Ventas AI — Plataforma
+            </p>
+            <h1 className="text-2xl font-bold text-white tracking-tight">
+              Panel Super Admin
+            </h1>
+            <p className="text-white/60 text-sm mt-1">
+              Visión global y control total de la plataforma
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-3">
+            <div className="text-center">
+              <p className="text-3xl font-black text-white tabular-nums">
+                {overview?.total_businesses ?? "—"}
+              </p>
+              <p className="text-white/50 text-xs mt-0.5">Negocios</p>
+            </div>
+            <div className="w-px h-10 bg-white/20" />
+            <div className="text-center">
+              <p className="text-3xl font-black text-white tabular-nums">
+                {overview?.total_users ?? "—"}
+              </p>
+              <p className="text-white/50 text-xs mt-0.5">Usuarios</p>
+            </div>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Panel Super Admin</h1>
-          <p className="text-sm text-muted-foreground">Visión global de la plataforma</p>
-        </div>
-      </div>
+
+        {/* Decorative glow circles */}
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-20 pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(249,115,22,0.6) 0%, transparent 70%)", transform: "translate(30%,-30%)" }}
+        />
+        <div className="absolute bottom-0 left-1/2 w-48 h-48 rounded-full opacity-10 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)", transform: "translate(-50%,30%)" }}
+        />
+      </motion.div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
@@ -59,14 +95,16 @@ export default function AdminOverviewPage() {
               title="Negocios activos"
               value={overview?.total_businesses ?? 0}
               icon={Building2}
-              iconBg="bg-violet-50" iconColor="text-violet-600"
+              iconColor="text-orange-600"
+              variant="admin"
               delay={0}
             />
             <StatCard
               title="Usuarios registrados"
               value={overview?.total_users ?? 0}
               icon={Users}
-              iconBg="bg-blue-50" iconColor="text-blue-600"
+              iconColor="text-violet-600"
+              variant="admin"
               delay={0.05}
             />
             <StatCard
@@ -74,15 +112,17 @@ export default function AdminOverviewPage() {
               value={overview?.total_conversations ?? 0}
               subtitle={`${overview?.total_messages ?? 0} mensajes`}
               icon={MessageSquare}
-              iconBg="bg-green-50" iconColor="text-green-600"
+              iconColor="text-blue-600"
+              variant="admin"
               delay={0.1}
             />
             <StatCard
-              title="Conversión plataforma"
+              title="Conversión global"
               value={`${overview?.platform_conversion ?? 0}%`}
               subtitle={`${overview?.closed_won ?? 0} deals ganados`}
               icon={TrendingUp}
-              iconBg="bg-amber-50" iconColor="text-amber-600"
+              iconColor="text-emerald-600"
+              variant="admin"
               delay={0.15}
             />
           </>
@@ -100,7 +140,10 @@ export default function AdminOverviewPage() {
           className="card-stripe p-6"
         >
           <div className="flex items-center gap-2 mb-5">
-            <Activity size={15} className="text-muted-foreground" />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg,#F97316,#EF4444)" }}>
+              <Activity size={13} className="text-white" />
+            </div>
             <p className="font-semibold text-foreground">Top negocios por conversaciones</p>
           </div>
           {analytics?.top_businesses_by_conversations?.length > 0 ? (
@@ -121,12 +164,20 @@ export default function AdminOverviewPage() {
                   width={120}
                 />
                 <Tooltip {...CHART_STYLE} />
-                <Bar dataKey="conversations" fill="hsl(243,75%,59%)" radius={[0, 4, 4, 0]} name="Conversaciones" />
+                <Bar dataKey="conversations" fill="url(#adminGrad)" radius={[0, 4, 4, 0]} name="Conversaciones">
+                  <defs>
+                    <linearGradient id="adminGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#F97316" />
+                      <stop offset="100%" stopColor="#EF4444" />
+                    </linearGradient>
+                  </defs>
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
-              Sin datos todavía
+            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+              <Building2 size={28} className="opacity-20 mb-2" />
+              <p className="text-sm">Sin datos todavía</p>
             </div>
           )}
         </motion.div>
@@ -139,23 +190,33 @@ export default function AdminOverviewPage() {
           className="card-stripe p-6"
         >
           <div className="flex items-center gap-2 mb-5">
-            <Bot size={15} className="text-muted-foreground" />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#6366F1)" }}>
+              <Zap size={13} className="text-white" />
+            </div>
             <p className="font-semibold text-foreground">Resumen de plataforma</p>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[
-              { label: "Total de leads en plataforma",  value: overview?.total_leads ?? 0,          color: "bg-violet-500" },
-              { label: "Mensajes procesados por IA",    value: overview?.total_messages ?? 0,        color: "bg-blue-500"   },
-              { label: "Cierres ganados",               value: overview?.closed_won ?? 0,            color: "bg-green-500"  },
-              { label: "Tasa de conversión global",     value: `${overview?.platform_conversion ?? 0}%`, color: "bg-amber-500"  },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
+              { label: "Total de leads",          value: overview?.total_leads ?? 0,            grad: "from-violet-500 to-purple-600"  },
+              { label: "Mensajes procesados IA",  value: overview?.total_messages ?? 0,          grad: "from-blue-500 to-indigo-600"    },
+              { label: "Cierres ganados",          value: overview?.closed_won ?? 0,             grad: "from-emerald-500 to-teal-600"   },
+              { label: "Tasa conversión global",  value: `${overview?.platform_conversion ?? 0}%`, grad: "from-amber-500 to-orange-600" },
+            ].map(({ label, value, grad }, i) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + i * 0.05 }}
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                style={{ background: "hsl(var(--secondary)/0.4)" }}
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`w-2.5 h-2.5 rounded-full ${color} flex-shrink-0`} />
+                  <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${grad} flex-shrink-0`} />
                   <p className="text-sm text-foreground">{label}</p>
                 </div>
                 <p className="font-bold text-foreground tabular-nums">{value}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </motion.div>
@@ -163,3 +224,4 @@ export default function AdminOverviewPage() {
     </div>
   );
 }
+

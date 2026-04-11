@@ -26,20 +26,25 @@ function KpiCard({
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35 }}
-      className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm"
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="stat-card"
     >
-      <div className={cn("absolute inset-0 opacity-[0.04]", gradient)} />
-      <div className="relative flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-black text-foreground mt-1 tabular-nums">{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
-        </div>
-        <div className={cn("p-2.5 rounded-xl", gradient)}>
+      {/* Decorative blur */}
+      <div className="absolute top-0 right-0 w-20 h-20 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none opacity-60"
+        style={{ background: `radial-gradient(circle, ${gradient.includes("violet") ? "rgba(99,91,255,0.15)" : gradient.includes("blue") ? "rgba(59,130,246,0.15)" : gradient.includes("emerald") ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"} 0%, transparent 70%)` }}
+      />
+      <div className="relative flex items-start justify-between mb-3">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+          style={{ background: gradient.includes("violet") ? "linear-gradient(135deg,#635BFF,#8B5CF6)" : gradient.includes("blue") ? "linear-gradient(135deg,#3B82F6,#6366F1)" : gradient.includes("emerald") ? "linear-gradient(135deg,#10B981,#059669)" : "linear-gradient(135deg,#F59E0B,#D97706)" }}
+        >
           <Icon size={18} className="text-white" />
         </div>
       </div>
+      <p className={cn("text-2xl font-black tabular-nums", gradient.includes("violet") ? "gradient-text-violet" : gradient.includes("blue") ? "gradient-text-blue" : gradient.includes("emerald") ? "gradient-text-green" : "gradient-text-amber")}>{value}</p>
+      <p className="text-sm font-semibold text-foreground mt-0.5">{title}</p>
+      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
     </motion.div>
   );
 }

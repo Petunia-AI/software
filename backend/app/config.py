@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # CORS
     frontend_url: str = "http://localhost:3000"
 
+    # URL pública del backend (para construir URLs de archivos subidos)
+    backend_url: str = "http://localhost:8000"
+
     # Claude model
     claude_model: str = "claude-sonnet-4-6"
 

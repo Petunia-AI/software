@@ -76,19 +76,21 @@ function ScoreRing({ score }: { score: number }) {
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <svg width="84" height="84" className="-rotate-90">
-        <circle cx="42" cy="42" r={r} fill="none" stroke="#e2e8f0" strokeWidth="8" />
-        <circle
-          cx="42" cy="42" r={r} fill="none"
-          stroke={color} strokeWidth="8"
-          strokeDasharray={`${dash} ${circ}`}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dasharray 0.6s ease" }}
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center" style={{ marginTop: "-60px" }}>
-        <span className="text-2xl font-black" style={{ color }}>{score.toFixed(1)}</span>
-        <span className="text-[10px] text-muted-foreground font-medium">/10</span>
+      <div className="relative w-[84px] h-[84px]">
+        <svg width="84" height="84" className="-rotate-90">
+          <circle cx="42" cy="42" r={r} fill="none" stroke="#e2e8f0" strokeWidth="8" />
+          <circle
+            cx="42" cy="42" r={r} fill="none"
+            stroke={color} strokeWidth="8"
+            strokeDasharray={`${dash} ${circ}`}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dasharray 0.6s ease" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-black leading-none" style={{ color }}>{score.toFixed(1)}</span>
+          <span className="text-[10px] text-muted-foreground font-medium">/10</span>
+        </div>
       </div>
       <span className="text-xs font-semibold" style={{ color }}>{label}</span>
     </div>
