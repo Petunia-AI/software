@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     meta_wa_verify_token: str = "agente_ventas_wa_verify"  # Hub verify token para webhook
     meta_wa_app_secret:   str = ""   # App Secret de la Meta App (para verificar firmas)
 
+    # Meta OAuth (Facebook Login for Business)
+    meta_app_id:     str = ""   # App ID de la Meta App
+    meta_app_secret: str = ""   # App Secret de la Meta App (para OAuth)
+    meta_oauth_redirect_uri: str = ""  # e.g. https://tu-dominio.com/meta/callback
+
     # Stripe
     stripe_secret_key:      str = ""
     stripe_publishable_key: str = ""

@@ -34,6 +34,21 @@ class BusinessUpdate(BaseModel):
     messenger_enabled: Optional[bool] = None
 
 
+class MetaPageOut(BaseModel):
+    id: str
+    name: str
+    has_instagram: bool = False
+    instagram_id: Optional[str] = None
+
+class MetaConnectionOut(BaseModel):
+    connected: bool = False
+    user_name: Optional[str] = None
+    pages: list[MetaPageOut] = []
+    selected_page_id: Optional[str] = None
+    selected_wa_phone_id: Optional[str] = None
+    wa_business_id: Optional[str] = None
+    token_expires_at: Optional[str] = None
+
 class BusinessOut(BaseModel):
     id: str
     name: str
@@ -50,9 +65,13 @@ class BusinessOut(BaseModel):
     instagram_account_id: Optional[str] = None
     instagram_page_id: Optional[str] = None
     meta_phone_number_id: Optional[str] = None
-    meta_wa_token_set: bool = False  # computed via @property on Business model
-    meta_page_token_set: bool = False  # computed via @property on Business model
+    meta_wa_token_set: bool = False
+    meta_page_token_set: bool = False
     messenger_enabled: bool = False
+    meta_connected: bool = False
+    meta_user_name: Optional[str] = None
+    meta_selected_page_id: Optional[str] = None
+    meta_selected_wa_phone_id: Optional[str] = None
     is_active: bool
 
     class Config:

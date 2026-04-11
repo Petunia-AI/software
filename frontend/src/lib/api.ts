@@ -61,6 +61,22 @@ export const leadsApi = {
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/leads/${id}`, data),
   delete: (id: string) => api.delete(`/leads/${id}`),
+  updateStage: (id: string, stage: string) =>
+    api.patch(`/leads/${id}/stage`, { stage }),
+  exportUrl: (format: "csv" | "xlsx", stage?: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+    const params = new URLSearchParams({ format });
+    if (stage) params.set("stage", stage);
+    return { url: `${base}/leads/export?${params}`, token };
+  },
+  import: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post("/leads/import", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 // ============ ANALYTICS ============

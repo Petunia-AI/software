@@ -44,6 +44,17 @@ class Business(Base):
     meta_page_token: Mapped[str] = mapped_column(String(1000), nullable=True)
     messenger_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Meta OAuth connection state
+    meta_connected: Mapped[bool] = mapped_column(Boolean, default=False)
+    meta_user_id: Mapped[str] = mapped_column(String(100), nullable=True)
+    meta_user_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    meta_long_lived_token: Mapped[str] = mapped_column(String(1000), nullable=True)
+    meta_token_expires_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)
+    meta_pages: Mapped[dict] = mapped_column(JSON, default=list)  # [{id, name, access_token, ig_id}]
+    meta_wa_business_id: Mapped[str] = mapped_column(String(100), nullable=True)  # WhatsApp Business Account ID
+    meta_selected_page_id: Mapped[str] = mapped_column(String(100), nullable=True)  # Page selected for Messenger/IG
+    meta_selected_wa_phone_id: Mapped[str] = mapped_column(String(100), nullable=True)  # WA phone selected
+
     @property
     def meta_wa_token_set(self) -> bool:
         return bool(self.meta_wa_token)

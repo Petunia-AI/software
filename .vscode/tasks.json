@@ -4,15 +4,45 @@
 		{
 			"label": "Backend API",
 			"type": "shell",
-			"command": "cd backend && source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+			"command": "set -a && source .env && set +a && cd backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
 			"isBackground": true,
-			"problemMatcher": []
+			"problemMatcher": [
+				{
+					"pattern": { "regexp": "^$" },
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "Started reloader",
+						"endsPattern": "Application startup complete"
+					}
+				}
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
 		},
 		{
 			"label": "Frontend Next.js",
 			"type": "shell",
-			"command": "cd frontend && npm run dev",
+			"command": "NEXT_PUBLIC_API_URL=http://localhost:8000/api NEXT_PUBLIC_WS_URL=ws://localhost:8000 npm run dev",
 			"isBackground": true,
+			"problemMatcher": [
+				{
+					"pattern": { "regexp": "^$" },
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "Starting",
+						"endsPattern": "Ready in"
+					}
+				}
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/frontend"
+			}
+		},
+		{
+			"label": "Start All",
+			"dependsOn": ["Backend API", "Frontend Next.js"],
+			"dependsOrder": "parallel",
 			"problemMatcher": []
 		}
 	]
