@@ -2,20 +2,26 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
-import { Bell, ChevronRight, Sparkles, LogOut } from "lucide-react";
+import {
+  Bell, ChevronRight, Sparkles, LogOut,
+  LayoutDashboard, MessageCircle, UsersRound, CalendarCheck,
+  TrendingUp, BrainCircuit, PenLine, SlidersHorizontal,
+  CreditCard, Building2,
+} from "lucide-react";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 
-const PAGE_META: Record<string, { label: string; emoji: string }> = {
-  "/dashboard":     { label: "Dashboard",       emoji: "📊" },
-  "/conversations": { label: "Conversaciones",  emoji: "💬" },
-  "/leads":         { label: "Leads",           emoji: "👥" },
-  "/seguimiento":   { label: "Seguimiento",     emoji: "📅" },
-  "/analytics":     { label: "Analíticas",      emoji: "📈" },
-  "/agents":        { label: "Agentes IA",       emoji: "🤖" },
-  "/content":       { label: "Contenido",       emoji: "✨" },
-  "/settings":      { label: "Configuración",   emoji: "⚙️" },
-  "/billing":       { label: "Plan & Billing",  emoji: "💳" },
-  "/properties":    { label: "Propiedades",     emoji: "🏢" },
+const PAGE_META: Record<string, { label: string; Icon: LucideIcon; color: string }> = {
+  "/dashboard":     { label: "Dashboard",      Icon: LayoutDashboard,    color: "#7C3AED" },
+  "/conversations": { label: "Conversaciones", Icon: MessageCircle,      color: "#06B6D4" },
+  "/leads":         { label: "Leads",          Icon: UsersRound,         color: "#10B981" },
+  "/seguimiento":   { label: "Seguimiento",    Icon: CalendarCheck,      color: "#F59E0B" },
+  "/analytics":     { label: "Analíticas",     Icon: TrendingUp,         color: "#3B82F6" },
+  "/agents":        { label: "Agentes IA",     Icon: BrainCircuit,       color: "#8B5CF6" },
+  "/content":       { label: "Contenido",      Icon: PenLine,            color: "#EC4899" },
+  "/settings":      { label: "Configuración",  Icon: SlidersHorizontal,  color: "#6B7280" },
+  "/billing":       { label: "Plan & Billing", Icon: CreditCard,         color: "#F97316" },
+  "/properties":    { label: "Propiedades",    Icon: Building2,          color: "#14B8A6" },
 };
 
 export function TopHeader() {
@@ -27,7 +33,7 @@ export function TopHeader() {
 
   const meta = Object.entries(PAGE_META).find(
     ([key]) => pathname === key || (key !== "/" && pathname.startsWith(key))
-  )?.[1] ?? { label: "Dashboard", emoji: "📊" };
+  )?.[1] ?? { label: "Dashboard", Icon: LayoutDashboard, color: "#7C3AED" };
 
   const initial = user?.full_name?.[0]?.toUpperCase() ?? "U";
 
@@ -40,8 +46,13 @@ export function TopHeader() {
           Petunia AI
         </Link>
         <ChevronRight size={13} className="text-muted-foreground/40" />
-        <span className="text-foreground font-semibold">
-          <span className="mr-1.5">{meta.emoji}</span>
+        <span className="text-foreground font-semibold flex items-center gap-1.5">
+          <span
+            className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+            style={{ background: `${meta.color}18` }}
+          >
+            <meta.Icon size={12} style={{ color: meta.color }} />
+          </span>
           {meta.label}
         </span>
       </div>
