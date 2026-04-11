@@ -48,11 +48,11 @@ class Lead(Base):
 
     # Estado y fuente
     stage: Mapped[str] = mapped_column(
-        Enum(LeadStage, name="leadstage"),
+        Enum(LeadStage, name="leadstage", values_callable=lambda obj: [e.value for e in obj]),
         default=LeadStage.NEW
     )
     source: Mapped[str] = mapped_column(
-        Enum(LeadSource, name="leadsource"),
+        Enum(LeadSource, name="leadsource", values_callable=lambda obj: [e.value for e in obj]),
         default=LeadSource.WEBCHAT
     )
 
