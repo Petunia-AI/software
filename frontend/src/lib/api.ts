@@ -73,9 +73,8 @@ export const leadsApi = {
   import: (file: File) => {
     const form = new FormData();
     form.append("file", file);
-    return api.post("/leads/import", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // NO fijar Content-Type manualmente: Axios necesita añadir el boundary automáticamente
+    return api.post("/leads/import", form);
   },
 };
 

@@ -63,93 +63,6 @@ async def list_leads(
     return result.scalars().all()
 
 
-@router.get("/{lead_id}", response_model=LeadOut)
-async def get_lead(
-    lead_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
-    )
-    lead = result.scalar_one_or_none()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead no encontrado")
-    return lead
-
-
-@router.post("/", response_model=LeadOut, status_code=201)
-async def create_lead(
-    data: LeadCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    lead = Lead(id=str(uuid.uuid4()), business_id=current_user.business_id, **data.model_dump())
-    db.add(lead)
-    await db.commit()
-    await db.refresh(lead)
-    return lead
-
-
-@router.patch("/{lead_id}", response_model=LeadOut)
-async def update_lead(
-    lead_id: str,
-    data: LeadUpdate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
-    )
-    lead = result.scalar_one_or_none()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead no encontrado")
-    for key, value in data.model_dump(exclude_none=True).items():
-        setattr(lead, key, value)
-    await db.commit()
-    await db.refresh(lead)
-    return lead
-
-
-@router.delete("/{lead_id}", status_code=204)
-async def delete_lead(
-    lead_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
-    )
-    lead = result.scalar_one_or_none()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead no encontrado")
-    lead.is_active = False
-    await db.commit()
-
-
-@router.patch("/{lead_id}/stage", response_model=LeadOut)
-async def update_lead_stage(
-    lead_id: str,
-    body: dict,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Cambio rápido de etapa desde Kanban o tabla."""
-    stage = body.get("stage", "")
-    if stage not in VALID_STAGES:
-        raise HTTPException(status_code=400, detail=f"Etapa inválida: {stage}")
-    result = await db.execute(
-        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
-    )
-    lead = result.scalar_one_or_none()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead no encontrado")
-    lead.stage = stage
-    await db.commit()
-    await db.refresh(lead)
-    return lead
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # EXPORT  GET /leads/export?format=csv|xlsx
 # ─────────────────────────────────────────────────────────────────────────────
@@ -349,3 +262,90 @@ async def import_leads(
         "message": f"{created} leads importados correctamente",
     }
 
+
+
+@router.get("/{lead_id}", response_model=LeadOut)
+async def get_lead(
+    lead_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
+    )
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead no encontrado")
+    return lead
+
+
+@router.post("/", response_model=LeadOut, status_code=201)
+async def create_lead(
+    data: LeadCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    lead = Lead(id=str(uuid.uuid4()), business_id=current_user.business_id, **data.model_dump())
+    db.add(lead)
+    await db.commit()
+    await db.refresh(lead)
+    return lead
+
+
+@router.patch("/{lead_id}", response_model=LeadOut)
+async def update_lead(
+    lead_id: str,
+    data: LeadUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
+    )
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead no encontrado")
+    for key, value in data.model_dump(exclude_none=True).items():
+        setattr(lead, key, value)
+    await db.commit()
+    await db.refresh(lead)
+    return lead
+
+
+@router.delete("/{lead_id}", status_code=204)
+async def delete_lead(
+    lead_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
+    )
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead no encontrado")
+    lead.is_active = False
+    await db.commit()
+
+
+@router.patch("/{lead_id}/stage", response_model=LeadOut)
+async def update_lead_stage(
+    lead_id: str,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cambio rápido de etapa desde Kanban o tabla."""
+    stage = body.get("stage", "")
+    if stage not in VALID_STAGES:
+        raise HTTPException(status_code=400, detail=f"Etapa inválida: {stage}")
+    result = await db.execute(
+        select(Lead).where(Lead.id == lead_id, Lead.business_id == current_user.business_id)
+    )
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead no encontrado")
+    lead.stage = stage
+    await db.commit()
+    await db.refresh(lead)
+    return lead
