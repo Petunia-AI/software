@@ -22,17 +22,32 @@ const adminNav = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, token, logout, loadUser } = useAdminAuthStore();
+  const { user, token, logout, loadUser, _hasHydrated } = useAdminAuthStore();
+
+  // La ruta /admin/login NO debe usar el layout con sidebar
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
 
   useEffect(() => {
+    if (!_hasHydrated) return; // esperar a que Zustand hidrate desde localStorage
     if (!token) { router.replace("/admin/login"); return; }
     loadUser();
-  }, [token]);
+  }, [_hasHydrated, token]);
 
   // Redirigir si no es superuser (verificado tras cargar)
   useEffect(() => {
     if (user && !user.is_superuser) router.replace("/dashboard");
   }, [user]);
+
+  // Mientras hidrata, mostrar pantalla de carga
+  if (!_hasHydrated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-950">
+        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-red-500 animate-spin" />
+      </div>
+    );
+  }
 
   const handleLogout = () => { logout(); router.push("/admin/login"); };
 

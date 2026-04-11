@@ -18,6 +18,8 @@ interface AdminAuthState {
   user: AdminUser | null;
   token: string | null;
   isAuthenticated: boolean;
+  _hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
@@ -56,6 +58,8 @@ export const useAdminAuthStore = create<AdminAuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      _hasHydrated: false,
+      setHasHydrated: (v) => set({ _hasHydrated: v }),
 
       login: async (email, password) => {
         const res = await adminAxios.post("/auth/login", { email, password });
@@ -88,8 +92,11 @@ export const useAdminAuthStore = create<AdminAuthState>()(
       },
     }),
     {
-      name: "admin-auth-storage", // key de localStorage separada del cliente
+      name: "admin-auth-storage",
       partialize: (state) => ({ token: state.token }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
