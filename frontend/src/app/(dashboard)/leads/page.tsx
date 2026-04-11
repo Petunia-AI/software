@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { leadsApi } from "@/lib/api";
 import { cn, timeAgo, getScoreColor, formatScore } from "@/lib/utils";
 import { StageBadge, ChannelBadge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import {
   Users, Search, Mail, Phone, Building2, Star,
   Download, Upload, FileSpreadsheet, ChevronDown, CheckCircle2,
   AlertCircle, Loader2, LayoutGrid, List, Filter, X, DollarSign,
-  ArrowUpRight, Award,
+  ArrowUpRight, Award, Trash2,
 } from "lucide-react";
 
 function KpiCard({
@@ -72,8 +72,18 @@ export default function LeadsPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => leadsApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      if (selectedLead && confirmDelete?.id === selectedLead.id) setSelectedLead(null);
+      setConfirmDelete(null);
+    },
+  });
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["leads", filterStage],
@@ -279,7 +289,7 @@ export default function LeadsPage() {
                 <thead>
                   <tr className="border-b border-border bg-accent/40">
                     {["Lead","Empresa","Etapa","Score BANT","Valor","Fuente","Último contacto",""].map((h,i) => (
-                      <th key={i} className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground first:px-5">{h}</th>
+                      <th key={i} className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground first:px-5 last:w-16">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -336,8 +346,23 @@ export default function LeadsPage() {
                       <td className="px-4 py-3.5 text-xs text-muted-foreground">
                         {lead.last_contacted_at ? timeAgo(lead.last_contacted_at) : "—"}
                       </td>
-                      <td className="px-4 py-3.5">
-                        <ArrowUpRight size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <td className="px-3 py-3.5">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={e => { e.stopPropagation(); setSelectedLead(lead); }}
+                            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                            title="Ver detalle"
+                          >
+                            <ArrowUpRight size={13} />
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); setConfirmDelete(lead); }}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
+                            title="Eliminar lead"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
                   ))}
@@ -348,7 +373,62 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      <LeadDrawer lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      <LeadDrawer
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        onDelete={(lead) => setConfirmDelete(lead)}
+      />
+
+      {/* Confirm delete modal */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-md"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <Trash2 size={18} className="text-red-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground">Eliminar lead</p>
+                  <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <div className="bg-accent/50 rounded-xl px-4 py-3 mb-5">
+                <p className="font-semibold text-sm text-foreground">{confirmDelete.name || "Sin nombre"}</p>
+                {confirmDelete.company && <p className="text-xs text-muted-foreground mt-0.5">{confirmDelete.company}</p>}
+                {confirmDelete.email && <p className="text-xs text-muted-foreground">{confirmDelete.email}</p>}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => deleteMutation.mutate(confirmDelete.id)}
+                  disabled={deleteMutation.isPending}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {deleteMutation.isPending
+                    ? <><Loader2 size={14} className="animate-spin" /> Eliminando…</>
+                    : <><Trash2 size={14} /> Eliminar</>}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

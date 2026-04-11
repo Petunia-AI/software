@@ -10,7 +10,7 @@ import {
   X, Mail, Phone, Building2, User, Briefcase, DollarSign,
   MessageSquare, Tag, Calendar, ChevronRight, Edit3, Save,
   CheckCircle, XCircle, Clock, ArrowRight, Zap, Target,
-  TrendingUp, AlertCircle, Star,
+  TrendingUp, AlertCircle, Star, Trash2,
 } from "lucide-react";
 
 // ─── tipos ─────────────────────────────────────────────────────────────────
@@ -40,6 +40,7 @@ export interface Lead {
 interface LeadDrawerProps {
   lead: Lead | null;
   onClose: () => void;
+  onDelete?: (lead: Lead) => void;
 }
 
 // ─── constantes ────────────────────────────────────────────────────────────
@@ -116,7 +117,7 @@ function BantBar({ value }: { value?: string }) {
 
 // ─── componente principal ──────────────────────────────────────────────────
 
-export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
+export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps) {
   const qc = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<Partial<Lead>>({});
@@ -229,6 +230,15 @@ export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
                 ) : (
                   <button onClick={startEdit} className="btn-ghost p-1.5 text-xs" title="Editar">
                     <Edit3 size={15} />
+                  </button>
+                )}
+                {onDelete && lead && (
+                  <button
+                    onClick={() => onDelete(lead)}
+                    className="btn-ghost p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50"
+                    title="Eliminar lead"
+                  >
+                    <Trash2 size={15} />
                   </button>
                 )}
                 <button onClick={onClose} className="btn-ghost p-1.5">
