@@ -42,11 +42,18 @@ function ConversationsInner() {
     mutationFn: () => conversationsApi.start("webchat"),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
-      toast.success("Conversación iniciada");
-      const id = res.data?.id ?? res.data?.conversation_id;
-      if (id) router.push(`/conversations/${id}`);
+      const id = res.data?.conversation_id ?? res.data?.id;
+      if (id) {
+        toast.success("Conversación iniciada");
+        router.push(`/conversations/${id}`);
+      } else {
+        toast.error("No se pudo obtener el ID de la conversación");
+      }
     },
-    onError: () => toast.error("Error al crear la conversación"),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { detail?: string } } };
+      toast.error(e?.response?.data?.detail || "Error al crear la conversación");
+    },
   });
 
   const filtered = convs.filter((c: Record<string, unknown>) => {
