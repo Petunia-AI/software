@@ -164,6 +164,33 @@ export const metaApi = {
   resubscribeWebhooks: () => api.post("/meta/resubscribe-webhooks"),
 };
 
+// ============ LINKEDIN OAUTH ============
+export const linkedinApi = {
+  getConnectUrl: () => api.get<{ url: string }>("/linkedin/connect"),
+  getStatus:     () => api.get("/linkedin/status"),
+  disconnect:    () => api.post("/linkedin/disconnect"),
+  post:          (text: string, image_url?: string, use_org?: boolean) =>
+    api.post("/linkedin/post", { text, image_url, use_org }),
+  getComments:   (post_urn: string) =>
+    api.get("/linkedin/comments", { params: { post_urn } }),
+  reply:         (post_urn: string, text: string, comment_urn?: string, use_org?: boolean) =>
+    api.post("/linkedin/reply", { post_urn, comment_urn, text, use_org }),
+};
+
+// ============ TIKTOK OAUTH ============
+export const tiktokApi = {
+  getConnectUrl: () => api.get<{ url: string }>("/tiktok/connect"),
+  getStatus:     () => api.get("/tiktok/status"),
+  disconnect:    () => api.post("/tiktok/disconnect"),
+  publish:       (video_url: string, title?: string, privacy?: string) =>
+    api.post("/tiktok/publish", { video_url, title, privacy }),
+  getVideos:     () => api.get("/tiktok/videos"),
+  getComments:   (video_id: string) =>
+    api.get("/tiktok/comments", { params: { video_id } }),
+  reply:         (video_id: string, text: string, comment_id?: string) =>
+    api.post("/tiktok/reply", { video_id, comment_id, text }),
+};
+
 // ============ PROPERTIES ============
 export const propertiesApi = {
   list: (params?: { status?: string; property_type?: string; operation?: string }) =>

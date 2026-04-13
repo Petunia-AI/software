@@ -3,12 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { businessApi, metaApi } from "@/lib/api";
+import { businessApi, metaApi, linkedinApi, tiktokApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetaConnect } from "@/components/meta-connect";
+import { LinkedInConnect } from "@/components/linkedin-connect";
+import { TikTokConnect } from "@/components/tiktok-connect";
 import toast from "react-hot-toast";
-import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Link2 } from "lucide-react";
+import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Link2, Linkedin, Music2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "http://localhost:3000";
@@ -118,6 +120,25 @@ function SettingsContent() {
         toast.error(`Error al conectar con Meta: ${reason}`);
       }
     }
+
+    const linkedinParam = searchParams.get("linkedin");
+    if (linkedinParam === "connected") {
+      toast.success("✅ LinkedIn conectado correctamente", { duration: 5000 });
+      qc.invalidateQueries({ queryKey: ["linkedin-status"] });
+    } else if (linkedinParam === "error") {
+      const reason = searchParams.get("reason") || "desconocido";
+      if (reason !== "cancelled") toast.error(`Error al conectar con LinkedIn: ${reason}`);
+    }
+
+    const tiktokParam = searchParams.get("tiktok");
+    if (tiktokParam === "connected") {
+      toast.success("✅ TikTok conectado correctamente", { duration: 5000 });
+      qc.invalidateQueries({ queryKey: ["tiktok-status"] });
+    } else if (tiktokParam === "error") {
+      const reason = searchParams.get("reason") || "desconocido";
+      if (reason !== "cancelled") toast.error(`Error al conectar con TikTok: ${reason}`);
+    }
+
     // Limpiar query params de la URL
     router.replace("/settings", { scroll: false });
   }, [searchParams, router, qc]);
@@ -130,6 +151,18 @@ function SettingsContent() {
   const { data: metaStatus, refetch: refetchMeta } = useQuery({
     queryKey: ["meta-status"],
     queryFn: () => metaApi.getStatus().then((r) => r.data),
+    staleTime: 30_000,
+  });
+
+  const { data: linkedinStatus, refetch: refetchLinkedin } = useQuery({
+    queryKey: ["linkedin-status"],
+    queryFn: () => linkedinApi.getStatus().then((r) => r.data),
+    staleTime: 30_000,
+  });
+
+  const { data: tiktokStatus, refetch: refetchTiktok } = useQuery({
+    queryKey: ["tiktok-status"],
+    queryFn: () => tiktokApi.getStatus().then((r) => r.data),
     staleTime: 30_000,
   });
 
@@ -388,6 +421,24 @@ function SettingsContent() {
             </div>
           </Section>
         )}
+
+        {/* LinkedIn Connect */}
+        <Section icon={Linkedin} title="Conectar con LinkedIn"
+          subtitle="Publica contenido y responde comentarios automáticamente" delay={0.23}>
+          <LinkedInConnect
+            status={linkedinStatus}
+            onUpdate={() => refetchLinkedin()}
+          />
+        </Section>
+
+        {/* TikTok Connect */}
+        <Section icon={Music2} title="Conectar con TikTok"
+          subtitle="Publica videos y responde comentarios automáticamente" delay={0.25}>
+          <TikTokConnect
+            status={tiktokStatus}
+            onUpdate={() => refetchTiktok()}
+          />
+        </Section>
 
         {/* Widget embed code */}
         <Section icon={Code2} title="Instalar el widget en tu web"
