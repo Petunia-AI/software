@@ -13,18 +13,20 @@
 (function () {
   "use strict";
 
-  // Captura los atributos del script tag ANTES de cualquier defer/async
+  // Config: primero busca objeto global (para WPCode JS snippet),
+  // luego atributos del script tag (para uso directo en HTML).
+  var _g = window.PetuniaWidgetConfig || {};
   var script = document.currentScript || (function () {
     var scripts = document.getElementsByTagName("script");
     return scripts[scripts.length - 1];
   })();
 
   var cfg = {
-    businessId: script.getAttribute("data-business-id") || "",
-    color:      script.getAttribute("data-color")       || "#635bff",
-    name:       script.getAttribute("data-name")        || "Asistente",
-    position:   script.getAttribute("data-position")    || "right",
-    baseUrl:    script.getAttribute("data-base-url")    || "https://app.aipetunia.com",
+    businessId: _g.businessId || script.getAttribute("data-business-id") || "",
+    color:      _g.color      || script.getAttribute("data-color")       || "#635bff",
+    name:       _g.name       || script.getAttribute("data-name")        || "Asistente",
+    position:   _g.position   || script.getAttribute("data-position")    || "right",
+    baseUrl:    _g.baseUrl    || script.getAttribute("data-base-url")    || "https://app.aipetunia.com",
   };
 
   function init() {
