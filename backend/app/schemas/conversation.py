@@ -21,11 +21,11 @@ class ConversationOut(BaseModel):
     lead_id: Optional[str] = None
     channel: str
     status: str
-    current_agent: str
-    message_count: int
+    current_agent: Optional[str] = None
+    message_count: Optional[int] = 0
     sentiment_score: Optional[float] = None
-    is_human_takeover: bool
-    started_at: datetime
+    is_human_takeover: Optional[bool] = False
+    started_at: Optional[datetime] = None
     last_message_at: Optional[datetime] = None
     messages: Optional[List[MessageOut]] = None
 
