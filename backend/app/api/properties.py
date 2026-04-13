@@ -115,7 +115,7 @@ async def _get_property(db: AsyncSession, property_id: str, business_id: str) ->
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/")
+@router.get("")
 async def list_properties(
     status:        Optional[str] = None,
     property_type: Optional[str] = None,
@@ -199,7 +199,7 @@ async def list_all_images(
     return {"images": images, "total": len(images)}
 
 
-@router.post("/")
+@router.post("")
 async def create_property(
     data:         PropertyCreate,
     db:           AsyncSession = Depends(get_db),

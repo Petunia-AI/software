@@ -36,7 +36,7 @@ VALID_SOURCES = {e.value for e in LeadSource}
 router = APIRouter(prefix="/leads", tags=["leads"])
 
 
-@router.get("/", response_model=List[LeadOut])
+@router.get("", response_model=List[LeadOut])
 async def list_leads(
     stage: Optional[str] = None,
     source: Optional[str] = None,
@@ -333,7 +333,7 @@ async def get_lead(
     return lead
 
 
-@router.post("/", response_model=LeadOut, status_code=201)
+@router.post("", response_model=LeadOut, status_code=201)
 async def create_lead(
     data: LeadCreate,
     current_user: User = Depends(get_current_user),

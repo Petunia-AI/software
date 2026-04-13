@@ -54,7 +54,7 @@ def _build_lead_dict(lead: Optional[Lead]) -> dict:
     }
 
 
-@router.get("/", response_model=List[ConversationOut])
+@router.get("", response_model=List[ConversationOut])
 async def list_conversations(
     status: Optional[str] = None,
     channel: Optional[str] = None,

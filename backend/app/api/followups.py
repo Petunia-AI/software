@@ -191,7 +191,7 @@ async def followup_calendar(
     return {"year": y, "month": m, "days": grouped}
 
 
-@router.get("/followups/")
+@router.get("/followups")
 async def list_followups(
     status: Optional[str] = None,
     priority: Optional[str] = None,
@@ -255,7 +255,7 @@ async def list_followups(
     return [_fu_to_dict(fu, leads_map.get(fu.lead_id)) for fu in followups]
 
 
-@router.post("/followups/", status_code=201)
+@router.post("/followups", status_code=201)
 async def create_followup(
     data: FollowUpCreate,
     current_user: User = Depends(get_current_user),

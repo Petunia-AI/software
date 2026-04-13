@@ -42,7 +42,7 @@ export const authApi = {
 // ============ CONVERSATIONS ============
 export const conversationsApi = {
   list: (params?: { status?: string; channel?: string; limit?: number }) =>
-    api.get("/conversations/", { params }),
+    api.get("/conversations", { params }),
   get: (id: string) => api.get(`/conversations/${id}`),
   start: (channel: string = "webchat", lead_name?: string) =>
     api.post("/conversations/start", null, { params: { channel, lead_name } }),
@@ -55,9 +55,9 @@ export const conversationsApi = {
 // ============ LEADS ============
 export const leadsApi = {
   list: (params?: { stage?: string; min_score?: number; limit?: number }) =>
-    api.get("/leads/", { params }),
+    api.get("/leads", { params }),
   get: (id: string) => api.get(`/leads/${id}`),
-  create: (data: Record<string, unknown>) => api.post("/leads/", data),
+  create: (data: Record<string, unknown>) => api.post("/leads", data),
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/leads/${id}`, data),
   delete: (id: string) => api.delete(`/leads/${id}`),
@@ -88,12 +88,12 @@ export const followupsApi = {
     status?: string; priority?: string; followup_type?: string;
     lead_id?: string; assigned_to?: string; period?: string;
     date_from?: string; date_to?: string; limit?: number;
-  }) => api.get("/followups/", { params }),
+  }) => api.get("/followups", { params }),
   create: (data: {
     lead_id: string; followup_type?: string; title: string;
     description?: string; priority?: string; scheduled_at: string;
     assigned_to?: string; notify_email?: boolean; notify_whatsapp?: boolean;
-  }) => api.post("/followups/", data),
+  }) => api.post("/followups", data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/followups/${id}`, data),
   complete: (id: string, outcome?: string) =>
     api.patch(`/followups/${id}/complete`, null, { params: { outcome } }),

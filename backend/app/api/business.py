@@ -12,7 +12,7 @@ import uuid
 router = APIRouter(prefix="/business", tags=["business"])
 
 
-@router.get("/", response_model=BusinessOut)
+@router.get("", response_model=BusinessOut)
 async def get_my_business(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -24,7 +24,7 @@ async def get_my_business(
     return business
 
 
-@router.patch("/", response_model=BusinessOut)
+@router.patch("", response_model=BusinessOut)
 async def update_business(
     data: BusinessUpdate,
     current_user: User = Depends(get_current_user),

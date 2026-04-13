@@ -38,6 +38,7 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
+    redirect_slashes=False,
 )
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
