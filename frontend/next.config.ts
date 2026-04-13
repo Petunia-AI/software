@@ -84,31 +84,37 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    // Cabeceras especiales para el widget: se puede embeber en cualquier dominio (WordPress, etc.)
-    const widgetHeaders = securityHeaders
-      .filter((h) => h.key !== "X-Frame-Options")
-      .map((h) => {
-        if (h.key === "Content-Security-Policy") {
-          return {
-            key: h.key,
-            value: h.value
-              // Permite que cualquier sitio embeba el widget en un iframe
-              .replace("frame-ancestors 'self'", "frame-ancestors *"),
-          };
-        }
-        return h;
-      });
+    // CSP del widget: permite que CUALQUIER sitio externo (WordPress, etc.) lo embeba en un iframe.
+    // Los navegadores modernos ignoran X-Frame-Options cuando CSP frame-ancestors está presente,
+    // así que basta con sobreescribir el CSP en la ruta /widget.
+    const widgetCsp = isDev
+      ? "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
+      : [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src * data: blob:",
+          "font-src 'self' data:",
+          "connect-src https: wss:",
+          "frame-ancestors *",  // ← permite embedding desde cualquier dominio
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join("; ");
 
     return [
       {
-        // Regla específica para el widget — debe ir ANTES de la regla genérica
-        source: "/widget",
-        headers: widgetHeaders,
+        // Aplica a TODAS las rutas (incluye /widget)
+        source: "/(.*)",
+        headers: securityHeaders,
       },
       {
-        // Aplica a todas las demás rutas
-        source: "/((?!widget).*)",
-        headers: securityHeaders,
+        // Sobreescribe CSP y X-Frame-Options solo para /widget
+        // (Next.js aplica las reglas en orden; la última gana en caso de colisión)
+        source: "/widget",
+        headers: [
+          { key: "Content-Security-Policy", value: widgetCsp },
+          { key: "X-Frame-Options",         value: "ALLOWALL" }, // ignorado por navegadores modernos que usan CSP
+        ],
       },
     ];
   },
