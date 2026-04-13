@@ -48,10 +48,12 @@ app.add_middleware(SlowAPIMiddleware)
 _allowed_origins = (
     ["*"]
     if settings.debug
-    else [
+    else list({
         settings.frontend_url,
         f"https://www.{settings.frontend_url.removeprefix('https://')}",
-    ]
+        "https://app.aipetunia.com",
+        "https://www.aipetunia.com",
+    })
 )
 app.add_middleware(
     CORSMiddleware,
