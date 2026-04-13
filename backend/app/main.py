@@ -36,8 +36,9 @@ app = FastAPI(
     description="Plataforma de IA conversacional para automatizar ventas en LATAM",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs" if settings.debug else None,   # deshabilitar Swagger en producción
+    docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
+    redirect_slashes=False,  # evita redirects 307 cuando falta/sobra la barra final
 )
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────

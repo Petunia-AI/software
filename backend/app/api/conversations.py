@@ -214,7 +214,7 @@ async def start_conversation(
     lead = Lead(
         id=str(uuid.uuid4()),
         business_id=current_user.business_id,
-        name=lead_name,
+        name=lead_name or "Visitante",
         phone=lead_phone,
         source=channel,
     )

@@ -84,10 +84,30 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
+    // Cabeceras especiales para el widget: se puede embeber en cualquier dominio (WordPress, etc.)
+    const widgetHeaders = securityHeaders
+      .filter((h) => h.key !== "X-Frame-Options")
+      .map((h) => {
+        if (h.key === "Content-Security-Policy") {
+          return {
+            key: h.key,
+            value: h.value
+              // Permite que cualquier sitio embeba el widget en un iframe
+              .replace("frame-ancestors 'self'", "frame-ancestors *"),
+          };
+        }
+        return h;
+      });
+
     return [
       {
-        // Aplica a todas las rutas
-        source: "/(.*)",
+        // Regla específica para el widget — debe ir ANTES de la regla genérica
+        source: "/widget",
+        headers: widgetHeaders,
+      },
+      {
+        // Aplica a todas las demás rutas
+        source: "/((?!widget).*)",
         headers: securityHeaders,
       },
     ];
