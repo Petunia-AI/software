@@ -19,6 +19,8 @@ class Channel(str, enum.Enum):
     MESSENGER = "messenger"
     WEBCHAT = "webchat"
     EMAIL = "email"
+    LINKEDIN = "linkedin"
+    TIKTOK = "tiktok"
 
 
 class Conversation(Base):

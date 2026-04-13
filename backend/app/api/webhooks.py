@@ -977,3 +977,354 @@ async def _fetch_lead_field_data(leadgen_id: str) -> dict:
 
         raw_fields = r.json().get("field_data", [])
         return {item["name"]: item["values"][0] for item in raw_fields if item.get("values")}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LINKEDIN WEBHOOK — comentarios en posts
+# LinkedIn envía eventos via webhook cuando alguien comenta en tus posts.
+# Se requiere suscribirse desde el portal de LinkedIn Developers.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/linkedin")
+async def linkedin_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Recibe notificaciones de LinkedIn (comentarios en posts).
+    LinkedIn usa un desafío de verificación en el primer GET, y luego
+    envía eventos POST cuando hay nuevos comentarios.
+    """
+    payload = await request.json()
+
+    # LinkedIn envía un array de eventos
+    events = payload if isinstance(payload, list) else [payload]
+
+    for event in events:
+        # Solo procesamos comentarios nuevos
+        if event.get("eventType") != "COMMENT":
+            continue
+
+        await _process_linkedin_comment(event, db)
+
+    return {"ok": True}
+
+
+@router.get("/linkedin")
+async def linkedin_webhook_verify(request: Request):
+    """Challenge de suscripción de LinkedIn Webhook."""
+    challenge = request.query_params.get("challengeCode", "")
+    if challenge:
+        return {"challengeCode": challenge}
+    return Response(status_code=200)
+
+
+async def _process_linkedin_comment(event: dict, db: AsyncSession):
+    """
+    Procesa un comentario de LinkedIn y genera respuesta del agente.
+    El channel_contact_id es el URN del autor del comentario.
+    """
+    try:
+        author_urn = event.get("actor", "")
+        post_urn   = event.get("object", "")   # URN del post comentado
+        comment_urn = event.get("id", "")
+        text = event.get("message", {}).get("text", "").strip()
+
+        if not text or not author_urn:
+            return
+
+        # Buscar negocio por linkedin_person_urn o linkedin_org_id
+        result = await db.execute(
+            select(Business).where(
+                Business.linkedin_enabled == True,
+                Business.is_active == True,
+            )
+        )
+        business = result.scalars().first()
+        if not business:
+            return
+
+        # No responder a comentarios propios
+        if author_urn in (business.linkedin_person_urn, business.linkedin_org_id):
+            return
+
+        # Buscar o crear lead
+        lead_result = await db.execute(
+            select(Lead).where(
+                Lead.business_id == business.id,
+                Lead.notes.contains(author_urn),
+            )
+        )
+        lead = lead_result.scalar_one_or_none()
+        if not lead:
+            lead = Lead(
+                id=str(uuid.uuid4()),
+                business_id=business.id,
+                name=author_urn.split(":")[-1],
+                source="manual",
+                notes=f"LinkedIn URN: {author_urn}",
+                tags=[],
+                is_active=True,
+            )
+            db.add(lead)
+            await db.flush()
+
+        # Buscar o crear conversación
+        conv_result = await db.execute(
+            select(Conversation).where(
+                Conversation.business_id == business.id,
+                Conversation.channel == Channel.LINKEDIN,
+                Conversation.channel_contact_id == author_urn,
+                Conversation.status.in_(["active", "waiting"]),
+            )
+        )
+        conv = conv_result.scalar_one_or_none()
+        if not conv:
+            conv = Conversation(
+                id=str(uuid.uuid4()),
+                business_id=business.id,
+                lead_id=lead.id,
+                channel=Channel.LINKEDIN,
+                channel_contact_id=author_urn,
+                extra_data={"post_urn": post_urn, "comment_urn": comment_urn},
+            )
+            db.add(conv)
+            await db.flush()
+
+        # Guardar mensaje del usuario
+        user_msg = Message(
+            id=str(uuid.uuid4()),
+            conversation_id=conv.id,
+            role=MessageRole.USER,
+            content=text,
+        )
+        db.add(user_msg)
+        await db.flush()
+
+        # No responder si hay takeover humano
+        if conv.is_human_takeover:
+            await db.commit()
+            return
+
+        # Obtener historial
+        hist_result = await db.execute(
+            select(Message)
+            .where(Message.conversation_id == conv.id)
+            .order_by(Message.created_at)
+        )
+        history = hist_result.scalars().all()
+
+        # Obtener config de agente
+        config_result = await db.execute(
+            select(AgentConfig).where(AgentConfig.business_id == business.id)
+        )
+        agent_config = config_result.scalar_one_or_none()
+
+        # Generar respuesta del agente
+        response_text, new_agent, qualification = await orchestrator.process_message(
+            message=text,
+            conversation=conv,
+            lead=lead,
+            business=business,
+            message_history=history,
+            agent_config=agent_config,
+        )
+
+        # Guardar respuesta
+        ai_msg = Message(
+            id=str(uuid.uuid4()),
+            conversation_id=conv.id,
+            role=MessageRole.ASSISTANT,
+            content=response_text,
+        )
+        db.add(ai_msg)
+
+        conv.current_agent = new_agent
+        conv.message_count = (conv.message_count or 0) + 2
+        conv.last_message_at = datetime.now(timezone.utc)
+
+        await db.commit()
+
+        # Enviar respuesta como comentario en LinkedIn
+        from app.services.linkedin_service import linkedin_service
+        author = business.linkedin_org_id or business.linkedin_person_urn
+        if author and business.linkedin_access_token:
+            await linkedin_service.reply_to_comment(
+                access_token=business.linkedin_access_token,
+                post_urn=post_urn,
+                parent_comment_urn=comment_urn,
+                author_urn=author,
+                text=response_text,
+            )
+
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("linkedin_webhook_error", error=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TIKTOK WEBHOOK — comentarios en videos
+# TikTok puede enviar notificaciones via webhook (requiere aprobación).
+# También se puede hacer polling desde el frontend con GET /tiktok/comments.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/tiktok")
+async def tiktok_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Recibe notificaciones de TikTok (comentarios en videos).
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return Response(status_code=200)
+
+    event_type = payload.get("event", "")
+    if event_type != "comment.new":
+        return {"ok": True}
+
+    await _process_tiktok_comment(payload, db)
+    return {"ok": True}
+
+
+@router.get("/tiktok")
+async def tiktok_webhook_verify(request: Request):
+    """Challenge de suscripción de TikTok Webhook."""
+    challenge = request.query_params.get("challenge", "")
+    if challenge:
+        return Response(content=challenge, media_type="text/plain")
+    return Response(status_code=200)
+
+
+async def _process_tiktok_comment(event: dict, db: AsyncSession):
+    """
+    Procesa un comentario de TikTok y genera respuesta del agente.
+    """
+    try:
+        data = event.get("data", {})
+        video_id   = data.get("video_id", "")
+        comment_id = data.get("comment_id", "")
+        commenter_id = data.get("commenter_id", data.get("open_id", ""))
+        text = data.get("text", "").strip()
+
+        if not text or not commenter_id:
+            return
+
+        # Buscar negocio
+        result = await db.execute(
+            select(Business).where(
+                Business.tiktok_enabled == True,
+                Business.is_active == True,
+            )
+        )
+        business = result.scalars().first()
+        if not business:
+            return
+
+        # No responder a comentarios propios
+        if commenter_id == business.tiktok_open_id:
+            return
+
+        # Buscar o crear lead
+        lead_result = await db.execute(
+            select(Lead).where(
+                Lead.business_id == business.id,
+                Lead.notes.contains(f"TikTok:{commenter_id}"),
+            )
+        )
+        lead = lead_result.scalar_one_or_none()
+        if not lead:
+            lead = Lead(
+                id=str(uuid.uuid4()),
+                business_id=business.id,
+                name=f"TikTok user {commenter_id[:8]}",
+                source="manual",
+                notes=f"TikTok:{commenter_id}",
+                tags=[],
+                is_active=True,
+            )
+            db.add(lead)
+            await db.flush()
+
+        # Buscar o crear conversación
+        conv_result = await db.execute(
+            select(Conversation).where(
+                Conversation.business_id == business.id,
+                Conversation.channel == Channel.TIKTOK,
+                Conversation.channel_contact_id == commenter_id,
+                Conversation.status.in_(["active", "waiting"]),
+            )
+        )
+        conv = conv_result.scalar_one_or_none()
+        if not conv:
+            conv = Conversation(
+                id=str(uuid.uuid4()),
+                business_id=business.id,
+                lead_id=lead.id,
+                channel=Channel.TIKTOK,
+                channel_contact_id=commenter_id,
+                extra_data={"video_id": video_id},
+            )
+            db.add(conv)
+            await db.flush()
+
+        # Guardar mensaje usuario
+        user_msg = Message(
+            id=str(uuid.uuid4()),
+            conversation_id=conv.id,
+            role=MessageRole.USER,
+            content=text,
+        )
+        db.add(user_msg)
+        await db.flush()
+
+        if conv.is_human_takeover:
+            await db.commit()
+            return
+
+        # Historial
+        hist_result = await db.execute(
+            select(Message)
+            .where(Message.conversation_id == conv.id)
+            .order_by(Message.created_at)
+        )
+        history = hist_result.scalars().all()
+
+        config_result = await db.execute(
+            select(AgentConfig).where(AgentConfig.business_id == business.id)
+        )
+        agent_config = config_result.scalar_one_or_none()
+
+        # Respuesta del agente
+        response_text, new_agent, qualification = await orchestrator.process_message(
+            message=text,
+            conversation=conv,
+            lead=lead,
+            business=business,
+            message_history=history,
+            agent_config=agent_config,
+        )
+
+        ai_msg = Message(
+            id=str(uuid.uuid4()),
+            conversation_id=conv.id,
+            role=MessageRole.ASSISTANT,
+            content=response_text,
+        )
+        db.add(ai_msg)
+
+        conv.current_agent = new_agent
+        conv.message_count = (conv.message_count or 0) + 2
+        conv.last_message_at = datetime.now(timezone.utc)
+
+        await db.commit()
+
+        # Enviar respuesta como comentario en TikTok (máx 150 chars)
+        from app.services.tiktok_service import tiktok_service
+        if business.tiktok_access_token:
+            await tiktok_service.reply_to_comment(
+                access_token=business.tiktok_access_token,
+                video_id=video_id,
+                comment_id=comment_id,
+                text=response_text[:150],
+            )
+
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("tiktok_webhook_error", error=str(e))

@@ -10,6 +10,8 @@ from app.api import auth, conversations, leads, analytics, webhooks, business, a
 from app.api import properties as properties_router
 from app.api import meta_oauth
 from app.api import followups as followups_router
+from app.api import linkedin_oauth
+from app.api import tiktok_oauth
 from app.core.scheduler import start_scheduler, stop_scheduler
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 import structlog
@@ -72,6 +74,8 @@ app.include_router(content.router, prefix="/api")
 app.include_router(properties_router.router, prefix="/api")
 app.include_router(meta_oauth.router, prefix="/api")
 app.include_router(followups_router.router, prefix="/api")
+app.include_router(linkedin_oauth.router, prefix="/api")
+app.include_router(tiktok_oauth.router, prefix="/api")
 
 # Servir imágenes subidas como archivos estáticos
 os.makedirs("uploads", exist_ok=True)

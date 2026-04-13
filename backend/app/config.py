@@ -67,9 +67,13 @@ class Settings(BaseSettings):
     # Instagram Business Account ID (para publicar)
     instagram_account_id: str = ""
 
-    # LinkedIn
+    # LinkedIn OAuth
+    linkedin_client_id:     str = ""
+    linkedin_client_secret: str = ""
+    linkedin_oauth_redirect_uri: str = ""
+    # Legacy (token estático, deprecado)
     linkedin_access_token: str = ""
-    linkedin_author_urn:   str = ""   # urn:li:organization:12345 o urn:li:person:xxx
+    linkedin_author_urn:   str = ""
 
     # X / Twitter
     twitter_api_key:       str = ""
@@ -88,7 +92,11 @@ class Settings(BaseSettings):
     # HeyGen — Generación de videos con avatares IA (solo plan Premium)
     heygen_api_key: str = ""
 
-    # TikTok (para publicación)
+    # TikTok OAuth
+    tiktok_client_key:    str = ""
+    tiktok_client_secret: str = ""
+    tiktok_oauth_redirect_uri: str = ""
+    # Legacy (token estático, deprecado)
     tiktok_access_token: str = ""
     tiktok_open_id:      str = ""
 

@@ -63,6 +63,23 @@ class Business(Base):
     def meta_page_token_set(self) -> bool:
         return bool(self.meta_page_token)
 
+    # LinkedIn
+    linkedin_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    linkedin_access_token: Mapped[str] = mapped_column(String(2000), nullable=True)
+    linkedin_refresh_token: Mapped[str] = mapped_column(String(2000), nullable=True)
+    linkedin_token_expires_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)
+    linkedin_org_id: Mapped[str] = mapped_column(String(100), nullable=True)   # URN organización (urn:li:organization:xxx)
+    linkedin_person_urn: Mapped[str] = mapped_column(String(100), nullable=True)  # urn:li:person:xxx
+    linkedin_name: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    # TikTok
+    tiktok_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    tiktok_access_token: Mapped[str] = mapped_column(String(2000), nullable=True)
+    tiktok_refresh_token: Mapped[str] = mapped_column(String(2000), nullable=True)
+    tiktok_token_expires_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)
+    tiktok_open_id: Mapped[str] = mapped_column(String(100), nullable=True)    # identificador de cuenta TikTok
+    tiktok_username: Mapped[str] = mapped_column(String(255), nullable=True)
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
