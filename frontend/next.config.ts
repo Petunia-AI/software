@@ -67,6 +67,21 @@ const nextConfig: NextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+  async rewrites() {
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+      "https://gentes-de-ventas-production.up.railway.app";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        source: "/ws/:path*",
+        destination: `${backendUrl}/ws/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
