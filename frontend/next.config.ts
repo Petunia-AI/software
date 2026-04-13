@@ -73,7 +73,7 @@ const nextConfig: NextConfig = {
     // dominio del frontend para evitar loops.
     const backendUrl =
       process.env.BACKEND_URL ||
-      "https://gentes-de-ventas-production.up.railway.app";
+      "http://gentes-de-ventas.railway.internal:8000";
     return [
       {
         source: "/api/:path*",
