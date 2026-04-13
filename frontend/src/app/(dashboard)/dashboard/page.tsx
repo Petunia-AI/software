@@ -129,6 +129,7 @@ export default function DashboardPage() {
           Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
         ) : (
           <>
+            <Link href="/conversations">
             <StatCard
               title="Conversaciones"
               value={stats?.total_conversations ?? 0}
@@ -137,7 +138,10 @@ export default function DashboardPage() {
               iconBg="bg-gradient-to-br from-violet-500 to-purple-600"
               iconColor="text-white"
               delay={0}
+              onClick={() => {}}
             />
+            </Link>
+            <Link href="/leads">
             <StatCard
               title="Leads generados"
               value={stats?.total_leads ?? 0}
@@ -146,7 +150,10 @@ export default function DashboardPage() {
               iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
               iconColor="text-white"
               delay={0.05}
+              onClick={() => {}}
             />
+            </Link>
+            <Link href="/leads?filter=closed_won">
             <StatCard
               title="Conversión"
               value={`${stats?.conversion_rate ?? 0}%`}
@@ -155,7 +162,10 @@ export default function DashboardPage() {
               iconBg="bg-gradient-to-br from-emerald-500 to-green-600"
               iconColor="text-white"
               delay={0.1}
+              onClick={() => {}}
             />
+            </Link>
+            <Link href="/leads?filter=high_score">
             <StatCard
               title="Score BANT"
               value={`${stats?.avg_qualification_score ?? 0}/10`}
@@ -164,7 +174,9 @@ export default function DashboardPage() {
               iconBg="bg-gradient-to-br from-amber-400 to-orange-500"
               iconColor="text-white"
               delay={0.15}
+              onClick={() => {}}
             />
+            </Link>
           </>
         )}
       </div>
