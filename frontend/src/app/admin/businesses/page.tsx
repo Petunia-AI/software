@@ -90,9 +90,13 @@ export default function AdminBusinessesPage() {
                   <span className="font-semibold text-foreground tabular-nums">{biz.users as number}</span>
                 </td>
                 <td className="text-center">
-                  <div className="flex items-center justify-center gap-1.5">
-                    {!!biz.whatsapp_enabled && <span title="WhatsApp" className="text-base">💬</span>}
-                    <span title="Webchat" className="text-base">🌐</span>
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap max-w-[120px] mx-auto">
+                    {!!biz.webchat_enabled && <span title="Webchat" className="text-sm">🌐</span>}
+                    {!!biz.whatsapp_enabled && <span title="WhatsApp" className="text-sm">💬</span>}
+                    {!!biz.instagram_enabled && <span title="Instagram" className="text-sm">📸</span>}
+                    {!!biz.messenger_enabled && <span title="Messenger" className="text-sm">💜</span>}
+                    {!!biz.linkedin_enabled && <span title="LinkedIn" className="text-sm">🔵</span>}
+                    {!!biz.tiktok_enabled && <span title="TikTok" className="text-sm">🎵</span>}
                   </div>
                 </td>
                 <td className="text-xs text-muted-foreground">
