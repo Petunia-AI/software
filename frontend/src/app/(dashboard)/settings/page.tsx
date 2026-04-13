@@ -269,7 +269,37 @@ function SettingsContent() {
         <Section icon={Building2} title="Información del negocio" delay={0}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Nombre" value={form.name} onChange={set("name") as (v: string) => void} placeholder="Mi Empresa SA" />
-            <Field label="Industria" value={form.industry} onChange={set("industry") as (v: string) => void} placeholder="SaaS, Fintech, Retail..." />
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Industria</label>
+              <select
+                value={form.industry}
+                onChange={(e) => (set("industry") as (v: string) => void)(e.target.value)}
+                className="input-stripe"
+              >
+                <option value="">Selecciona una industria...</option>
+                <option value="Bienes Raíces">Bienes Raíces</option>
+                <option value="SaaS / Software">SaaS / Software</option>
+                <option value="Fintech">Fintech</option>
+                <option value="E-commerce / Retail">E-commerce / Retail</option>
+                <option value="Salud / Medicina">Salud / Medicina</option>
+                <option value="Educación">Educación</option>
+                <option value="Consultoría">Consultoría</option>
+                <option value="Marketing / Publicidad">Marketing / Publicidad</option>
+                <option value="Manufactura / Industria">Manufactura / Industria</option>
+                <option value="Logística / Transporte">Logística / Transporte</option>
+                <option value="Restaurantes / Gastronomía">Restaurantes / Gastronomía</option>
+                <option value="Turismo / Hotelería">Turismo / Hotelería</option>
+                <option value="Legal / Juridico">Legal / Jurídico</option>
+                <option value="Seguros">Seguros</option>
+                <option value="Automotriz">Automotriz</option>
+                <option value="Construcción">Construcción</option>
+                <option value="Energía / Utilities">Energía / Utilities</option>
+                <option value="Telecomunicaciones">Telecomunicaciones</option>
+                <option value="Recursos Humanos">Recursos Humanos</option>
+                <option value="Agro / Alimentación">Agro / Alimentación</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
           </div>
           <div className="mt-4">
             <Field label="Descripción" value={form.description}
