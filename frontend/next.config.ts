@@ -68,8 +68,11 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   async rewrites() {
+    // BACKEND_URL es una variable server-side (sin NEXT_PUBLIC_) que apunta
+    // directamente al servicio backend de Railway. Nunca debe ser el mismo
+    // dominio del frontend para evitar loops.
     const backendUrl =
-      process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+      process.env.BACKEND_URL ||
       "https://gentes-de-ventas-production.up.railway.app";
     return [
       {
