@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { conversationsApi } from "@/lib/api";
 import { timeAgo, cn } from "@/lib/utils";
 import { AgentBadge, ChannelBadge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import Link from "next/link";
 
 function ConversationsInner() {
   const qc = useQueryClient();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [filterChannel, setFilterChannel] = useState(searchParams.get("channel") ?? "");
@@ -42,7 +43,10 @@ function ConversationsInner() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
       toast.success("Conversación iniciada");
+      const id = res.data?.id ?? res.data?.conversation_id;
+      if (id) router.push(`/conversations/${id}`);
     },
+    onError: () => toast.error("Error al crear la conversación"),
   });
 
   const filtered = convs.filter((c: Record<string, unknown>) => {
@@ -94,6 +98,9 @@ function ConversationsInner() {
           <option value="whatsapp">💬 WhatsApp</option>
           <option value="webchat">🌐 Webchat</option>
           <option value="instagram">📸 Instagram</option>
+          <option value="messenger">💜 Messenger</option>
+          <option value="linkedin">🔵 LinkedIn</option>
+          <option value="tiktok">🎵 TikTok</option>
         </select>
 
         <select
@@ -149,7 +156,7 @@ function ConversationsInner() {
               >
                 {/* Channel icon */}
                 <div className="w-11 h-11 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-lg flex-shrink-0">
-                  {{ whatsapp: "💬", instagram: "📸", webchat: "🌐", email: "📧" }[conv.channel as string] ?? "💬"}
+                  {{ whatsapp: "💬", instagram: "📸", webchat: "🌐", email: "📧", messenger: "💜", linkedin: "🔵", tiktok: "🎵" }[conv.channel as string] ?? "💬"}
                 </div>
 
                 {/* Info */}
