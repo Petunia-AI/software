@@ -464,24 +464,49 @@ function SettingsContent() {
             <p className="text-xs text-violet-600 mt-2">Usa este ID al instalar el plugin o el código en tu web.</p>
           </div>
 
-          {/* Plugin WordPress */}
-          <div className="mb-4 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
-            <span className="text-2xl">🔌</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">Plugin para WordPress</p>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-3">Insólalo en 2 clics — sin tocar código</p>
-              <a
-                href="https://github.com/Petunia-AI/gentes-de-ventas/raw/main/wordpress-plugin/petunia-chat.zip"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                <ExternalLink size={12} /> Descargar petunia-chat.zip
-              </a>
-              <p className="text-xs text-muted-foreground mt-2">
-                WordPress Admin → Plugins → Añadir nuevo → Subir plugin → Activar → Ajustes → Petunia AI Chat
-              </p>
+          {/* Plataformas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+
+            {/* WordPress */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">🔌</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">WordPress</p>
+                <p className="text-xs text-muted-foreground mt-0.5 mb-3">Instala el plugin en 2 clics</p>
+                <a
+                  href="https://github.com/Petunia-AI/gentes-de-ventas/raw/main/wordpress-plugin/petunia-chat.zip"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  <ExternalLink size={11} /> Descargar .zip
+                </a>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Plugins → Añadir nuevo → Subir plugin → Activar → Ajustes → Petunia AI Chat
+                </p>
+              </div>
             </div>
+
+            {/* Shopify */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">🛍️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">Shopify</p>
+                <p className="text-xs text-muted-foreground mt-0.5 mb-3">Snippet para tu tema</p>
+                <a
+                  href="https://github.com/Petunia-AI/gentes-de-ventas/raw/main/shopify-integration/petunia-chat.liquid"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  <ExternalLink size={11} /> Descargar .liquid
+                </a>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Online Store → Themes → Edit code → Snippets → Añadir petunia-chat → pegar en theme.liquid
+                </p>
+              </div>
+            </div>
+
           </div>
 
           {/* Código HTML manual */}

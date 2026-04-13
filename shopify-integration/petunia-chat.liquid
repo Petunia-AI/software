@@ -1,0 +1,33 @@
+{%- comment -%}
+  Petunia AI – Chat de Ventas
+  Versión: 1.0.0
+  Documentación: https://app.aipetunia.com/settings
+
+  INSTALACIÓN:
+  1. En tu admin de Shopify: Online Store → Themes → Edit code
+  2. En la carpeta "Snippets" → Add a new snippet → Nombre: "petunia-chat"
+  3. Pega este archivo completo
+  4. Abre theme.liquid → busca </body> → encima añade: {% render 'petunia-chat' %}
+  5. Guarda
+{%- endcomment -%}
+
+{% comment %} ── Configuración ─────────────────────────────────────── {% endcomment %}
+{% assign petunia_business_id = "TU_BUSINESS_ID_AQUI" %}
+{% assign petunia_color       = "#635bff" %}
+{% assign petunia_name        = "Asistente" %}
+{% assign petunia_position    = "right" %}
+
+{% comment %}
+  Personalización opcional por idioma del cliente:
+{% endcomment %}
+{% if request.locale.iso_code == "en" %}
+  {% assign petunia_name = "Assistant" %}
+{% endif %}
+
+<script
+  src="https://app.aipetunia.com/widget.js"
+  data-business-id="{{ petunia_business_id }}"
+  data-color="{{ petunia_color }}"
+  data-name="{{ petunia_name | escape }}"
+  data-position="{{ petunia_position }}"
+></script>
