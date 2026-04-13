@@ -11,6 +11,8 @@ interface Message {
   createdAt: Date;
 }
 
+// El widget usa su propio API_URL apuntando al backend directamente.
+// NEXT_PUBLIC_BACKEND_API_URL se puede sobreescribir; si no existe, usa el proxy del frontend.
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 function WidgetChat() {
@@ -36,14 +38,19 @@ function WidgetChat() {
   const startConversation = async () => {
     if (!userInfo.name.trim()) return;
     try {
-      const res = await fetch(
-        `${API_URL}/conversations/start?channel=webchat&lead_name=${encodeURIComponent(userInfo.name)}`,
-        { method: "POST", headers: { "Content-Type": "application/json" } }
-      );
+      const res = await fetch(`${API_URL}/widget/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business_id: businessId,
+          lead_name: userInfo.name.trim(),
+          lead_email: userInfo.email.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setConversationId(data.conversation_id);
       setStep("chat");
-      // Mensaje de bienvenida
       setMessages([{
         id: "welcome",
         role: "assistant",
@@ -51,7 +58,7 @@ function WidgetChat() {
         createdAt: new Date(),
       }]);
     } catch (err) {
-      console.error(err);
+      console.error("Error iniciando conversación:", err);
     }
   };
 
@@ -72,11 +79,12 @@ function WidgetChat() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
-      const res = await fetch(`${API_URL}/conversations/send`, {
+      const res = await fetch(`${API_URL}/widget/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversation_id: conversationId, content }),
+        body: JSON.stringify({ conversation_id: conversationId, business_id: businessId, content }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setMessages((prev) => [...prev, {
         id: Date.now().toString() + "-ai",

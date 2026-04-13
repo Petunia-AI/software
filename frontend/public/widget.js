@@ -23,7 +23,7 @@
     color:      script.getAttribute("data-color")       || "#635bff",
     name:       script.getAttribute("data-name")        || "Asistente",
     position:   script.getAttribute("data-position")    || "right",
-    baseUrl:    script.getAttribute("data-base-url")    || "http://localhost:3000",
+    baseUrl:    script.getAttribute("data-base-url")    || "https://app.aipetunia.com",
   };
 
   var isOpen  = false;

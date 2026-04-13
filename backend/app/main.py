@@ -12,6 +12,7 @@ from app.api import meta_oauth
 from app.api import followups as followups_router
 from app.api import linkedin_oauth
 from app.api import tiktok_oauth
+from app.api import widget as widget_router
 from app.core.scheduler import start_scheduler, stop_scheduler
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 import structlog
@@ -44,22 +45,16 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# ── CORS — estricto en producción ────────────────────────────────────────────
-_allowed_origins = (
-    ["*"]
-    if settings.debug
-    else list({
-        settings.frontend_url,
-        f"https://www.{settings.frontend_url.removeprefix('https://')}",
-        "https://app.aipetunia.com",
-        "https://www.aipetunia.com",
-        "https://gentes-de-ventas-production.up.railway.app",
-    })
-)
+# ── CORS ─────────────────────────────────────────────────────────────────────
+# El dashboard accede al backend a través del proxy Next.js (mismo origen),
+# por eso no necesita credenciales CORS. El widget embeddable necesita allow_origins=*
+# para funcionar en cualquier sitio de cliente.
+# Los tokens JWT van en el header Authorization, no en cookies, así que
+# allow_credentials=False es correcto y compatible con allow_origins=["*"].
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
@@ -79,6 +74,7 @@ app.include_router(meta_oauth.router, prefix="/api")
 app.include_router(followups_router.router, prefix="/api")
 app.include_router(linkedin_oauth.router, prefix="/api")
 app.include_router(tiktok_oauth.router, prefix="/api")
+app.include_router(widget_router.router, prefix="/api")
 
 # Servir imágenes subidas como archivos estáticos
 os.makedirs("uploads", exist_ok=True)
