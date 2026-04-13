@@ -185,18 +185,60 @@ async def import_leads(
 
     # Normalizar cabeceras en español → campo interno
     ALIAS = {
-        "nombre": "name", "email": "email", "correo": "email",
+        # Nombre
+        "nombre": "name", "nombre completo": "name", "nombre_completo": "name",
+        "full name": "name", "full_name": "name", "contact": "name", "contacto": "name",
+        # Email
+        "email": "email", "correo": "email", "correo electrónico": "email",
+        "correo electronico": "email", "e-mail": "email", "mail": "email",
+        # Teléfono
         "teléfono": "phone", "telefono": "phone", "celular": "phone",
-        "empresa": "company", "cargo": "position", "etapa": "stage",
-        "fuente": "source", "score bant": "qualification_score",
-        "score": "qualification_score", "valor estimado": "estimated_value",
-        "notas": "notes", "presupuesto": "budget", "autoridad": "authority",
-        "necesidad": "need", "timeline": "timeline",
+        "tel": "phone", "whatsapp": "phone", "móvil": "phone", "movil": "phone",
+        "phone": "phone", "phone number": "phone", "número": "phone", "numero": "phone",
+        # Empresa
+        "empresa": "company", "negocio": "company", "compañia": "company",
+        "compañía": "company", "company": "company", "organización": "company",
+        "organizacion": "company", "razón social": "company", "razon social": "company",
+        # Cargo
+        "cargo": "position", "puesto": "position", "posición": "position",
+        "posicion": "position", "title": "position", "job title": "position",
+        "rol": "position", "role": "position",
+        # Etapa
+        "etapa": "stage", "estado": "stage", "stage": "stage", "status": "stage",
+        # Fuente
+        "fuente": "source", "canal": "source", "source": "source", "origen": "source",
+        # Score
+        "score bant": "qualification_score", "score": "qualification_score",
+        "calificación": "qualification_score", "calificacion": "qualification_score",
+        "puntuación": "qualification_score", "puntuacion": "qualification_score",
+        "qualification_score": "qualification_score",
+        # Valor
+        "valor estimado": "estimated_value", "valor": "estimated_value",
+        "presupuesto estimado": "estimated_value", "monto": "estimated_value",
+        "importe": "estimated_value", "precio": "estimated_value",
+        "estimated_value": "estimated_value",
+        # Notas
+        "notas": "notes", "nota": "notes", "observaciones": "notes",
+        "comentarios": "notes", "notes": "notes", "comments": "notes",
+        # BANT
+        "presupuesto": "budget", "budget": "budget",
+        "autoridad": "authority", "authority": "authority",
+        "necesidad": "need", "need": "need", "necesidades": "need",
+        "timeline": "timeline", "plazo": "timeline", "tiempo": "timeline",
+        "tiempo de compra": "timeline",
     }
 
     created = 0
     skipped = 0
     errors: list[str] = []
+
+    # Detectar columnas originales y cuáles no se reconocieron
+    original_headers = list(rows[0].keys()) if rows else []
+    mapped_fields = set(IMPORT_FIELDS)
+    unrecognized_cols = [
+        h for h in original_headers
+        if ALIAS.get(h.strip().lower(), h.strip().lower()) not in mapped_fields
+    ]
 
     for i, raw in enumerate(rows, 2):
         # Normalizar claves
@@ -267,7 +309,11 @@ async def import_leads(
         "created": created,
         "skipped": skipped,
         "errors": errors,
-        "message": f"{created} leads importados correctamente",
+        "unrecognized_columns": unrecognized_cols,
+        "message": (
+            f"{created} leads importados correctamente"
+            + (f". Columnas no reconocidas: {', '.join(unrecognized_cols)}" if unrecognized_cols else "")
+        ),
     }
 
 

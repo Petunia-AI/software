@@ -73,11 +73,8 @@ export const leadsApi = {
   import: (file: File) => {
     const form = new FormData();
     form.append("file", file);
-    // Eliminar Content-Type para que el browser ponga multipart/form-data con el boundary correcto
-    return api.post("/leads/import", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-      transformRequest: [(data) => data],
-    });
+    // No fijar Content-Type: el browser añade automáticamente multipart/form-data con boundary
+    return api.post("/leads/import", form);
   },
 };
 
