@@ -176,11 +176,65 @@ async def import_leads(
         raw_rows = list(ws.iter_rows(values_only=True))
         if not raw_rows:
             raise HTTPException(status_code=400, detail="Archivo vacío")
-        # Primera fila = cabeceras
-        headers = [str(h).strip().lower() if h else "" for h in raw_rows[0]]
-        import structlog as _sl; _sl.get_logger().info("import_headers", headers=headers)
-        for row in raw_rows[1:]:
-            rows.append({headers[i]: (str(v).strip() if v is not None else "") for i, v in enumerate(row)})
+
+        # Detectar si la primera fila es cabecera o datos
+        # Si ningún valor de la primera fila luce como nombre de columna (texto corto sin @/@digit),
+        # asumimos que no hay headers y usamos mapeo posicional.
+        KNOWN_HEADERS = {
+            "name","nombre","email","correo","phone","telefono","teléfono","company","empresa",
+            "position","cargo","stage","etapa","source","fuente","notes","notas","budget",
+            "presupuesto","first name","last name","full name","contact","title","company name",
+            "phone number","mobile","first_name","last_name","mail","status","estado",
+        }
+        first_row_vals = [str(v).strip().lower() if v else "" for v in raw_rows[0]]
+        has_header = any(v in KNOWN_HEADERS for v in first_row_vals)
+
+        import structlog as _sl; _sl.get_logger().info("import_headers", headers=first_row_vals, has_header=has_header)
+
+        if has_header:
+            headers = first_row_vals
+            data_rows = raw_rows[1:]
+        else:
+            # Sin cabecera: detectar columnas por contenido de múltiples filas
+            import re as _re
+            sample = [r for r in raw_rows[:20] if any(v for v in r)]
+            n_cols = len(raw_rows[0])
+            auto_headers = [""] * n_cols
+            for col_idx in range(n_cols):
+                vals = [str(sample[r][col_idx]).strip() for r in range(len(sample))
+                        if col_idx < len(sample[r]) and sample[r][col_idx]]
+                if not vals:
+                    auto_headers[col_idx] = f"col_{col_idx}"
+                    continue
+                # Detectar tipo por patrón
+                emails   = sum(1 for v in vals if "@" in v and "." in v)
+                phones   = sum(1 for v in vals if _re.match(r'^[\d\s\+\-\(\)]{6,20}$', v))
+                names    = sum(1 for v in vals if _re.match(r'^[A-Za-zÀ-ÿ\s]{4,60}$', v) and len(v.split()) >= 2)
+                amounts  = sum(1 for v in vals if _re.match(r'^[\d\$\.\,\s]+$', v) or "dólar" in v.lower() or "dollar" in v.lower())
+
+                if emails > len(vals) * 0.3:
+                    auto_headers[col_idx] = "email"
+                elif phones > len(vals) * 0.3:
+                    auto_headers[col_idx] = "phone"
+                elif names > len(vals) * 0.3 and "name" not in auto_headers:
+                    auto_headers[col_idx] = "name"
+                elif amounts > len(vals) * 0.3:
+                    auto_headers[col_idx] = "estimated_value" if "estimated_value" not in auto_headers else "budget"
+                else:
+                    # Columna de texto libre → notes si no hay name aún
+                    if "name" not in auto_headers:
+                        auto_headers[col_idx] = "name"
+                    elif "notes" not in auto_headers:
+                        auto_headers[col_idx] = "notes"
+                    else:
+                        auto_headers[col_idx] = f"col_{col_idx}"
+
+            headers = auto_headers
+            data_rows = raw_rows  # incluir la primera fila pues es datos
+            _sl.get_logger().info("import_auto_headers", detected=headers)
+
+        for row in data_rows:
+            rows.append({headers[i]: (str(v).strip() if v is not None else "") for i, v in enumerate(row) if i < len(headers)})
     else:
         raise HTTPException(status_code=400, detail="Formato no soportado. Usa CSV o XLSX.")
 
