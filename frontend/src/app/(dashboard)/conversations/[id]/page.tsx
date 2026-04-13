@@ -82,7 +82,7 @@ export default function ConversationDetailPage() {
   }, [conv?.messages, isAiTyping]);
 
   useEffect(() => {
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000"}/api/conversations/ws/${params.id}`;
+    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000"}/api/ws/${params.id}`;
     const ws = new WebSocket(wsUrl);
     ws.onmessage = () => qc.invalidateQueries({ queryKey: ["conversation", params.id] });
     return () => ws.close();
