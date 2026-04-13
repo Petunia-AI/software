@@ -138,7 +138,8 @@ export default function LeadsPage() {
     setImportResult(null);
     try {
       const res = await leadsApi.import(file);
-      setImportResult({ ok: true, message: res.data.message });
+      const msg = res.data?.message ?? `${res.data?.created ?? 0} leads importados correctamente`;
+      setImportResult({ ok: true, message: msg });
       qc.invalidateQueries({ queryKey: ["leads"] });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Error al importar";
