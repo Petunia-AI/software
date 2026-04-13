@@ -178,6 +178,7 @@ async def import_leads(
             raise HTTPException(status_code=400, detail="Archivo vacío")
         # Primera fila = cabeceras
         headers = [str(h).strip().lower() if h else "" for h in raw_rows[0]]
+        import structlog as _sl; _sl.get_logger().info("import_headers", headers=headers)
         for row in raw_rows[1:]:
             rows.append({headers[i]: (str(v).strip() if v is not None else "") for i, v in enumerate(row)})
     else:
@@ -188,44 +189,73 @@ async def import_leads(
         # Nombre
         "nombre": "name", "nombre completo": "name", "nombre_completo": "name",
         "full name": "name", "full_name": "name", "contact": "name", "contacto": "name",
+        "contact name": "name", "name": "name", "lead name": "name", "lead": "name",
+        "prospect": "name", "prospect name": "name", "client": "name", "cliente": "name",
+        # Nombre dividido (first + last se combinan después)
+        "first name": "first_name", "first_name": "first_name", "firstname": "first_name",
+        "nombre": "first_name", "primer nombre": "first_name",
+        "last name": "last_name", "last_name": "last_name", "lastname": "last_name",
+        "surname": "last_name", "apellido": "last_name", "apellidos": "last_name",
         # Email
         "email": "email", "correo": "email", "correo electrónico": "email",
         "correo electronico": "email", "e-mail": "email", "mail": "email",
+        "email address": "email", "work email": "email", "business email": "email",
         # Teléfono
         "teléfono": "phone", "telefono": "phone", "celular": "phone",
         "tel": "phone", "whatsapp": "phone", "móvil": "phone", "movil": "phone",
         "phone": "phone", "phone number": "phone", "número": "phone", "numero": "phone",
+        "mobile": "phone", "mobile phone": "phone", "cell": "phone", "cell phone": "phone",
+        "work phone": "phone", "direct phone": "phone", "office phone": "phone",
+        "phone 1": "phone", "phone1": "phone", "primary phone": "phone",
         # Empresa
         "empresa": "company", "negocio": "company", "compañia": "company",
         "compañía": "company", "company": "company", "organización": "company",
         "organizacion": "company", "razón social": "company", "razon social": "company",
+        "company name": "company", "organization": "company", "organisation": "company",
+        "business": "company", "business name": "company", "employer": "company",
+        "account": "company", "account name": "company",
         # Cargo
         "cargo": "position", "puesto": "position", "posición": "position",
         "posicion": "position", "title": "position", "job title": "position",
-        "rol": "position", "role": "position",
+        "rol": "position", "role": "position", "job role": "position",
+        "job_title": "position", "jobtitle": "position", "occupation": "position",
+        "department": "position", "designation": "position",
         # Etapa
         "etapa": "stage", "estado": "stage", "stage": "stage", "status": "stage",
+        "lead stage": "stage", "lead status": "stage",
         # Fuente
         "fuente": "source", "canal": "source", "source": "source", "origen": "source",
+        "lead source": "source", "channel": "source", "referral": "source",
         # Score
         "score bant": "qualification_score", "score": "qualification_score",
         "calificación": "qualification_score", "calificacion": "qualification_score",
         "puntuación": "qualification_score", "puntuacion": "qualification_score",
-        "qualification_score": "qualification_score",
+        "qualification_score": "qualification_score", "rating": "qualification_score",
         # Valor
         "valor estimado": "estimated_value", "valor": "estimated_value",
         "presupuesto estimado": "estimated_value", "monto": "estimated_value",
         "importe": "estimated_value", "precio": "estimated_value",
-        "estimated_value": "estimated_value",
+        "estimated_value": "estimated_value", "deal value": "estimated_value",
+        "opportunity value": "estimated_value", "revenue": "estimated_value",
+        "deal size": "estimated_value", "contract value": "estimated_value",
         # Notas
         "notas": "notes", "nota": "notes", "observaciones": "notes",
         "comentarios": "notes", "notes": "notes", "comments": "notes",
+        "description": "notes", "note": "notes", "remarks": "notes",
         # BANT
         "presupuesto": "budget", "budget": "budget",
         "autoridad": "authority", "authority": "authority",
         "necesidad": "need", "need": "need", "necesidades": "need",
         "timeline": "timeline", "plazo": "timeline", "tiempo": "timeline",
-        "tiempo de compra": "timeline",
+        "tiempo de compra": "timeline", "time frame": "timeline", "timeframe": "timeline",
+        # Ciudad/Estado (→ notas)
+        "city": "notes_city", "state": "notes_state", "country": "notes_country",
+        "location": "notes_city", "ciudad": "notes_city", "país": "notes_country",
+        "pais": "notes_country", "address": "notes_city",
+        # LinkedIn / website (→ notas)
+        "linkedin": "notes_linkedin", "linkedin url": "notes_linkedin",
+        "website": "notes_website", "url": "notes_website", "website url": "notes_website",
+        "industry": "notes_industry", "industria": "notes_industry", "sector": "notes_industry",
     }
 
     created = 0
@@ -234,7 +264,7 @@ async def import_leads(
 
     # Detectar columnas originales y cuáles no se reconocieron
     original_headers = list(rows[0].keys()) if rows else []
-    mapped_fields = set(IMPORT_FIELDS)
+    mapped_fields = set(IMPORT_FIELDS) | {"first_name", "last_name", "notes_city", "notes_state", "notes_country", "notes_linkedin", "notes_website", "notes_industry"}
     unrecognized_cols = [
         h for h in original_headers
         if ALIAS.get(h.strip().lower(), h.strip().lower()) not in mapped_fields
@@ -252,6 +282,12 @@ async def import_leads(
             skipped += 1
             continue
 
+        # Combinar first_name + last_name si no hay "name" ya mapeado
+        if not row.get("name") and (row.get("first_name") or row.get("last_name")):
+            first = row.pop("first_name", "") or ""
+            last  = row.pop("last_name", "") or ""
+            row["name"] = f"{first} {last}".strip()
+
         # name es NOT NULL — usar fallback: email, teléfono o "Sin nombre"
         name = (
             row.get("name") or
@@ -259,6 +295,16 @@ async def import_leads(
             row.get("phone") or
             f"Lead fila {i}"
         ).strip() or f"Lead fila {i}"
+
+        # Acumular campos extras (city, linkedin, etc.) en notes
+        extra_parts = []
+        for extra_key in ("notes_city", "notes_state", "notes_country", "notes_linkedin", "notes_website", "notes_industry"):
+            val = row.get(extra_key, "").strip()
+            if val:
+                label = extra_key.replace("notes_", "").capitalize()
+                extra_parts.append(f"{label}: {val}")
+        base_notes = row.get("notes") or ""
+        combined_notes = "\n".join(filter(None, [base_notes] + extra_parts)) or None
 
         stage  = row.get("stage", "new").strip().lower()
         source = row.get("source", "manual").strip().lower()
@@ -287,7 +333,7 @@ async def import_leads(
             source=source,
             qualification_score=score,
             estimated_value=est_val,
-            notes=row.get("notes") or None,
+            notes=combined_notes,
             budget=row.get("budget") or None,
             authority=row.get("authority") or None,
             need=row.get("need") or None,
