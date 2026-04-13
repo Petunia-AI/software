@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Link2, Linkedin, Music2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "http://localhost:3000";
+const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "https://app.aipetunia.com";
 
 function Section({ icon: Icon, title, subtitle, children, delay = 0 }: {
   icon: React.ElementType; title: string; subtitle?: string;
@@ -443,6 +443,49 @@ function SettingsContent() {
         {/* Widget embed code */}
         <Section icon={Code2} title="Instalar el widget en tu web"
           subtitle="Copia y pega este código antes de cerrar </body>" delay={0.22}>
+
+          {/* Business ID prominente */}
+          <div className="mb-4 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-1">Tu Business ID</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-sm font-mono font-bold text-violet-900 bg-white px-3 py-2 rounded-lg border border-violet-200 select-all">
+                {user?.business_id ?? "Cargando..."}
+              </code>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(user?.business_id ?? "");
+                  toast.success("Business ID copiado");
+                }}
+                className="flex items-center gap-1 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded-lg transition-colors flex-shrink-0"
+              >
+                <Copy size={12} /> Copiar
+              </button>
+            </div>
+            <p className="text-xs text-violet-600 mt-2">Usa este ID al instalar el plugin o el código en tu web.</p>
+          </div>
+
+          {/* Plugin WordPress */}
+          <div className="mb-4 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
+            <span className="text-2xl">🔌</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Plugin para WordPress</p>
+              <p className="text-xs text-muted-foreground mt-0.5 mb-3">Insólalo en 2 clics — sin tocar código</p>
+              <a
+                href="https://github.com/Petunia-AI/gentes-de-ventas/raw/main/wordpress-plugin/petunia-chat.zip"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                <ExternalLink size={12} /> Descargar petunia-chat.zip
+              </a>
+              <p className="text-xs text-muted-foreground mt-2">
+                WordPress Admin → Plugins → Añadir nuevo → Subir plugin → Activar → Ajustes → Petunia AI Chat
+              </p>
+            </div>
+          </div>
+
+          {/* Código HTML manual */}
+          <p className="text-xs font-medium text-muted-foreground mb-2">O pégalo manualmente en tu HTML:</p>
           <div className="relative">
             <pre className="bg-slate-950 text-green-300 text-xs p-4 rounded-xl overflow-x-auto leading-relaxed font-mono border border-slate-800">
               {widgetCode}
