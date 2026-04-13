@@ -6,12 +6,14 @@ import { leadsApi } from "@/lib/api";
 import { cn, timeAgo } from "@/lib/utils";
 import { StageBadge, ChannelBadge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   X, Mail, Phone, Building2, User, Briefcase, DollarSign,
   MessageSquare, Tag, Calendar, ChevronRight, Edit3, Save,
   CheckCircle, XCircle, Clock, ArrowRight, Zap, Target,
-  TrendingUp, AlertCircle, Star, Trash2,
+  TrendingUp, AlertCircle, Star, Trash2, BotMessageSquare,
 } from "lucide-react";
+import { followupsApi } from "@/lib/api";
 
 // ─── tipos ─────────────────────────────────────────────────────────────────
 
@@ -121,9 +123,32 @@ function BantBar({ value }: { value?: string }) {
 
 export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps) {
   const qc = useQueryClient();
+  const router = useRouter();
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<Partial<Lead>>({});
   const [activeTab, setActiveTab] = useState<"info" | "bant" | "activity">("info");
+  const [followupDone, setFollowupDone] = useState(false);
+
+  const followupMutation = useMutation({
+    mutationFn: async () => {
+      const scheduledAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await followupsApi.create({
+        lead_id: lead!.id,
+        title: `Seguimiento AI — ${lead!.name ?? "Lead"}`,
+        description: "Seguimiento automático iniciado desde el panel de leads.",
+        followup_type: "ai_followup",
+        priority: "high",
+        scheduled_at: scheduledAt,
+      });
+      await leadsApi.updateStage(lead!.id, "nurturing");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["followups"] });
+      setFollowupDone(true);
+      setTimeout(() => { onClose(); router.push("/seguimiento"); }, 1200);
+    },
+  });
 
   // Sync form cuando cambia el lead
   if (lead && !editMode && Object.keys(form).length === 0) {
@@ -547,7 +572,26 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
             </div>
 
             {/* ── Footer acciones rápidas ── */}
-            <div className="border-t border-border px-6 py-4 flex items-center gap-2 flex-shrink-0 bg-background">
+            <div className="border-t border-border px-6 py-4 flex flex-col gap-2 flex-shrink-0 bg-background">
+              {/* Botón principal: Comenzar seguimiento AI */}
+              <button
+                onClick={() => followupMutation.mutate()}
+                disabled={followupMutation.isPending || followupDone}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  followupDone
+                    ? "bg-emerald-500 text-white cursor-default"
+                    : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg"
+                }`}
+              >
+                {followupDone ? (
+                  <><CheckCircle size={15} /> ¡Seguimiento creado!</>
+                ) : followupMutation.isPending ? (
+                  <><Clock size={15} className="animate-spin" /> Creando seguimiento...</>
+                ) : (
+                  <><BotMessageSquare size={15} /> Comenzar seguimiento AI</>
+                )}
+              </button>
+              <div className="flex items-center gap-2">
               {data.email && (
                 <a href={`mailto:${data.email}`} className="btn-secondary text-xs flex items-center gap-1.5 flex-1 justify-center">
                   <Mail size={13} />
@@ -573,6 +617,7 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
               {!data.email && !data.phone && (
                 <p className="text-xs text-muted-foreground">Sin datos de contacto</p>
               )}
+              </div>
             </div>
           </motion.aside>
         </>
