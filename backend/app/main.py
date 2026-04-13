@@ -53,6 +53,7 @@ _allowed_origins = (
         f"https://www.{settings.frontend_url.removeprefix('https://')}",
         "https://app.aipetunia.com",
         "https://www.aipetunia.com",
+        "https://gentes-de-ventas-production.up.railway.app",
     })
 )
 app.add_middleware(
