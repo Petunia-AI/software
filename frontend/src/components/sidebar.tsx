@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
@@ -241,7 +242,18 @@ export function Sidebar() {
             glow: "rgba(236,72,153,0.4)",
             Icon: Camera,
           },
-        ].map(({ label, channel, count, color, glow, Icon }) => {
+          {
+            label: "TikTok", channel: "tiktok", count: 0,
+            color: "from-neutral-800 to-neutral-900",
+            glow: "rgba(255,255,255,0.15)",
+            Icon: Camera,
+            customIcon: (
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/>
+              </svg>
+            ),
+          },
+        ].map(({ label, channel, count, color, glow, Icon, customIcon }: { label: string; channel: string; count: number; color: string; glow: string; Icon: React.ElementType; customIcon?: React.ReactNode }) => {
           const isActive = pathname.startsWith("/conversations") &&
             (typeof window !== "undefined"
               ? new URLSearchParams(window.location.search).get("channel") === channel
@@ -270,7 +282,7 @@ export function Sidebar() {
                 )}
                 style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(255,255,255,0.45)" }}
               >
-                <Icon size={13} />
+                {customIcon ?? <Icon size={13} />}
               </div>
               <span className="flex-1 truncate">{label}</span>
               {count > 0 && (

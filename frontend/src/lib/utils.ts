@@ -85,6 +85,7 @@ export function getChannelIcon(channel: string): string {
     instagram: "📸",
     webchat: "🌐",
     email: "📧",
+    tiktok: "🎵",
   };
   return icons[channel] || "💬";
 }
