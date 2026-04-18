@@ -88,10 +88,13 @@ class AyrshareService:
         if not settings.ayrshare_domain:
             raise ValueError("AYRSHARE_DOMAIN no está configurado.")
 
+        # El .env guarda el PEM con \n literales — restaurar saltos de línea reales
+        private_key = settings.ayrshare_jwt_secret.replace("\\n", "\n")
+
         # Ayrshare espera application/x-www-form-urlencoded, NO JSON
         form_data = {
             "domain":     settings.ayrshare_domain,
-            "privateKey": settings.ayrshare_jwt_secret,
+            "privateKey": private_key,
             "profileKey": profile_key,
         }
 
