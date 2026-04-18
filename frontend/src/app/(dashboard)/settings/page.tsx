@@ -3,14 +3,13 @@
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { businessApi, linkedinApi, tiktokApi, ayrshareApi } from "@/lib/api";
+import { businessApi, tiktokApi, ayrshareApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
-import { LinkedInConnect } from "@/components/linkedin-connect";
 import { TikTokConnect } from "@/components/tiktok-connect";
 import { AyrshareConnect } from "@/components/ayrshare-connect";
 import toast from "react-hot-toast";
-import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Linkedin, Music2, Share2 } from "lucide-react";
+import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Music2, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "https://app.aipetunia.com";
@@ -121,15 +120,6 @@ function SettingsContent() {
       }
     }
 
-    const linkedinParam = searchParams.get("linkedin");
-    if (linkedinParam === "connected") {
-      toast.success("✅ LinkedIn conectado correctamente", { duration: 5000 });
-      qc.invalidateQueries({ queryKey: ["linkedin-status"] });
-    } else if (linkedinParam === "error") {
-      const reason = searchParams.get("reason") || "desconocido";
-      if (reason !== "cancelled") toast.error(`Error al conectar con LinkedIn: ${reason}`);
-    }
-
     const tiktokParam = searchParams.get("tiktok");
     if (tiktokParam === "connected") {
       toast.success("✅ TikTok conectado correctamente", { duration: 5000 });
@@ -146,12 +136,6 @@ function SettingsContent() {
   const { data: business, isLoading } = useQuery({
     queryKey: ["business"],
     queryFn: () => businessApi.get().then((r) => r.data),
-  });
-
-  const { data: linkedinStatus, refetch: refetchLinkedin } = useQuery({
-    queryKey: ["linkedin-status"],
-    queryFn: () => linkedinApi.getStatus().then((r) => r.data),
-    staleTime: 30_000,
   });
 
   const { data: tiktokStatus, refetch: refetchTiktok } = useQuery({
@@ -437,15 +421,6 @@ function SettingsContent() {
             </div>
           </Section>
         )}
-
-        {/* LinkedIn Connect */}
-        <Section icon={Linkedin} title="Conectar con LinkedIn"
-          subtitle="Publica contenido y responde comentarios automáticamente" delay={0.23}>
-          <LinkedInConnect
-            status={linkedinStatus}
-            onUpdate={() => refetchLinkedin()}
-          />
-        </Section>
 
         {/* TikTok Connect */}
         <Section icon={Music2} title="Conectar con TikTok"
