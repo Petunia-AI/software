@@ -143,11 +143,10 @@ export function MetaConnect({ status, onUpdate }: MetaConnectProps) {
           </svg>
         </div>
         <h3 className="font-semibold text-foreground mb-1 text-base">
-          Conectar con Meta
+          Conectar WhatsApp
         </h3>
         <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed">
-          Un solo click para habilitar <strong>WhatsApp Business</strong>,{" "}
-          <strong>Instagram DMs</strong> y <strong>Facebook Messenger</strong>{" "}
+          Un solo click para vincular tu <strong>WhatsApp Business</strong>{" "}
           — sin copiar tokens ni configurar webhooks.
         </p>
         <button
@@ -269,7 +268,7 @@ export function MetaConnect({ status, onUpdate }: MetaConnectProps) {
             Página de Facebook
           </p>
           <span className="text-xs text-muted-foreground">
-            Messenger + Instagram DMs
+            Mensajes directos
           </span>
         </div>
 
