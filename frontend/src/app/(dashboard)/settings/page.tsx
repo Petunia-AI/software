@@ -3,15 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { businessApi, metaApi, linkedinApi, tiktokApi, ayrshareApi } from "@/lib/api";
+import { businessApi, linkedinApi, tiktokApi, ayrshareApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
-import { MetaConnect } from "@/components/meta-connect";
 import { LinkedInConnect } from "@/components/linkedin-connect";
 import { TikTokConnect } from "@/components/tiktok-connect";
 import { AyrshareConnect } from "@/components/ayrshare-connect";
 import toast from "react-hot-toast";
-import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Link2, Linkedin, Music2, Share2 } from "lucide-react";
+import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Linkedin, Music2, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "https://app.aipetunia.com";
@@ -147,12 +146,6 @@ function SettingsContent() {
   const { data: business, isLoading } = useQuery({
     queryKey: ["business"],
     queryFn: () => businessApi.get().then((r) => r.data),
-  });
-
-  const { data: metaStatus, refetch: refetchMeta } = useQuery({
-    queryKey: ["meta-status"],
-    queryFn: () => metaApi.getStatus().then((r) => r.data),
-    staleTime: 30_000,
   });
 
   const { data: linkedinStatus, refetch: refetchLinkedin } = useQuery({
@@ -349,20 +342,6 @@ function SettingsContent() {
               checked={form.messenger_enabled} onChange={set("messenger_enabled") as (v: boolean) => void} />
           </div>
         </Section>
-
-        {/* Meta Connect — reemplaza config manual de Instagram + Messenger */}
-        {(form.instagram_enabled || form.messenger_enabled || form.whatsapp_enabled) && (
-          <Section icon={Link2} title="Conectar con Meta"
-            subtitle="WhatsApp Business · Instagram DMs · Facebook Messenger" delay={0.18}>
-            <MetaConnect
-              status={metaStatus}
-              onUpdate={() => {
-                refetchMeta();
-                qc.invalidateQueries({ queryKey: ["business"] });
-              }}
-            />
-          </Section>
-        )}
 
         {/* WhatsApp extra config — solo se muestra si WA está habilitado */}
         {form.whatsapp_enabled && (
