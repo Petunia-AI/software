@@ -3,14 +3,15 @@
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { businessApi, metaApi, linkedinApi, tiktokApi } from "@/lib/api";
+import { businessApi, metaApi, linkedinApi, tiktokApi, ayrshareApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetaConnect } from "@/components/meta-connect";
 import { LinkedInConnect } from "@/components/linkedin-connect";
 import { TikTokConnect } from "@/components/tiktok-connect";
+import { AyrshareConnect } from "@/components/ayrshare-connect";
 import toast from "react-hot-toast";
-import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Link2, Linkedin, Music2 } from "lucide-react";
+import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Link2, Linkedin, Music2, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "https://app.aipetunia.com";
@@ -163,6 +164,12 @@ function SettingsContent() {
   const { data: tiktokStatus, refetch: refetchTiktok } = useQuery({
     queryKey: ["tiktok-status"],
     queryFn: () => tiktokApi.getStatus().then((r) => r.data),
+    staleTime: 30_000,
+  });
+
+  const { data: ayrshareStatus, refetch: refetchAyrshare } = useQuery({
+    queryKey: ["ayrshare-status"],
+    queryFn: () => ayrshareApi.getStatus().then((r) => r.data),
     staleTime: 30_000,
   });
 
@@ -467,6 +474,15 @@ function SettingsContent() {
           <TikTokConnect
             status={tiktokStatus}
             onUpdate={() => refetchTiktok()}
+          />
+        </Section>
+
+        {/* Ayrshare — Auto Global OAuth */}
+        <Section icon={Share2} title="Redes Sociales (Ayrshare)"
+          subtitle="Vincula X/Twitter, Instagram, Facebook, LinkedIn, TikTok, YouTube y más en un click" delay={0.27}>
+          <AyrshareConnect
+            status={ayrshareStatus}
+            onUpdate={() => refetchAyrshare()}
           />
         </Section>
 

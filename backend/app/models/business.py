@@ -80,6 +80,13 @@ class Business(Base):
     tiktok_open_id: Mapped[str] = mapped_column(String(100), nullable=True)    # identificador de cuenta TikTok
     tiktok_username: Mapped[str] = mapped_column(String(255), nullable=True)
 
+    # Ayrshare Auto Global OAuth
+    ayrshare_profile_key: Mapped[str] = mapped_column(String(500), nullable=True)   # profileKey único por cliente
+    ayrshare_ref_id: Mapped[str] = mapped_column(String(255), nullable=True)        # refId = business_id (idempotente)
+    ayrshare_connected_platforms: Mapped[dict] = mapped_column(JSON, default=list)  # ["instagram","twitter",...]
+    ayrshare_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    ayrshare_autoresponder_enabled: Mapped[bool] = mapped_column(Boolean, default=False)  # responder comentarios/DMs automáticamente
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)

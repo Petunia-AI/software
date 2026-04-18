@@ -191,6 +191,26 @@ export const tiktokApi = {
     api.post("/tiktok/reply", { video_id, comment_id, text }),
 };
 
+// ============ AYRSHARE — Auto Global OAuth ============
+export const ayrshareApi = {
+  /** Crea o reutiliza perfil Ayrshare y devuelve la JWT URL para vincular redes */
+  connect:     () => api.post<{ url: string; profile_key: string }>("/ayrshare/connect"),
+  /** Estado de conexión + redes vinculadas */
+  getStatus:   () => api.get("/ayrshare/status"),
+  /** Refresca la lista de redes conectadas desde Ayrshare */
+  refresh:     () => api.post("/ayrshare/refresh"),
+  /** Elimina el perfil de Ayrshare */
+  disconnect:  () => api.post("/ayrshare/disconnect"),
+  /** Publica contenido en redes sociales del cliente */
+  post:        (text: string, platforms: string[], media_urls?: string[], scheduled_date?: string) =>
+    api.post("/ayrshare/post", { text, platforms, media_urls, scheduled_date }),
+  /** Activa o desactiva el auto-respondedor de comentarios/mensajes */
+  updateSettings: (autoresponder_enabled: boolean) =>
+    api.patch("/ayrshare/settings", { autoresponder_enabled }),
+  /** Registra el webhook de Petunia en Ayrshare */
+  registerWebhook: () => api.post("/ayrshare/register-webhook"),
+};
+
 // ============ PROPERTIES ============
 export const propertiesApi = {
   list: (params?: { status?: string; property_type?: string; operation?: string }) =>

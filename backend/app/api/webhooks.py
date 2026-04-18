@@ -1328,3 +1328,291 @@ async def _process_tiktok_comment(event: dict, db: AsyncSession):
     except Exception as e:
         import structlog
         structlog.get_logger().error("tiktok_webhook_error", error=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AYRSHARE WEBHOOK — comentarios y mensajes unificados de todas las redes
+#
+# Ayrshare envía un POST cuando hay un nuevo comentario/mensaje en cualquier
+# plataforma vinculada (Instagram, Facebook, Twitter/X, LinkedIn, TikTok,
+# YouTube, Pinterest, Telegram, etc.)
+#
+# Payload ejemplo:
+# {
+#   "action": "comment",
+#   "platform": "instagram",
+#   "profileKey": "xxx",
+#   "data": {
+#     "id": "comment_id",
+#     "text": "Cuanto cuesta?",
+#     "username": "@juan_doe",
+#     "postId": "post_id"
+#   }
+# }
+# ─────────────────────────────────────────────────────────────────────────────
+
+_PLATFORM_TO_CHANNEL = {
+    "instagram": Channel.INSTAGRAM,
+    "facebook":  Channel.FACEBOOK,
+    "twitter":   Channel.TWITTER,
+    "linkedin":  Channel.LINKEDIN,
+    "tiktok":    Channel.TIKTOK,
+    "youtube":   Channel.YOUTUBE,
+    "x":         Channel.TWITTER,
+}
+
+
+@router.post("/ayrshare")
+async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Webhook unificado de Ayrshare. Recibe comentarios y mensajes de
+    cualquier red social vinculada y los procesa con el agente de ventas.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return Response(status_code=200)
+
+    platform    = payload.get("platform", "").lower()
+    action      = payload.get("action", "").lower()  # "comment", "dm", "mention"
+    profile_key = payload.get("profileKey", "")
+    data        = payload.get("data", {})
+
+    text         = (data.get("text") or data.get("message") or "").strip()
+    commenter_id = (
+        data.get("username") or data.get("userId") or
+        data.get("open_id") or data.get("senderId") or ""
+    )
+    comment_id = data.get("id", "")
+    post_id    = data.get("postId") or data.get("videoId") or ""
+
+    if not text or not commenter_id or not profile_key:
+        return {"ok": True}
+
+    # Solo procesamos comentarios y mensajes directos
+    if action not in ("comment", "dm", "mention", "reply", "message", ""):
+        return {"ok": True}
+
+    # Buscar negocio por profileKey
+    biz_result = await db.execute(
+        select(Business).where(
+            Business.ayrshare_profile_key == profile_key,
+            Business.ayrshare_autoresponder_enabled == True,
+            Business.is_active == True,
+        )
+    )
+    business = biz_result.scalar_one_or_none()
+    if not business:
+        return {"ok": True}
+
+    channel = _PLATFORM_TO_CHANNEL.get(platform, Channel.WEBCHAT)
+
+    await _process_ayrshare_event(
+        db=db,
+        business=business,
+        channel=channel,
+        platform=platform,
+        commenter_id=commenter_id,
+        text=text,
+        comment_id=comment_id,
+        post_id=post_id,
+    )
+    return {"ok": True}
+
+
+async def _process_ayrshare_event(
+    db: AsyncSession,
+    business: Business,
+    channel: Channel,
+    platform: str,
+    commenter_id: str,
+    text: str,
+    comment_id: str,
+    post_id: str,
+) -> None:
+    """
+    Procesa un comentario/mensaje de Ayrshare:
+    1. Busca o crea Lead
+    2. Busca o crea Conversation
+    3. Guarda mensaje entrante
+    4. Genera respuesta con el orquestador
+    5. Publica respuesta via Ayrshare
+    """
+    from app.services.ayrshare_service import ayrshare_service
+    import structlog as _sl
+    log = _sl.get_logger()
+
+    try:
+        # Deduplicar: si ya procesamos este comment_id, ignorar
+        if comment_id:
+            dup = await db.execute(
+                select(Message).where(Message.channel_message_id == comment_id).limit(1)
+            )
+            if dup.scalar_one_or_none():
+                return
+
+        # No responder a mensajes propios de Petunia
+        # (los identifica porque el commenter_id coincide con la cuenta del negocio)
+
+        # Buscar o crear lead por (business_id, channel, commenter_id)
+        lead_result = await db.execute(
+            select(Lead).where(
+                Lead.business_id == business.id,
+                Lead.notes.contains(f"ayrshare:{platform}:{commenter_id}"),
+            ).limit(1)
+        )
+        lead = lead_result.scalar_one_or_none()
+        if not lead:
+            lead = Lead(
+                id=str(uuid.uuid4()),
+                business_id=business.id,
+                name=commenter_id.lstrip("@"),
+                source=platform,
+                notes=f"ayrshare:{platform}:{commenter_id}",
+                tags=[],
+                is_active=True,
+            )
+            db.add(lead)
+            await db.flush()
+
+        # Buscar o crear conversación activa
+        conv_result = await db.execute(
+            select(Conversation)
+            .where(
+                Conversation.business_id == business.id,
+                Conversation.channel == channel,
+                Conversation.channel_contact_id == commenter_id,
+                Conversation.status.in_(["active", "waiting"]),
+            )
+            .options(selectinload(Conversation.messages), selectinload(Conversation.lead))
+            .order_by(Conversation.started_at.desc())
+            .limit(1)
+        )
+        conv = conv_result.scalar_one_or_none()
+        if not conv:
+            conv = Conversation(
+                id=str(uuid.uuid4()),
+                business_id=business.id,
+                lead_id=lead.id,
+                channel=channel,
+                channel_contact_id=commenter_id,
+                extra_data={"platform": platform, "post_id": post_id},
+            )
+            db.add(conv)
+            await db.flush()
+            conv.messages = []
+            conv.lead = lead
+
+        # Guardar mensaje entrante
+        user_msg = Message(
+            id=str(uuid.uuid4()),
+            conversation_id=conv.id,
+            role=MessageRole.USER,
+            content=text,
+            channel_message_id=comment_id or None,
+        )
+        db.add(user_msg)
+        await db.flush()
+
+        if conv.is_human_takeover:
+            await db.commit()
+            return
+
+        # Cargar configs de agentes
+        configs_result = await db.execute(
+            select(AgentConfig).where(
+                AgentConfig.business_id == business.id,
+                AgentConfig.is_active == True,
+            )
+        )
+        raw_configs = configs_result.scalars().all()
+        agent_configs = {
+            c.agent_type: {"persona_name": c.persona_name, "persona_tone": c.persona_tone}
+            for c in raw_configs
+        }
+
+        business_dict = _build_business_dict(business)
+        lead_obj = conv.lead or lead
+        lead_dict = {
+            "id":                   lead_obj.id,
+            "name":                 lead_obj.name or commenter_id,
+            "stage":                lead_obj.stage if lead_obj else "new",
+            "qualification_score":  lead_obj.qualification_score if lead_obj else 0,
+            "assigned_agent_type":  lead_obj.assigned_agent_type if lead_obj else "qualifier",
+            "budget":               lead_obj.budget if lead_obj else None,
+            "authority":            lead_obj.authority if lead_obj else None,
+            "need":                 lead_obj.need if lead_obj else None,
+            "timeline":             lead_obj.timeline if lead_obj else None,
+        }
+
+        all_messages = list(conv.messages) + [user_msg]
+
+        # Generar respuesta con el orquestador
+        ai_response, agent_used, qualification = await orchestrator.process_message(
+            user_message=text,
+            conversation_history=all_messages,
+            business=business_dict,
+            lead=lead_dict,
+            agent_configs=agent_configs,
+        )
+
+        # Guardar respuesta
+        ai_msg = Message(
+            id=str(uuid.uuid4()),
+            conversation_id=conv.id,
+            role=MessageRole.ASSISTANT,
+            content=ai_response,
+            agent_type=agent_used,
+        )
+        db.add(ai_msg)
+
+        conv.message_count = (conv.message_count or 0) + 2
+        conv.last_message_at = datetime.now(timezone.utc)
+        conv.current_agent = agent_used
+
+        if qualification and lead_obj:
+            lead_obj.qualification_score = qualification.score
+            lead_obj.budget    = qualification.budget
+            lead_obj.authority = qualification.authority
+            lead_obj.need      = qualification.need
+            lead_obj.timeline  = qualification.timeline
+            lead_obj.last_contacted_at = datetime.now(timezone.utc)
+            next_agent = orchestrator.determine_next_agent(qualification)
+            if next_agent != "disqualified":
+                lead_obj.assigned_agent_type = next_agent
+
+        await db.commit()
+
+        # Publicar respuesta via Ayrshare
+        if comment_id and business.ayrshare_profile_key:
+            # Twitter tiene límite de 280 chars; YouTube/TikTok 150
+            max_len = 280 if platform == "twitter" else 1000
+            reply_text = ai_response[:max_len]
+            await ayrshare_service.reply_to_comment(
+                profile_key=business.ayrshare_profile_key,
+                comment_id=comment_id,
+                platform=platform,
+                text=reply_text,
+            )
+
+        # Notificar dashboard via WebSocket
+        await ws_manager.send_to_conversation(conv.id, {
+            "type": "new_message",
+            "message": {
+                "role": "assistant",
+                "content": ai_response,
+                "agent_type": agent_used,
+                "platform": platform,
+            },
+        })
+
+        log.info(
+            "ayrshare_event_processed",
+            business_id=business.id,
+            platform=platform,
+            agent=agent_used,
+        )
+
+    except Exception as e:
+        import structlog as _sl2
+        _sl2.get_logger().error("ayrshare_webhook_error", error=str(e), platform=platform)

@@ -167,10 +167,18 @@ async def job_publish_scheduled_posts():
                 tags = " ".join(f"#{h.lstrip('#')}" for h in post.hashtags)
                 caption_with_hashtags = f"{post.caption}\n\n{tags}"
 
+            # Buscar el negocio para obtener el profileKey de Ayrshare
+            biz_res = await db.execute(
+                select(Business).where(Business.id == post.business_id)
+            )
+            biz = biz_res.scalar_one_or_none()
+            ayrshare_key = biz.ayrshare_profile_key if biz and biz.ayrshare_enabled else None
+
             pub_result = await publish_post(
                 channel=post.channel.value,
                 caption=caption_with_hashtags,
                 image_url=post.image_url,
+                ayrshare_profile_key=ayrshare_key,
             )
 
             post.status = ContentStatus.published if pub_result["success"] else ContentStatus.failed
@@ -269,6 +277,83 @@ async def job_followup_notifications():
             await db.commit()
 
 
+# ── Ayrshare comment polling (fallback when webhook misses events) ────────
+async def job_ayrshare_poll_comments():
+    """
+    Cada 5 min: por cada negocio con Ayrshare + autoresponder habilitado,
+    consulta los comentarios recientes y procesa los que no han sido respondidos.
+    Es un fallback para cuando el webhook de Ayrshare no llega.
+    """
+    from app.api.webhooks import _process_ayrshare_event, _PLATFORM_TO_CHANNEL
+    from app.services.ayrshare_service import ayrshare_service
+    from app.models.conversation import Channel
+    from app.models.message import Message
+
+    async with AsyncSessionLocal() as db:
+        biz_result = await db.execute(
+            select(Business).where(
+                Business.ayrshare_profile_key.isnot(None),
+                Business.ayrshare_autoresponder_enabled == True,
+                Business.is_active == True,
+            )
+        )
+        businesses = biz_result.scalars().all()
+
+        for business in businesses:
+            try:
+                platforms = business.ayrshare_connected_platforms or []
+                if not platforms:
+                    continue
+
+                comments = await ayrshare_service.get_recent_comments(
+                    profile_key=business.ayrshare_profile_key,
+                    platforms=platforms,
+                    last_n=20,
+                )
+
+                for comment in comments:
+                    comment_id   = comment.get("id", "")
+                    platform     = comment.get("platform", "").lower()
+                    text         = (comment.get("text") or comment.get("comment") or "").strip()
+                    commenter_id = (
+                        comment.get("username") or comment.get("userId") or
+                        comment.get("senderId") or ""
+                    )
+                    post_id = comment.get("postId") or comment.get("videoId") or ""
+
+                    if not text or not commenter_id or not comment_id:
+                        continue
+
+                    # Deduplicar por channel_message_id
+                    dup = await db.execute(
+                        select(Message).where(
+                            Message.channel_message_id == comment_id
+                        ).limit(1)
+                    )
+                    if dup.scalar_one_or_none():
+                        continue  # ya procesado
+
+                    channel = _PLATFORM_TO_CHANNEL.get(platform, Channel.WEBCHAT)
+
+                    await _process_ayrshare_event(
+                        db=db,
+                        business=business,
+                        channel=channel,
+                        platform=platform,
+                        commenter_id=commenter_id,
+                        text=text,
+                        comment_id=comment_id,
+                        post_id=post_id,
+                    )
+
+            except Exception as e:
+                logger.warning(
+                    "scheduler.ayrshare_poll.failed",
+                    business_id=business.id,
+                    error=str(e),
+                )
+
+
 # ── Setup ─────────────────────────────────────────────────────────────────
 def start_scheduler():
     scheduler.add_job(
@@ -295,8 +380,14 @@ def start_scheduler():
         id="followup_notifications",
         replace_existing=True,
     )
+    scheduler.add_job(
+        job_ayrshare_poll_comments,
+        CronTrigger(minute="*/5"),  # every 5 minutes
+        id="ayrshare_poll_comments",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts", "followup_notifications"])
+    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts", "followup_notifications", "ayrshare_poll_comments"])
 
 
 def stop_scheduler():

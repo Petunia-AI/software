@@ -100,6 +100,11 @@ class Settings(BaseSettings):
     tiktok_access_token: str = ""
     tiktok_open_id:      str = ""
 
+    # Ayrshare — Social Media Auto Global OAuth
+    ayrshare_api_key:     str = ""   # API Key del plan Business de Ayrshare
+    ayrshare_domain:      str = ""   # Domain / ID único de la cuenta (ej: id-f9Dl5)
+    ayrshare_jwt_secret:  str = ""   # Private key RSA PEM (de Ayrshare dashboard → JWT settings)
+
     class Config:
         env_file = ".env"
         extra = "ignore"

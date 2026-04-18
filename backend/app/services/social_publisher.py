@@ -173,10 +173,63 @@ async def publish_twitter(caption: str) -> dict:
         return {"success": True, "platform_post_id": tweet_id, "platform_url": f"https://x.com/i/web/status/{tweet_id}"}
 
 
+# ── Ayrshare publisher (multi-plataforma unificado) ───────────────────────────
+
+async def publish_via_ayrshare(
+    profile_key: str,
+    caption: str,
+    platforms: list[str],
+    image_url: str | None = None,
+    scheduled_date: str | None = None,
+) -> dict:
+    """
+    Publica en una o varias redes usando Ayrshare (Auto Global).
+    Requiere que el negocio tenga ayrshare_profile_key configurado.
+    """
+    from app.services.ayrshare_service import ayrshare_service
+
+    try:
+        result = await ayrshare_service.post(
+            profile_key=profile_key,
+            text=caption,
+            platforms=platforms,
+            media_urls=[image_url] if image_url else None,
+            scheduled_date=scheduled_date,
+        )
+        post_id = result.get("id") or result.get("postIds", {}).get(platforms[0] if platforms else "", "")
+        logger.info("ayrshare_published", platforms=platforms, post_id=post_id)
+        return {"success": True, "platform_post_id": str(post_id), "platform_url": "", "ayrshare": result}
+    except Exception as e:
+        logger.error("ayrshare_publish_error", error=str(e))
+        return {"success": False, "error": str(e)}
+
+
 # ── Dispatcher principal ──────────────────────────────────────────────────────
 
-async def publish_post(channel: str, caption: str, image_url: str | None = None) -> dict:
-    """Dispatcher que enruta al publisher correcto según el canal."""
+async def publish_post(
+    channel: str,
+    caption: str,
+    image_url: str | None = None,
+    ayrshare_profile_key: str | None = None,
+) -> dict:
+    """
+    Dispatcher que enruta al publisher correcto.
+    Si el negocio tiene Ayrshare conectado, se usa como canal primario
+    para Instagram, Facebook, Twitter, LinkedIn y TikTok.
+    Los canales exclusivos de Meta (WhatsApp, Messenger) siguen usando API directa.
+    """
+    # Plataformas soportadas por Ayrshare
+    ayrshare_platforms = {"instagram", "facebook", "twitter", "linkedin", "tiktok", "youtube"}
+
+    if ayrshare_profile_key and channel in ayrshare_platforms:
+        return await publish_via_ayrshare(
+            profile_key=ayrshare_profile_key,
+            caption=caption,
+            platforms=[channel],
+            image_url=image_url,
+        )
+
+    # Fallback a APIs directas
     handlers = {
         "instagram": lambda: publish_instagram(caption, image_url),
         "facebook":  lambda: publish_facebook(caption, image_url),

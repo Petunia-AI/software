@@ -21,6 +21,9 @@ class Channel(str, enum.Enum):
     EMAIL = "email"
     LINKEDIN = "linkedin"
     TIKTOK = "tiktok"
+    TWITTER = "twitter"
+    YOUTUBE = "youtube"
+    FACEBOOK = "facebook"   # comentarios en página de Facebook (distinto de Messenger DMs)
 
 
 class Conversation(Base):
