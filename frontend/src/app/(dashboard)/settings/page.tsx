@@ -3,9 +3,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { businessApi, tiktokApi, ayrshareApi } from "@/lib/api";
+import { businessApi, metaApi, tiktokApi, ayrshareApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
+import { MetaConnect } from "@/components/meta-connect";
 import { TikTokConnect } from "@/components/tiktok-connect";
 import { AyrshareConnect } from "@/components/ayrshare-connect";
 import toast from "react-hot-toast";
@@ -136,6 +137,12 @@ function SettingsContent() {
   const { data: business, isLoading } = useQuery({
     queryKey: ["business"],
     queryFn: () => businessApi.get().then((r) => r.data),
+  });
+
+  const { data: metaStatus, refetch: refetchMeta } = useQuery({
+    queryKey: ["meta-status"],
+    queryFn: () => metaApi.getStatus().then((r) => r.data),
+    staleTime: 30_000,
   });
 
   const { data: tiktokStatus, refetch: refetchTiktok } = useQuery({
@@ -421,6 +428,18 @@ function SettingsContent() {
             </div>
           </Section>
         )}
+
+        {/* WhatsApp — Meta OAuth */}
+        <Section icon={Smartphone} title="Conectar WhatsApp"
+          subtitle="Vincula tu número de WhatsApp Business en un clic con Meta" delay={0.23}>
+          <MetaConnect
+            status={metaStatus}
+            onUpdate={() => {
+              refetchMeta();
+              qc.invalidateQueries({ queryKey: ["business"] });
+            }}
+          />
+        </Section>
 
         {/* TikTok Connect */}
         <Section icon={Music2} title="Conectar con TikTok"
