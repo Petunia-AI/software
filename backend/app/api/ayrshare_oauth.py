@@ -33,6 +33,40 @@ def _require_config():
         )
 
 
+# Helper
+
+async def _create_ayrshare_profile(business, db: AsyncSession) -> None:
+    """Crea un perfil en Ayrshare y guarda el profileKey en la BD.
+    Usa un título único con sufijo del business_id para evitar duplicados."""
+    import re
+    short_id = str(business.id)[:8]
+    base_title = (business.name or "Negocio").strip()
+    # Quitar el sufijo anterior si existe
+    base_title = re.sub(r"\s+\[[\w-]+\]$", "", base_title)
+    title = f"{base_title} [{short_id}]"
+    try:
+        profile_data = await ayrshare_service.create_profile(
+            ref_id=str(business.id),
+            title=title,
+        )
+        profile_key = (
+            profile_data.get("profileKey")
+            or profile_data.get("profile", {}).get("profileKey")
+        )
+        if not profile_key:
+            logger.error("ayrshare_no_profile_key", data=profile_data)
+            raise HTTPException(500, "Ayrshare no devolvio un profileKey")
+        business.ayrshare_profile_key = profile_key
+        business.ayrshare_ref_id = str(business.id)
+        await db.commit()
+        logger.info("ayrshare_profile_created", business_id=business.id, profile_key=profile_key[:8])
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("ayrshare_create_profile_failed", error=str(e))
+        raise HTTPException(502, f"Error al crear perfil en Ayrshare: {str(e)}")
+
+
 # Connect
 
 @router.post("/connect")
@@ -53,28 +87,20 @@ async def ayrshare_connect(
 
     # Si no tiene profileKey, crear perfil en Ayrshare
     if not business.ayrshare_profile_key:
-        try:
-            profile_data = await ayrshare_service.create_profile(
-                ref_id=business.id,
-                title=business.name or business.id,
-            )
-            profile_key = (
-                profile_data.get("profileKey")
-                or profile_data.get("profile", {}).get("profileKey")
-            )
-            if not profile_key:
-                logger.error("ayrshare_no_profile_key", data=profile_data)
-                raise HTTPException(500, "Ayrshare no devolvio un profileKey")
+        await _create_ayrshare_profile(business, db)
 
-            business.ayrshare_profile_key = profile_key
-            business.ayrshare_ref_id = business.id
+    # Verificar que el profileKey guardado es válido; si no, recrear el perfil
+    if business.ayrshare_profile_key:
+        try:
+            await ayrshare_service.get_profile(business.ayrshare_profile_key)
+        except Exception:
+            logger.warning("ayrshare_invalid_profile_key_detected", business_id=business.id)
+            business.ayrshare_profile_key = None
+            business.ayrshare_ref_id = None
+            business.ayrshare_connected_platforms = []
+            business.ayrshare_enabled = False
             await db.commit()
-            logger.info("ayrshare_profile_created", business_id=business.id)
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error("ayrshare_create_profile_failed", error=str(e))
-            raise HTTPException(502, f"Error al crear perfil en Ayrshare: {str(e)}")
+            await _create_ayrshare_profile(business, db)
 
     # Llamar a Ayrshare para generar la JWT URL
     try:
