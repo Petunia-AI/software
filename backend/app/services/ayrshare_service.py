@@ -96,6 +96,7 @@ class AyrshareService:
             "domain":     settings.ayrshare_domain,
             "privateKey": private_key,
             "profileKey": profile_key,
+            "expiresIn":  1800,  # 30 minutos para que el OAuth de LinkedIn/TikTok complete
         }
 
         # Content-Type para form-data (no usar _headers() que pone JSON)
