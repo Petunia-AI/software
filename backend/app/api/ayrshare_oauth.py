@@ -192,8 +192,17 @@ async def ayrshare_debug_profile(
         profile = await ayrshare_service.get_profile(business.ayrshare_profile_key)
         # También intentar sin profile key (perfil principal)
         primary = await ayrshare_service.get_profile(None)
+        # Generar JWT URL para ver qué URL se produce
+        jwt_url = None
+        jwt_error = None
+        try:
+            jwt_url = await ayrshare_service.generate_jwt_url(business.ayrshare_profile_key)
+        except Exception as e:
+            jwt_error = str(e)
         return {
             "sub_profile_key": business.ayrshare_profile_key[:8] + "...",
+            "jwt_url_generated": jwt_url,
+            "jwt_error": jwt_error,
             "sub_profile": {
                 "activeSocialAccounts": profile.get("activeSocialAccounts"),
                 "displayNames_count": len(profile.get("displayNames", [])),
