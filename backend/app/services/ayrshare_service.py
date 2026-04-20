@@ -156,7 +156,28 @@ class AyrshareService:
         """Devuelve la lista de redes sociales que el cliente tiene vinculadas."""
         try:
             profile = await self.get_profile(profile_key)
-            return profile.get("activeSocialAccounts", [])
+            logger.info("ayrshare_profile_raw", keys=list(profile.keys()), profile_key=profile_key[:8] + "...")
+
+            # Ayrshare devuelve activeSocialAccounts (lista) cuando hay redes vinculadas.
+            # Si no hay redes vinculadas el campo no aparece en la respuesta.
+            active = profile.get("activeSocialAccounts")
+            if isinstance(active, list) and active:
+                return active
+
+            # Fallback: extraer plataformas de displayNames (siempre presente)
+            display_names = profile.get("displayNames", [])
+            if isinstance(display_names, list) and display_names:
+                platforms = list({entry["platform"] for entry in display_names if "platform" in entry})
+                if platforms:
+                    logger.info("ayrshare_platforms_from_displayNames", platforms=platforms)
+                    return platforms
+
+            # Fallback: claves del objeto socialAccounts si existe
+            social_accounts = profile.get("socialAccounts")
+            if isinstance(social_accounts, dict):
+                return [k for k, v in social_accounts.items() if v]
+
+            return []
         except Exception as e:
             logger.warning("ayrshare_get_platforms_failed", error=str(e))
             return []

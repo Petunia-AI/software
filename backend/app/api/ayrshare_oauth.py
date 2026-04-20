@@ -175,6 +175,32 @@ async def ayrshare_disconnect(
     return {"ok": True}
 
 
+# Debug — raw Ayrshare profile response
+
+@router.get("/debug-profile")
+async def ayrshare_debug_profile(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Devuelve la respuesta cruda de Ayrshare para diagnóstico."""
+    result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+    business = result.scalar_one_or_none()
+    if not business or not business.ayrshare_profile_key:
+        raise HTTPException(400, "No hay perfil de Ayrshare configurado")
+
+    try:
+        profile = await ayrshare_service.get_profile(business.ayrshare_profile_key)
+        return {
+            "profile_key": business.ayrshare_profile_key[:8] + "...",
+            "activeSocialAccounts": profile.get("activeSocialAccounts"),
+            "displayNames_count": len(profile.get("displayNames", [])),
+            "displayNames_platforms": [e.get("platform") for e in profile.get("displayNames", [])],
+            "raw_keys": list(profile.keys()),
+        }
+    except Exception as e:
+        raise HTTPException(502, f"Error al consultar Ayrshare: {str(e)}")
+
+
 # Register webhook
 
 @router.post("/register-webhook")
