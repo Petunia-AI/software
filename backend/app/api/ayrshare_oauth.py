@@ -102,6 +102,18 @@ async def ayrshare_status(
     if not business:
         raise HTTPException(404, "Negocio no encontrado")
 
+    # Si hay perfil pero las plataformas no están cacheadas, consultarlas en Ayrshare
+    if business.ayrshare_profile_key and settings.ayrshare_api_key and not business.ayrshare_connected_platforms:
+        try:
+            platforms = await ayrshare_service.get_connected_platforms(business.ayrshare_profile_key)
+            if platforms:
+                business.ayrshare_connected_platforms = platforms
+                business.ayrshare_enabled = True
+                await db.commit()
+                logger.info("ayrshare_status_auto_refreshed", business_id=business.id, platforms=platforms)
+        except Exception as e:
+            logger.warning("ayrshare_status_auto_refresh_failed", error=str(e))
+
     return {
         "connected": bool(business.ayrshare_profile_key),
         "enabled": business.ayrshare_enabled,

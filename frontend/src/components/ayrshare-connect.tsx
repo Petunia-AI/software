@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ayrshareApi } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -46,6 +46,7 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
   const [connecting, setConnecting] = useState(false);
   const [togglingAutoresponder, setTogglingAutoresponder] = useState(false);
   const [registeringWebhook, setRegisteringWebhook] = useState(false);
+  const visibilityListenerRef = useRef<(() => void) | null>(null);
 
   const refreshMutation = useMutation({
     mutationFn: () => ayrshareApi.refresh(),
@@ -102,10 +103,24 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
       // Abrir la URL JWT en una nueva pestaña para que el cliente vincule sus redes
       window.open(data.url, "_blank", "noopener,noreferrer");
       toast.success(
-        "Se abrió la página de Ayrshare. Vincula tus redes y luego haz clic en «Actualizar».",
+        "Se abrió la página de Ayrshare. Vincula tus redes — se actualizará automáticamente al volver.",
         { duration: 7000 }
       );
       onUpdate();
+
+      // Auto-refrescar cuando el usuario vuelve a esta pestaña
+      if (visibilityListenerRef.current) {
+        document.removeEventListener("visibilitychange", visibilityListenerRef.current);
+      }
+      const handler = () => {
+        if (document.visibilityState === "visible") {
+          document.removeEventListener("visibilitychange", handler);
+          visibilityListenerRef.current = null;
+          ayrshareApi.refresh().then(() => onUpdate()).catch(() => {});
+        }
+      };
+      visibilityListenerRef.current = handler;
+      document.addEventListener("visibilitychange", handler);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
       toast.error(err?.response?.data?.detail || "Error al conectar con Ayrshare");
