@@ -190,12 +190,22 @@ async def ayrshare_debug_profile(
 
     try:
         profile = await ayrshare_service.get_profile(business.ayrshare_profile_key)
+        # También intentar sin profile key (perfil principal)
+        primary = await ayrshare_service.get_profile(None)
         return {
-            "profile_key": business.ayrshare_profile_key[:8] + "...",
-            "activeSocialAccounts": profile.get("activeSocialAccounts"),
-            "displayNames_count": len(profile.get("displayNames", [])),
-            "displayNames_platforms": [e.get("platform") for e in profile.get("displayNames", [])],
-            "raw_keys": list(profile.keys()),
+            "sub_profile_key": business.ayrshare_profile_key[:8] + "...",
+            "sub_profile": {
+                "activeSocialAccounts": profile.get("activeSocialAccounts"),
+                "displayNames_count": len(profile.get("displayNames", [])),
+                "displayNames_platforms": [e.get("platform") for e in profile.get("displayNames", [])],
+                "raw_keys": list(profile.keys()),
+            },
+            "primary_profile": {
+                "activeSocialAccounts": primary.get("activeSocialAccounts"),
+                "displayNames_count": len(primary.get("displayNames", [])),
+                "displayNames_platforms": [e.get("platform") for e in primary.get("displayNames", [])],
+                "raw_keys": list(primary.keys()),
+            },
         }
     except Exception as e:
         raise HTTPException(502, f"Error al consultar Ayrshare: {str(e)}")

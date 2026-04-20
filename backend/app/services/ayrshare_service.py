@@ -48,7 +48,7 @@ class AyrshareService:
             resp.raise_for_status()
             return resp.json()
 
-    async def get_profile(self, profile_key: str) -> dict:
+    async def get_profile(self, profile_key: str | None) -> dict:
         """Obtiene información del perfil incluyendo redes conectadas."""
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
