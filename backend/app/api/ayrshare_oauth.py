@@ -201,6 +201,36 @@ async def ayrshare_disconnect(
     return {"ok": True}
 
 
+# Force-set profile key (repair endpoint)
+
+class AyrshareRepairRequest(BaseModel):
+    profile_key: str
+
+@router.post("/repair")
+async def ayrshare_repair(
+    body: AyrshareRepairRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Fuerza la actualización del profileKey en BD con uno conocido válido."""
+    result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+    business = result.scalar_one_or_none()
+    if not business:
+        raise HTTPException(404, "Negocio no encontrado")
+    business.ayrshare_profile_key = body.profile_key
+    business.ayrshare_connected_platforms = []
+    business.ayrshare_enabled = False
+    await db.commit()
+    # Refrescar plataformas inmediatamente
+    platforms = await ayrshare_service.get_connected_platforms(body.profile_key)
+    if platforms:
+        business.ayrshare_connected_platforms = platforms
+        business.ayrshare_enabled = True
+        await db.commit()
+    logger.info("ayrshare_repaired", business_id=business.id, profile_key=body.profile_key[:8], platforms=platforms)
+    return {"ok": True, "profile_key": body.profile_key[:8] + "...", "connected_platforms": platforms}
+
+
 # Debug — raw Ayrshare profile response
 
 @router.get("/debug-profile")
