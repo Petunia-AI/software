@@ -962,8 +962,9 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
 
 // ── Edit Post Modal ───────────────────────────────────────────────────────
 
-function EditPostModal({ post, token, onClose, onSaved }: {
+function EditPostModal({ post, token, onClose, onSaved, onPublish, onSchedule }: {
   post: Post; token: string; onClose: () => void; onSaved: (updated: Post) => void;
+  onPublish?: () => void; onSchedule?: () => void;
 }) {
   const [hook, setHook] = useState(post.hook ?? "");
   const [caption, setCaption] = useState(post.caption);
@@ -971,6 +972,8 @@ function EditPostModal({ post, token, onClose, onSaved }: {
   const [imageUrl, setImageUrl] = useState(post.image_url ?? "");
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState<"none" | "now" | "schedule">("none");
+  const [scheduleDate, setScheduleDate] = useState("");
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
@@ -998,6 +1001,44 @@ function EditPostModal({ post, token, onClose, onSaved }: {
         toast.error(err.detail || "Error al guardar");
       }
     } finally { setSaving(false); setApproving(false); }
+  }
+
+  async function handleSaveAndPublish() {
+    // 1. Guardar cambios y aprobar
+    setSaving(true);
+    try {
+      const body = { hook: hook || null, caption, hashtags: parseHashtags(hashtagsRaw), image_url: imageUrl || null, status: "approved" };
+      const res = await fetch(`${API}/content/posts/${post.id}`, { method: "PATCH", headers, body: JSON.stringify(body) });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.detail || "Error al guardar"); return; }
+    } finally { setSaving(false); }
+    // 2. Publicar
+    onClose();
+    onPublish?.();
+  }
+
+  async function handleSaveAndSchedule() {
+    if (!scheduleDate) return;
+    // 1. Guardar cambios
+    setSaving(true);
+    try {
+      const body = { hook: hook || null, caption, hashtags: parseHashtags(hashtagsRaw), image_url: imageUrl || null };
+      const res = await fetch(`${API}/content/posts/${post.id}`, { method: "PATCH", headers, body: JSON.stringify(body) });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.detail || "Error al guardar"); return; }
+    } finally { setSaving(false); }
+    // 2. Aprobar + programar
+    const apRes = await fetch(`${API}/content/posts/${post.id}/approve`, { method: "POST", headers });
+    if (!apRes.ok) { toast.error("Error al aprobar"); return; }
+    const schRes = await fetch(`${API}/content/posts/${post.id}/schedule`, {
+      method: "POST", headers,
+      body: JSON.stringify({ post_id: post.id, scheduled_at: new Date(scheduleDate).toISOString() }),
+    });
+    if (schRes.ok) {
+      toast.success("Post programado ✅");
+      const updated: Post = { ...post, status: "scheduled", scheduled_at: scheduleDate };
+      onSaved(updated);
+    } else {
+      toast.error("Error al programar");
+    }
   }
 
   const inputCls = "w-full px-3 py-2 rounded-xl text-sm bg-white border border-border outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all text-foreground placeholder:text-muted-foreground";
@@ -1069,19 +1110,58 @@ function EditPostModal({ post, token, onClose, onSaved }: {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 px-6 py-4 border-t border-border bg-slate-50/50">
-          <button onClick={() => handleSave(false)} disabled={saving || approving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-border text-foreground hover:bg-slate-50 disabled:opacity-60 transition-all">
-            {saving ? <><RefreshCw size={13} className="animate-spin" />Guardando...</> : <><CheckCircle size={13} />Guardar</>}
-          </button>
-          {post.status === "draft" && (
-            <button onClick={() => handleSave(true)} disabled={saving || approving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all hover:opacity-90"
-              style={{ background: "linear-gradient(135deg, #10B981, #059669)" }}>
-              {approving ? <><RefreshCw size={13} className="animate-spin" />Aprobando...</> : <><CheckCircle size={13} />Guardar y aprobar</>}
+        <div className="px-6 py-4 border-t border-border bg-slate-50/50 space-y-3">
+          {/* Publish action selector */}
+          <div className="flex gap-2">
+            <button onClick={() => setScheduleMode(scheduleMode === "now" ? "none" : "now")}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                scheduleMode === "now" ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300 hover:text-violet-600"
+              }`}>
+              <Send size={12} /> Publicar ahora
             </button>
+            <button onClick={() => setScheduleMode(scheduleMode === "schedule" ? "none" : "schedule")}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                scheduleMode === "schedule" ? "border-blue-400 bg-blue-50 text-blue-700" : "border-border bg-white text-muted-foreground hover:border-blue-300 hover:text-blue-600"
+              }`}>
+              <Calendar size={12} /> Programar
+            </button>
+          </div>
+
+          {/* Schedule date picker */}
+          {scheduleMode === "schedule" && (
+            <div className="flex gap-2 items-center">
+              <input type="datetime-local" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-xl text-sm bg-white border border-blue-200 text-foreground outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all" />
+              <button onClick={handleSaveAndSchedule} disabled={!scheduleDate || saving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
+                style={{ background: "linear-gradient(135deg, #2563EB, #4F46E5)" }}>
+                {saving ? <RefreshCw size={13} className="animate-spin" /> : <Clock size={13} />} Programar
+              </button>
+            </div>
           )}
-          <button onClick={onClose} className="ml-auto text-sm text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
+
+          {/* Bottom row */}
+          <div className="flex items-center gap-2">
+            <button onClick={() => handleSave(false)} disabled={saving || approving}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-border text-foreground hover:bg-slate-50 disabled:opacity-60 transition-all">
+              {saving ? <><RefreshCw size={13} className="animate-spin" />Guardando...</> : <><CheckCircle size={13} />Guardar</>}
+            </button>
+            {post.status === "draft" && scheduleMode !== "schedule" && (
+              <button onClick={() => handleSave(true)} disabled={saving || approving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, #10B981, #059669)" }}>
+                {approving ? <><RefreshCw size={13} className="animate-spin" />Aprobando...</> : <><CheckCircle size={13} />Guardar y aprobar</>}
+              </button>
+            )}
+            {scheduleMode === "now" && (
+              <button onClick={handleSaveAndPublish} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, #635BFF, #7C3AED)" }}>
+                {saving ? <><RefreshCw size={13} className="animate-spin" />Guardando...</> : <><Send size={13} />Guardar y publicar</>}
+              </button>
+            )}
+            <button onClick={onClose} className="ml-auto text-sm text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -1514,7 +1594,9 @@ export default function ContentPage() {
       {/* Edit post modal */}
       <AnimatePresence>
         {editingPost && (
-          <EditPostModal post={editingPost} token={token ?? ""} onClose={() => setEditingPost(null)} onSaved={handlePostSaved} />
+          <EditPostModal post={editingPost} token={token ?? ""} onClose={() => setEditingPost(null)} onSaved={handlePostSaved}
+            onPublish={() => publishPost(editingPost.id)}
+            onSchedule={() => { setSchedulingPost(editingPost.id); setEditingPost(null); }} />
         )}
       </AnimatePresence>
 
