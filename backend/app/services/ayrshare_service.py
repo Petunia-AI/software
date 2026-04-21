@@ -323,12 +323,19 @@ class AyrshareService:
                         post_id=post_id,
                         platform=platform,
                     )
+                    # For Facebook, post_id is {pageId}_{postId} — skip page's own comments
+                    page_id = post_id.split("_")[0] if platform == "facebook" else None
+
                     for c in comments:
                         # Skip comments made by the page/company itself
                         if c.get("company") or c.get("owner"):
                             continue
-                        # Normalize comment fields for the scheduler
                         commenter = c.get("from") or {}
+                        commenter_user_id = commenter.get("id") or c.get("userId") or ""
+                        # Skip if commenter is the page itself
+                        if page_id and commenter_user_id == page_id:
+                            continue
+                        # Normalize comment fields for the scheduler
                         all_comments.append({
                             "id":          c.get("commentId", ""),
                             "platform":    platform,
