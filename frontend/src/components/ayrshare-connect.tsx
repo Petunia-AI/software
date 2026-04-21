@@ -18,6 +18,11 @@ import {
 // Plataformas que soporta Ayrshare para MENSAJES DIRECTOS (DMs)
 const DM_SUPPORTED_PLATFORMS = ["facebook", "instagram"];
 
+// Label especial para DMs (Facebook → Messenger)
+const DM_LABEL_OVERRIDE: Record<string, string> = {
+  facebook: "Messenger (Facebook)",
+};
+
 // Plataformas que soporta Ayrshare
 const PLATFORM_META: Record<string, { label: string; color: string; bg: string }> = {
   twitter:   { label: "X / Twitter",  color: "text-gray-900",   bg: "bg-gray-100" },
@@ -392,7 +397,7 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
                             </svg>
                           )}
                         </div>
-                        <span className={`text-xs font-medium ${meta.color}`}>{meta.label}</span>
+                        <span className={`text-xs font-medium ${meta.color}`}>{DM_LABEL_OVERRIDE[p.toLowerCase()] ?? meta.label}</span>
                       </label>
                     );
                   })}
