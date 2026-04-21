@@ -331,22 +331,24 @@ async def ayrshare_register_webhook(
     profile_key = business.ayrshare_profile_key if business else None
 
     results = {}
-    # Registrar en perfil primario
-    try:
-        results["primary"] = await ayrshare_service.register_webhook(webhook_url)
-        logger.info("ayrshare_webhook_registered_primary", url=webhook_url)
-    except Exception as e:
-        logger.warning("ayrshare_webhook_primary_failed", error=str(e))
-        results["primary_error"] = str(e)
+    # Registrar en perfil primario para DMs y comentarios
+    for action in ("messages", "comment"):
+        try:
+            results[f"primary_{action}"] = await ayrshare_service.register_webhook(webhook_url, action=action)
+            logger.info("ayrshare_webhook_registered_primary", url=webhook_url, action=action)
+        except Exception as e:
+            logger.warning("ayrshare_webhook_primary_failed", error=str(e), action=action)
+            results[f"primary_{action}_error"] = str(e)
 
     # Registrar también en el sub-perfil del negocio (si tiene)
     if profile_key:
-        try:
-            results["sub_profile"] = await ayrshare_service.register_webhook(webhook_url, profile_key=profile_key)
-            logger.info("ayrshare_webhook_registered_sub", url=webhook_url, profile_key=profile_key[:8])
-        except Exception as e:
-            logger.warning("ayrshare_webhook_sub_failed", error=str(e))
-            results["sub_profile_error"] = str(e)
+        for action in ("messages", "comment"):
+            try:
+                results[f"sub_{action}"] = await ayrshare_service.register_webhook(webhook_url, profile_key=profile_key, action=action)
+                logger.info("ayrshare_webhook_registered_sub", url=webhook_url, profile_key=profile_key[:8], action=action)
+            except Exception as e:
+                logger.warning("ayrshare_webhook_sub_failed", error=str(e), action=action)
+                results[f"sub_{action}_error"] = str(e)
 
     return {"ok": True, "webhook_url": webhook_url, "results": results}
 

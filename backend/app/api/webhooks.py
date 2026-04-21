@@ -1409,22 +1409,33 @@ async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db))
     comment_id = data.get("id", "")
     post_id    = data.get("postId") or data.get("videoId") or ""
 
-    if not text or not commenter_id or not profile_key:
+    if not text or not commenter_id:
         return {"ok": True}
 
     # Solo procesamos comentarios y mensajes directos
     if action not in ("comment", "dm", "mention", "reply", "message", ""):
         return {"ok": True}
 
-    # Buscar negocio por profileKey
+    # Buscar negocio por profileKey o refId (Ayrshare puede enviar cualquiera)
+    ref_id = payload.get("refId", "")
     biz_result = await db.execute(
         select(Business).where(
-            Business.ayrshare_profile_key == profile_key,
+            (Business.ayrshare_profile_key == profile_key) if profile_key else (Business.ayrshare_ref_id == ref_id),
             Business.ayrshare_autoresponder_enabled == True,
             Business.is_active == True,
         )
     )
     business = biz_result.scalar_one_or_none()
+    # Si no se encontró por profileKey, intentar por refId
+    if not business and profile_key and ref_id:
+        biz_result2 = await db.execute(
+            select(Business).where(
+                Business.ayrshare_ref_id == ref_id,
+                Business.ayrshare_autoresponder_enabled == True,
+                Business.is_active == True,
+            )
+        )
+        business = biz_result2.scalar_one_or_none()
     if not business:
         return {"ok": True}
 
