@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { followupsApi } from "@/lib/api";
+import { followupsApi, analyticsApi } from "@/lib/api";
 
 const navItems = [
   {
@@ -90,6 +90,14 @@ export function Sidebar() {
     staleTime: 30_000,
   });
   const overdueCount: number = followupStats?.overdue ?? 0;
+
+  const { data: dashStats } = useQuery({
+    queryKey: ["dashboard-stats-sidebar"],
+    queryFn: () => analyticsApi.dashboard().then((r) => r.data),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const convByChannel: Record<string, number> = dashStats?.conversations_by_channel ?? {};
 
   return (
     <aside className="sidebar w-60 flex flex-col h-full select-none flex-shrink-0">
@@ -223,77 +231,68 @@ export function Sidebar() {
           Canales
         </p>
 
-        {[
-          {
-            label: "WhatsApp",  channel: "whatsapp",  count: 2,
-            color: "from-green-500 to-emerald-600",
-            glow: "rgba(16,185,129,0.4)",
-            Icon: MessageCircle,
-          },
-          {
-            label: "Webchat",   channel: "webchat",   count: 1,
-            color: "from-blue-500 to-indigo-600",
-            glow: "rgba(99,102,241,0.4)",
-            Icon: Globe,
-          },
-          {
-            label: "Instagram", channel: "instagram", count: 0,
-            color: "from-pink-500 to-fuchsia-600",
-            glow: "rgba(236,72,153,0.4)",
-            Icon: Camera,
-          },
-          {
-            label: "TikTok", channel: "tiktok", count: 0,
-            color: "from-neutral-800 to-neutral-900",
-            glow: "rgba(255,255,255,0.15)",
-            Icon: Camera,
-            customIcon: (
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/>
-              </svg>
-            ),
-          },
-        ].map(({ label, channel, count, color, glow, Icon, customIcon }: { label: string; channel: string; count: number; color: string; glow: string; Icon: React.ElementType; customIcon?: React.ReactNode }) => {
-          const isActive = pathname.startsWith("/conversations") &&
-            (typeof window !== "undefined"
-              ? new URLSearchParams(window.location.search).get("channel") === channel
-              : false);
-          return (
-            <Link
-              key={channel}
-              href={`/conversations?channel=${channel}`}
-              className={cn(
-                "group flex items-center gap-2.5 px-2 py-[6px] rounded-xl text-[13px] font-medium transition-all duration-150",
-                isActive
-                  ? "text-white"
-                  : "text-white/40 hover:text-white/75 hover:bg-white/[0.05]"
-              )}
-              style={isActive ? {
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              } : { border: "1px solid transparent" }}
-            >
-              <div
-                className={cn(
-                  "w-[26px] h-[26px] rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-150",
-                  isActive
-                    ? `bg-gradient-to-br ${color}`
-                    : "bg-white/[0.07] group-hover:bg-white/[0.1]"
-                )}
-                style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(255,255,255,0.45)" }}
-              >
-                {customIcon ?? <Icon size={13} />}
-              </div>
-              <span className="flex-1 truncate">{label}</span>
-              {count > 0 && (
-                <span className="min-w-[18px] h-[18px] px-1 text-white text-[9px] font-bold rounded-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #EF4444, #DC2626)", boxShadow: "0 0 8px rgba(239,68,68,0.5)" }}>
-                  {count}
-                </span>
-              )}
-            </Link>
+        {(() => {
+          const ALL_CHANNELS: { label: string; channel: string; color: string; glow: string; Icon: React.ElementType; customIcon?: React.ReactNode }[] = [
+            { label: "WhatsApp",  channel: "whatsapp",  color: "from-green-500 to-emerald-600", glow: "rgba(16,185,129,0.4)", Icon: MessageCircle },
+            { label: "Webchat",   channel: "webchat",   color: "from-blue-500 to-indigo-600",   glow: "rgba(99,102,241,0.4)", Icon: Globe },
+            { label: "Instagram", channel: "instagram", color: "from-pink-500 to-fuchsia-600",  glow: "rgba(236,72,153,0.4)", Icon: Camera },
+            { label: "Messenger", channel: "messenger", color: "from-blue-600 to-indigo-700",   glow: "rgba(59,130,246,0.4)", Icon: MessageCircle },
+            { label: "TikTok",    channel: "tiktok",    color: "from-neutral-800 to-neutral-900", glow: "rgba(255,255,255,0.15)", Icon: Camera,
+              customIcon: (
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/>
+                </svg>
+              ),
+            },
+          ];
+          // Mostrar solo canales con actividad + siempre WhatsApp y Webchat
+          const always = new Set(["whatsapp", "webchat"]);
+          const channels = ALL_CHANNELS.filter(
+            (c) => always.has(c.channel) || (convByChannel[c.channel] ?? 0) > 0
           );
-        })}
+          return channels.map(({ label, channel, color, glow, Icon, customIcon }) => {
+            const count = convByChannel[channel] ?? 0;
+            const isActive = pathname.startsWith("/conversations") &&
+              (typeof window !== "undefined"
+                ? new URLSearchParams(window.location.search).get("channel") === channel
+                : false);
+            return (
+              <Link
+                key={channel}
+                href={`/conversations?channel=${channel}`}
+                className={cn(
+                  "group flex items-center gap-2.5 px-2 py-[6px] rounded-xl text-[13px] font-medium transition-all duration-150",
+                  isActive
+                    ? "text-white"
+                    : "text-white/40 hover:text-white/75 hover:bg-white/[0.05]"
+                )}
+                style={isActive ? {
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                } : { border: "1px solid transparent" }}
+              >
+                <div
+                  className={cn(
+                    "w-[26px] h-[26px] rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-150",
+                    isActive
+                      ? `bg-gradient-to-br ${color}`
+                      : "bg-white/[0.07] group-hover:bg-white/[0.1]"
+                  )}
+                  style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(255,255,255,0.45)" }}
+                >
+                  {customIcon ?? <Icon size={13} />}
+                </div>
+                <span className="flex-1 truncate">{label}</span>
+                {count > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 text-white text-[9px] font-bold rounded-full flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #EF4444, #DC2626)", boxShadow: "0 0 8px rgba(239,68,68,0.5)" }}>
+                    {count}
+                  </span>
+                )}
+              </Link>
+            );
+          });
+        })()}
       </nav>
 
       {/* ── User footer ── */}
