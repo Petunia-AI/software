@@ -296,6 +296,38 @@ class AyrshareService:
                 return {"ok": False, "error": resp.text}
             return {"ok": True, **resp.json()}
 
+    # ── Mensajes directos (DMs) ───────────────────────────────────────────────
+
+    async def send_message(
+        self,
+        profile_key: str,
+        platform: str,
+        recipient_id: str,
+        message: str,
+    ) -> dict:
+        """
+        Envía un mensaje directo (DM) a un usuario via Ayrshare Messages API.
+
+        platform: "facebook" | "instagram" | "twitter"
+        recipient_id: ID del destinatario (senderId recibido en el webhook)
+        message: texto de la respuesta
+        """
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{AYRSHARE_BASE}/messages/{platform}",
+                headers=_headers(profile_key),
+                json={"recipientId": recipient_id, "message": message},
+            )
+            if resp.status_code >= 400:
+                logger.warning(
+                    "ayrshare_send_message_failed",
+                    platform=platform,
+                    status=resp.status_code,
+                    body=resp.text[:300],
+                )
+                return {"ok": False, "error": resp.text}
+            return {"ok": True, **resp.json()}
+
     # ── Registrar webhook ─────────────────────────────────────────────────────
 
     async def register_webhook(self, webhook_url: str) -> dict:

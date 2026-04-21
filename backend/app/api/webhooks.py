@@ -1616,3 +1616,252 @@ async def _process_ayrshare_event(
     except Exception as e:
         import structlog as _sl2
         _sl2.get_logger().error("ayrshare_webhook_error", error=str(e), platform=platform)
+
+
+# ── Ayrshare Direct Messages Webhook ──────────────────────────────────────
+
+@router.post("/ayrshare-messages")
+async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Recibe notificaciones de mensajes directos (DMs) de Ayrshare.
+    Soporta: Facebook Messenger, Instagram DM.
+
+    Payload relevante:
+      {
+        "action": "messages",
+        "type": "received",
+        "subAction": "messageCreated",
+        "platform": "facebook" | "instagram",
+        "message": "texto del mensaje",
+        "senderId": "id del remitente",
+        "recipientId": "id de la cuenta del negocio",
+        "conversationId": "id de la conversación",
+        "refId": "business_id de Petunia",
+        "senderDetails": { "username": "...", "name": "..." }
+      }
+    """
+    import structlog as _sl3
+    log = _sl3.get_logger()
+
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"ok": True}
+
+    # Sólo procesar mensajes recibidos nuevos
+    action     = payload.get("action")
+    msg_type   = payload.get("type")
+    sub_action = payload.get("subAction", "")
+
+    if action != "messages" or msg_type != "received" or sub_action != "messageCreated":
+        return {"ok": True}
+
+    platform        = payload.get("platform", "").lower()
+    message_text    = payload.get("message", "").strip()
+    sender_id       = payload.get("senderId", "")
+    ref_id          = payload.get("refId", "")
+    conversation_id = payload.get("conversationId", "")
+    sender_details  = payload.get("senderDetails", {})
+    sender_name     = sender_details.get("name") or sender_details.get("username") or sender_id
+
+    if not message_text or not sender_id or not platform:
+        return {"ok": True}
+
+    # Buscar negocio por refId (= business_id almacenado al crear el perfil Ayrshare)
+    biz_result = await db.execute(
+        select(Business).where(
+            Business.ayrshare_ref_id == ref_id,
+            Business.is_active == True,
+        ).limit(1)
+    )
+    business = biz_result.scalar_one_or_none()
+
+    if not business:
+        log.warning("ayrshare_dm_business_not_found", ref_id=ref_id, platform=platform)
+        return {"ok": True}
+
+    # Verificar que el autoresponder esté habilitado
+    if not business.ayrshare_autoresponder_enabled:
+        log.info("ayrshare_dm_autoresponder_disabled", business_id=business.id)
+        return {"ok": True}
+
+    # Verificar que el negocio tenga profileKey para poder responder
+    if not business.ayrshare_profile_key:
+        log.warning("ayrshare_dm_no_profile_key", business_id=business.id)
+        return {"ok": True}
+
+    # Mapear plataforma a Channel enum
+    channel_map = {
+        "facebook": Channel.MESSENGER,
+        "instagram": Channel.INSTAGRAM,
+    }
+    channel = channel_map.get(platform)
+    if not channel:
+        log.warning("ayrshare_dm_unsupported_platform", platform=platform)
+        return {"ok": True}
+
+    # Buscar o crear lead por (business_id, platform, senderId)
+    lead_result = await db.execute(
+        select(Lead).where(
+            Lead.business_id == business.id,
+            Lead.notes.contains(f"ayrshare_dm:{platform}:{sender_id}"),
+        ).limit(1)
+    )
+    lead = lead_result.scalar_one_or_none()
+    if not lead:
+        lead = Lead(
+            id=str(uuid.uuid4()),
+            business_id=business.id,
+            name=sender_name,
+            source=platform,
+            notes=f"ayrshare_dm:{platform}:{sender_id}",
+            tags=[],
+            is_active=True,
+        )
+        db.add(lead)
+        await db.flush()
+
+    # Buscar o crear conversación activa
+    conv_result = await db.execute(
+        select(Conversation)
+        .where(
+            Conversation.business_id == business.id,
+            Conversation.channel == channel,
+            Conversation.channel_contact_id == sender_id,
+            Conversation.status.in_(["active", "waiting"]),
+        )
+        .options(selectinload(Conversation.messages), selectinload(Conversation.lead))
+        .order_by(Conversation.started_at.desc())
+        .limit(1)
+    )
+    conv = conv_result.scalar_one_or_none()
+    if not conv:
+        conv = Conversation(
+            id=str(uuid.uuid4()),
+            business_id=business.id,
+            lead_id=lead.id,
+            channel=channel,
+            channel_contact_id=sender_id,
+            extra_data={"platform": platform, "ayrshare_conversation_id": conversation_id},
+        )
+        db.add(conv)
+        await db.flush()
+        conv.messages = []
+        conv.lead = lead
+
+    # Guardar mensaje entrante
+    user_msg = Message(
+        id=str(uuid.uuid4()),
+        conversation_id=conv.id,
+        role=MessageRole.USER,
+        content=message_text,
+        channel_message_id=payload.get("id") or None,
+    )
+    db.add(user_msg)
+    await db.flush()
+
+    # Si está en control humano, no responder con IA
+    if conv.is_human_takeover:
+        await db.commit()
+        return {"ok": True}
+
+    # Cargar configs de agentes
+    configs_result = await db.execute(
+        select(AgentConfig).where(
+            AgentConfig.business_id == business.id,
+            AgentConfig.is_active == True,
+        )
+    )
+    raw_configs = configs_result.scalars().all()
+    agent_configs = {
+        c.agent_type: {"persona_name": c.persona_name, "persona_tone": c.persona_tone}
+        for c in raw_configs
+    }
+
+    business_dict = _build_business_dict(business)
+    lead_obj = conv.lead or lead
+    lead_dict = {
+        "id":                   lead_obj.id,
+        "name":                 lead_obj.name or sender_name,
+        "stage":                lead_obj.stage if lead_obj else "new",
+        "qualification_score":  lead_obj.qualification_score if lead_obj else 0,
+        "assigned_agent_type":  lead_obj.assigned_agent_type if lead_obj else "qualifier",
+        "budget":               lead_obj.budget if lead_obj else None,
+        "authority":            lead_obj.authority if lead_obj else None,
+        "need":                 lead_obj.need if lead_obj else None,
+        "timeline":             lead_obj.timeline if lead_obj else None,
+    }
+
+    all_messages = list(conv.messages) + [user_msg]
+
+    # Generar respuesta con el orquestador
+    ai_response, agent_used, qualification = await orchestrator.process_message(
+        user_message=message_text,
+        conversation_history=all_messages,
+        business=business_dict,
+        lead=lead_dict,
+        agent_configs=agent_configs,
+    )
+
+    # Guardar respuesta de IA
+    ai_msg = Message(
+        id=str(uuid.uuid4()),
+        conversation_id=conv.id,
+        role=MessageRole.ASSISTANT,
+        content=ai_response,
+        agent_type=agent_used,
+    )
+    db.add(ai_msg)
+
+    # Actualizar conversación
+    conv.message_count = (conv.message_count or 0) + 2
+    conv.last_message_at = datetime.now(timezone.utc)
+    conv.current_agent = agent_used
+
+    # Actualizar lead si hay calificación
+    if qualification and conv.lead:
+        lead_obj = conv.lead
+        lead_obj.qualification_score = qualification.score
+        lead_obj.budget = qualification.budget
+        lead_obj.authority = qualification.authority
+        lead_obj.need = qualification.need
+        lead_obj.timeline = qualification.timeline
+        lead_obj.last_contacted_at = datetime.now(timezone.utc)
+        next_agent = orchestrator.determine_next_agent(qualification)
+        if next_agent != "disqualified":
+            lead_obj.assigned_agent_type = next_agent
+
+    await db.commit()
+
+    # Enviar respuesta por DM via Ayrshare
+    from app.services.ayrshare_service import ayrshare_service as _ayr
+    try:
+        await _ayr.send_message(
+            profile_key=business.ayrshare_profile_key,
+            platform=platform,
+            recipient_id=sender_id,
+            message=ai_response,
+        )
+    except Exception as send_err:
+        log.error("ayrshare_dm_send_failed", error=str(send_err), platform=platform)
+
+    # Notificar dashboard via WebSocket
+    await ws_manager.send_to_conversation(conv.id, {
+        "type": "new_message",
+        "message": {
+            "role": "assistant",
+            "content": ai_response,
+            "agent_type": agent_used,
+            "platform": platform,
+        },
+    })
+
+    log.info(
+        "ayrshare_dm_processed",
+        business_id=business.id,
+        platform=platform,
+        sender_id=sender_id,
+        agent=agent_used,
+    )
+
+    return {"ok": True}
