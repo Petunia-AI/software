@@ -73,11 +73,19 @@
         '<div id="av-pulse" style="background:' + cfg.color + '"></div>' +
         '<button id="av-btn" style="background:' + cfg.color + '" aria-label="Abrir chat">' +
           '<div id="av-btn-inner">' +
-            '<svg id="av-icon-chat" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-              '<path d="M16 4C9.37 4 4 8.93 4 15c0 2.7 1.05 5.18 2.8 7.1L4 28l6.4-2.1C11.84 26.6 13.88 27 16 27c6.63 0 12-4.93 12-11S22.63 4 16 4z" fill="white"/>' +
-              '<circle cx="10.5" cy="15" r="1.8" fill="' + cfg.color + '"/>' +
-              '<circle cx="16" cy="15" r="1.8" fill="' + cfg.color + '"/>' +
-              '<circle cx="21.5" cy="15" r="1.8" fill="' + cfg.color + '"/>' +
+            '<svg id="av-icon-chat" width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+              '<!-- cabeza -->' +
+              '<rect x="5" y="10" width="22" height="15" rx="4" fill="white"/>' +
+              '<!-- antenas -->' +
+              '<line x1="16" y1="5" x2="16" y2="10" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+              '<circle cx="16" cy="4" r="2" fill="white"/>' +
+              '<!-- ojos -->' +
+              '<circle cx="11" cy="16" r="2.2" fill="' + cfg.color + '"/>' +
+              '<circle cx="21" cy="16" r="2.2" fill="' + cfg.color + '"/>' +
+              '<circle cx="11.8" cy="15.2" r="0.8" fill="white"/>' +
+              '<circle cx="21.8" cy="15.2" r="0.8" fill="white"/>' +
+              '<!-- boca -->' +
+              '<path d="M11 21 Q16 24.5 21 21" stroke="' + cfg.color + '" stroke-width="1.8" stroke-linecap="round" fill="none"/>' +
             '</svg>' +
             '<svg id="av-icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">' +
               '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
