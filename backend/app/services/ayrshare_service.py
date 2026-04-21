@@ -135,7 +135,26 @@ class AyrshareService:
 
         platforms: ["instagram", "twitter", "facebook", "linkedin", "tiktok", ...]
         scheduled_date: ISO 8601 string para programar (opcional)
+
+        Nota: TikTok e Instagram requieren mediaUrls (imagen/video) obligatorio.
+        Si no hay imagen se omiten automáticamente de la lista de plataformas.
         """
+        # Plataformas que requieren media obligatorio
+        requires_media = {"tiktok", "instagram"}
+        if not media_urls:
+            filtered = [p for p in platforms if p not in requires_media]
+            if filtered != platforms:
+                logger.warning(
+                    "ayrshare_platforms_filtered_no_media",
+                    removed=[p for p in platforms if p in requires_media],
+                    remaining=filtered,
+                )
+            platforms = filtered
+
+        if not platforms:
+            logger.warning("ayrshare_post_skipped_no_valid_platforms")
+            return {"skipped": True, "reason": "No hay plataformas válidas (TikTok/Instagram requieren imagen)"}
+
         body: dict = {"post": text, "platforms": platforms}
         if media_urls:
             body["mediaUrls"] = media_urls
@@ -148,7 +167,20 @@ class AyrshareService:
                 headers=_headers(profile_key),
                 json=body,
             )
-            resp.raise_for_status()
+            if not resp.is_success:
+                error_body = resp.text[:1000]
+                logger.error(
+                    "ayrshare_post_error",
+                    status=resp.status_code,
+                    body=error_body,
+                    platforms=platforms,
+                    profile_key=profile_key[:8] + "...",
+                )
+                raise httpx.HTTPStatusError(
+                    f"Ayrshare {resp.status_code}: {error_body}",
+                    request=resp.request,
+                    response=resp,
+                )
             return resp.json()
 
     # ── Redes conectadas ──────────────────────────────────────────────────────

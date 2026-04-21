@@ -196,6 +196,8 @@ async def publish_via_ayrshare(
             media_urls=[image_url] if image_url else None,
             scheduled_date=scheduled_date,
         )
+        if result.get("skipped"):
+            return {"success": False, "error": result.get("reason", "Plataforma requiere imagen o video")}
         post_id = result.get("id") or result.get("postIds", {}).get(platforms[0] if platforms else "", "")
         logger.info("ayrshare_published", platforms=platforms, post_id=post_id)
         return {"success": True, "platform_post_id": str(post_id), "platform_url": "", "ayrshare": result}
