@@ -304,6 +304,40 @@ async def ayrshare_debug_profile(
         raise HTTPException(502, f"Error al consultar Ayrshare: {str(e)}")
 
 
+# Debug comments
+
+@router.get("/debug-comments")
+async def ayrshare_debug_comments(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Llama directamente al GET /api/comments de Ayrshare y devuelve la respuesta cruda."""
+    result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+    business = result.scalar_one_or_none()
+    if not business or not business.ayrshare_profile_key:
+        raise HTTPException(400, "No hay perfil de Ayrshare configurado")
+
+    import httpx
+    from app.services.ayrshare_service import AYRSHARE_BASE, _headers
+
+    platforms = business.ayrshare_connected_platforms or []
+    params: dict = {"lastRecords": 10}
+    if platforms:
+        params["platforms"] = ",".join(platforms)
+
+    async with httpx.AsyncClient(timeout=20) as client:
+        resp = await client.get(
+            f"{AYRSHARE_BASE}/comments",
+            headers=_headers(business.ayrshare_profile_key),
+            params=params,
+        )
+    return {
+        "status_code": resp.status_code,
+        "platforms_queried": platforms,
+        "raw_response": resp.json() if resp.headers.get("content-type", "").startswith("application/json") else resp.text[:500],
+    }
+
+
 # Register webhook
 
 @router.post("/register-webhook")
