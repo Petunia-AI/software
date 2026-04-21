@@ -81,10 +81,9 @@ async def list_conversations(
     out = []
     for conv in convs:
         d = ConversationOut.model_validate(conv)
-        if conv.lead and conv.lead.name:
-            d.lead_name = conv.lead.name
-        elif conv.channel_contact_id:
-            d.lead_name = conv.channel_contact_id
+        raw_name = conv.lead.name if conv.lead else None
+        if raw_name and not raw_name.isdigit():
+            d.lead_name = raw_name
         out.append(d)
     return out
 

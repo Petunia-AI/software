@@ -1700,7 +1700,8 @@ async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
     ref_id          = payload.get("refId", "")
     conversation_id = payload.get("conversationId", "")
     sender_details  = payload.get("senderDetails", {})
-    sender_name     = sender_details.get("name") or sender_details.get("username") or sender_id
+    _raw_name   = sender_details.get("name") or sender_details.get("username") or ""
+    sender_name = _raw_name if (_raw_name and not _raw_name.isdigit()) else None
 
     if not message_text or not sender_id or not platform:
         return
@@ -1757,7 +1758,7 @@ async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
         lead = Lead(
             id=str(uuid.uuid4()),
             business_id=business.id,
-            name=sender_name,
+            name=sender_name or None,
             source=platform,
             notes=lead_key,
             tags=[],
@@ -1765,6 +1766,9 @@ async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
         )
         db.add(lead)
         await db.flush()
+    elif sender_name and (not lead.name or (lead.name and lead.name.isdigit())):
+        # Actualizar nombre si antes se guardó el ID numérico
+        lead.name = sender_name
 
     # Buscar o crear conversación activa
     conv_result = await db.execute(
