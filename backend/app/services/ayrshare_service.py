@@ -339,9 +339,9 @@ class AyrshareService:
         """
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{AYRSHARE_BASE}/hook",
+                f"{AYRSHARE_BASE}/hook/webhook",
                 headers=_headers(),
-                json={"action": "subscribe", "url": webhook_url},
+                json={"action": "messages", "url": webhook_url},
             )
             if resp.status_code >= 400:
                 raise Exception(f"Ayrshare error {resp.status_code}: {resp.text}")
