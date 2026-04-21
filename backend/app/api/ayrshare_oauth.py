@@ -328,10 +328,25 @@ async def ayrshare_debug_comments(
         platforms=comment_platforms,
         last_n=5,
     )
+
+    # Also show raw post history for debugging
+    raw_posts = {}
+    for platform in comment_platforms:
+        posts = await ayrshare_service.get_history_for_platform(
+            profile_key=business.ayrshare_profile_key,
+            platform=platform,
+            limit=5,
+        )
+        raw_posts[platform] = [
+            {"id": p.get("id"), "commentsCount": p.get("commentsCount"), "created": p.get("created"), "post": (p.get("post") or "")[:60]}
+            for p in posts
+        ]
+
     return {
         "platforms_queried": comment_platforms,
         "comments_found": len(result),
         "comments": result[:10],
+        "raw_posts": raw_posts,
     }
 
 
