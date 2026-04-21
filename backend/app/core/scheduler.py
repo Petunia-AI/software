@@ -314,12 +314,11 @@ async def job_ayrshare_poll_comments():
                 for comment in comments:
                     comment_id   = comment.get("id", "")
                     platform     = comment.get("platform", "").lower()
-                    text         = (comment.get("text") or comment.get("comment") or "").strip()
+                    text         = comment.get("text", "").strip()
                     commenter_id = (
-                        comment.get("username") or comment.get("userId") or
-                        comment.get("senderId") or ""
+                        comment.get("userId") or comment.get("username") or ""
                     )
-                    post_id = comment.get("postId") or comment.get("videoId") or ""
+                    post_id = comment.get("postId", "")
 
                     if not text or not commenter_id or not comment_id:
                         continue

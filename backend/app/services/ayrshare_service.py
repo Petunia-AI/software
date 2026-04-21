@@ -235,33 +235,118 @@ class AyrshareService:
 
     # ── Comentarios ───────────────────────────────────────────────────────────
 
-    async def get_recent_comments(
-        self, profile_key: str, platforms: list[str] | None = None, last_n: int = 50
+    async def get_history_for_platform(
+        self, profile_key: str, platform: str, limit: int = 10
     ) -> list[dict]:
         """
-        Obtiene los comentarios recientes de una o varias plataformas.
-        Usado por el job de polling como fallback al webhook.
-
-        GET /api/comments?platforms=instagram,facebook&lastRecords=50
+        GET /api/history/:platform — devuelve los posts recientes de una plataforma.
+        Soporta posts publicados dentro y fuera de Ayrshare.
         """
-        params: dict = {"lastRecords": last_n}
-        if platforms:
-            params["platforms"] = ",".join(platforms)
-
         async with httpx.AsyncClient(timeout=20) as client:
             resp = await client.get(
-                f"{AYRSHARE_BASE}/comments",
+                f"{AYRSHARE_BASE}/history/{platform}",
                 headers=_headers(profile_key),
-                params=params,
+                params={"limit": limit, "skipAnalytics": "true"},
             )
             if resp.status_code != 200:
-                logger.warning("ayrshare_get_comments_failed", status=resp.status_code)
+                logger.warning(
+                    "ayrshare_history_failed",
+                    platform=platform,
+                    status=resp.status_code,
+                    body=resp.text[:200],
+                )
                 return []
             data = resp.json()
-            # Ayrshare devuelve { "comments": [...] } o directamente una lista
-            if isinstance(data, list):
-                return data
-            return data.get("comments", [])
+            return data.get("posts", []) if isinstance(data, dict) else data
+
+    async def get_comments_for_post(
+        self, profile_key: str, post_id: str, platform: str
+    ) -> list[dict]:
+        """
+        GET /api/comments/:postId?platform=:platform&searchPlatformId=true
+        Devuelve los comentarios de un post usando el Social Post ID.
+        """
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.get(
+                f"{AYRSHARE_BASE}/comments/{post_id}",
+                headers=_headers(profile_key),
+                params={"platform": platform, "searchPlatformId": "true"},
+            )
+            if resp.status_code != 200:
+                logger.warning(
+                    "ayrshare_get_comments_failed",
+                    post_id=post_id,
+                    platform=platform,
+                    status=resp.status_code,
+                    body=resp.text[:200],
+                )
+                return []
+            data = resp.json()
+            # Response: { "facebook": [...], "instagram": [...], "status": "success" }
+            return data.get(platform, []) if isinstance(data, dict) else []
+
+    async def get_recent_comments(
+        self, profile_key: str, platforms: list[str] | None = None, last_n: int = 10
+    ) -> list[dict]:
+        """
+        Polling: para cada plataforma obtiene los N posts más recientes y luego
+        los comentarios de cada post que tenga commentsCount > 0.
+        Devuelve lista normalizada de comentarios listos para procesar.
+
+        Solo soporta plataformas con comentarios: facebook, instagram.
+        """
+        # Solo estas plataformas soportan GET comments via Social Post ID
+        comment_platforms = {"facebook", "instagram"}
+        target = [p for p in (platforms or []) if p in comment_platforms]
+        if not target:
+            return []
+
+        all_comments: list[dict] = []
+        for platform in target:
+            try:
+                posts = await self.get_history_for_platform(
+                    profile_key=profile_key,
+                    platform=platform,
+                    limit=last_n,
+                )
+                for post in posts:
+                    post_id = post.get("id", "")
+                    comments_count = post.get("commentsCount", 0) or 0
+                    if not post_id or comments_count == 0:
+                        continue
+                    comments = await self.get_comments_for_post(
+                        profile_key=profile_key,
+                        post_id=post_id,
+                        platform=platform,
+                    )
+                    for c in comments:
+                        # Skip comments made by the page/company itself
+                        if c.get("company") or c.get("owner"):
+                            continue
+                        # Normalize comment fields for the scheduler
+                        commenter = c.get("from") or {}
+                        all_comments.append({
+                            "id":          c.get("commentId", ""),
+                            "platform":    platform,
+                            "text":        c.get("comment", "").strip(),
+                            "username":    (
+                                commenter.get("username")
+                                or commenter.get("name")
+                                or c.get("userName")
+                                or c.get("displayName")
+                                or ""
+                            ),
+                            "userId":      commenter.get("id") or c.get("userId") or "",
+                            "postId":      post_id,
+                        })
+            except Exception as e:
+                logger.warning(
+                    "ayrshare_poll_platform_failed",
+                    platform=platform,
+                    error=str(e),
+                )
+
+        return all_comments
 
     async def reply_to_comment(
         self,
@@ -271,27 +356,28 @@ class AyrshareService:
         text: str,
     ) -> dict:
         """
-        Publica una respuesta a un comentario en la plataforma indicada.
+        Responde a un comentario existente usando el Social Comment ID.
 
-        POST /api/comments
-        Body: { "id": "comment_id", "comment": "text", "platforms": ["platform"] }
+        POST /api/comments/reply/:commentId
+        Body: { "platforms": ["platform"], "comment": "text", "searchPlatformId": true }
         """
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{AYRSHARE_BASE}/comments",
+                f"{AYRSHARE_BASE}/comments/reply/{comment_id}",
                 headers=_headers(profile_key),
                 json={
-                    "id": comment_id,
-                    "comment": text,
                     "platforms": [platform],
+                    "comment": text,
+                    "searchPlatformId": True,
                 },
             )
             if resp.status_code >= 400:
                 logger.warning(
                     "ayrshare_reply_failed",
                     platform=platform,
+                    comment_id=comment_id[:20],
                     status=resp.status_code,
-                    body=resp.text[:200],
+                    body=resp.text[:300],
                 )
                 return {"ok": False, "error": resp.text}
             return {"ok": True, **resp.json()}

@@ -311,30 +311,27 @@ async def ayrshare_debug_comments(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Llama directamente al GET /api/comments de Ayrshare y devuelve la respuesta cruda."""
+    """Testea el polling de comentarios para diagnóstico."""
     result = await db.execute(select(Business).where(Business.id == current_user.business_id))
     business = result.scalar_one_or_none()
     if not business or not business.ayrshare_profile_key:
         raise HTTPException(400, "No hay perfil de Ayrshare configurado")
 
-    import httpx
-    from app.services.ayrshare_service import AYRSHARE_BASE, _headers
-
     platforms = business.ayrshare_connected_platforms or []
-    params: dict = {"lastRecords": 10}
-    if platforms:
-        params["platforms"] = ",".join(platforms)
+    # Only comment-supported platforms
+    comment_platforms = [p for p in platforms if p in ("facebook", "instagram")]
+    if not comment_platforms:
+        return {"status_code": 0, "platforms_queried": platforms, "error": "No comment-supported platforms connected (need facebook or instagram)"}
 
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.get(
-            f"{AYRSHARE_BASE}/comments",
-            headers=_headers(business.ayrshare_profile_key),
-            params=params,
-        )
+    result = await ayrshare_service.get_recent_comments(
+        profile_key=business.ayrshare_profile_key,
+        platforms=comment_platforms,
+        last_n=5,
+    )
     return {
-        "status_code": resp.status_code,
-        "platforms_queried": platforms,
-        "raw_response": resp.json() if resp.headers.get("content-type", "").startswith("application/json") else resp.text[:500],
+        "platforms_queried": comment_platforms,
+        "comments_found": len(result),
+        "comments": result[:10],
     }
 
 
