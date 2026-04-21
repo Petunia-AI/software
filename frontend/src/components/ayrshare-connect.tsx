@@ -15,6 +15,9 @@ import {
   Webhook,
 } from "lucide-react";
 
+// Plataformas que soporta Ayrshare para MENSAJES DIRECTOS (DMs)
+const DM_SUPPORTED_PLATFORMS = ["facebook", "instagram"];
+
 // Plataformas que soporta Ayrshare
 const PLATFORM_META: Record<string, { label: string; color: string; bg: string }> = {
   twitter:   { label: "X / Twitter",  color: "text-gray-900",   bg: "bg-gray-100" },
@@ -338,48 +341,64 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
         {/* Selector de canales — visible cuando el autoresponder está activo */}
         {status.autoresponder_enabled && platforms.length > 0 && (
           <div className="px-4 pb-4 border-t border-violet-200 pt-3">
-            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2.5">
-              Canales activos para respuesta automática
+            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-1">
+              Canales con respuesta automática de DMs
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {platforms.map((p) => {
-                const meta = PLATFORM_META[p.toLowerCase()] ?? {
-                  label: p,
-                  color: "text-foreground",
-                  bg: "bg-secondary",
-                };
-                const enabledChannels: string[] = status.autoresponder_channels ?? [];
-                // Si la lista está vacía se consideran todos activos (legacy)
-                const isChecked = enabledChannels.length === 0 || enabledChannels.includes(p.toLowerCase());
+            <p className="text-xs text-violet-500 mb-2.5">
+              Solo Facebook e Instagram soportan DMs automáticos via Ayrshare.
+            </p>
+            {(() => {
+              const dmPlatforms = platforms.filter((p) =>
+                DM_SUPPORTED_PLATFORMS.includes(p.toLowerCase())
+              );
+              if (dmPlatforms.length === 0) {
                 return (
-                  <label
-                    key={p}
-                    className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all select-none ${
-                      isChecked
-                        ? "bg-white border-violet-300 shadow-sm"
-                        : "bg-violet-50/50 border-violet-100 opacity-60"
-                    } ${savingChannels ? "pointer-events-none" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={(e) => handleToggleChannel(p.toLowerCase(), e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-all ${
-                      isChecked ? "bg-violet-600 border-violet-600" : "bg-white border-gray-300"
-                    }`}>
-                      {isChecked && (
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </div>
-                    <span className={`text-xs font-medium ${meta.color}`}>{meta.label}</span>
-                  </label>
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    Ninguna de tus redes vinculadas soporta DMs automáticos. Vincula <strong>Facebook</strong> o <strong>Instagram</strong> para activar esta función.
+                  </p>
                 );
-              })}
-            </div>
+              }
+              return (
+                <div className="grid grid-cols-2 gap-2">
+                  {dmPlatforms.map((p) => {
+                    const meta = PLATFORM_META[p.toLowerCase()] ?? {
+                      label: p,
+                      color: "text-foreground",
+                      bg: "bg-secondary",
+                    };
+                    const enabledChannels: string[] = status.autoresponder_channels ?? [];
+                    const isChecked = enabledChannels.length === 0 || enabledChannels.includes(p.toLowerCase());
+                    return (
+                      <label
+                        key={p}
+                        className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all select-none ${
+                          isChecked
+                            ? "bg-white border-violet-300 shadow-sm"
+                            : "bg-violet-50/50 border-violet-100 opacity-60"
+                        } ${savingChannels ? "pointer-events-none" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => handleToggleChannel(p.toLowerCase(), e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-all ${
+                          isChecked ? "bg-violet-600 border-violet-600" : "bg-white border-gray-300"
+                        }`}>
+                          {isChecked && (
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </div>
+                        <span className={`text-xs font-medium ${meta.color}`}>{meta.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            })()}
             {savingChannels && (
               <p className="text-xs text-violet-500 mt-2 flex items-center gap-1">
                 <Loader2 size={10} className="animate-spin" /> Guardando...
@@ -420,8 +439,8 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
 
       <p className="text-xs text-muted-foreground">
         {status.autoresponder_enabled
-          ? `Los agentes están respondiendo automáticamente en ${(status.autoresponder_channels ?? []).length > 0 ? `${(status.autoresponder_channels ?? []).length} canal(es) seleccionado(s)` : "todos los canales"}.`
-          : "Activa el auto-respondedor para que los agentes respondan en las redes seleccionadas."}
+          ? `Los agentes responden DMs automáticamente en Facebook e Instagram.`
+          : "Activa el auto-respondedor para que los agentes respondan DMs de Facebook e Instagram."}
       </p>
     </div>
   );
