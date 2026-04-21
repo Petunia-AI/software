@@ -1373,8 +1373,18 @@ async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db))
     except Exception:
         return Response(status_code=200)
 
+    action = payload.get("action", "").lower()
+
+    # Detectar formato de mensajería de Ayrshare (DMs via messaging API)
+    # Formato: {"action":"messages","type":"received","subAction":"messageCreated","refId":"..."}
+    if action == "messages" or (payload.get("type") == "received" and payload.get("refId")):
+        try:
+            await _process_ayrshare_dm(payload, db, logger)
+        except Exception as e:
+            logger.error("ayrshare_webhook_dm_error", error=str(e), exc_info=True)
+        return {"ok": True}
+
     platform    = payload.get("platform", "").lower()
-    action      = payload.get("action", "").lower()  # "comment", "dm", "mention"
     profile_key = payload.get("profileKey", "")
     data        = payload.get("data", {})
 
