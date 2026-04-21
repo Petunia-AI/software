@@ -39,17 +39,23 @@
     /* ── CSS ──────────────────────────────────────────────────────────── */
     var style = document.createElement("style");
     style.textContent = [
-      "#av-launcher{position:fixed;bottom:24px;z-index:2147483647;cursor:pointer;transition:transform .2s ease;}",
-      "#av-launcher:hover{transform:scale(1.08);}",
+      "@keyframes av-pulse{0%{transform:scale(1);opacity:.6}70%{transform:scale(1.55);opacity:0}100%{transform:scale(1.55);opacity:0}}",
+      "@keyframes av-pop{0%{transform:translateY(8px) scale(.9);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}",
+      "#av-launcher{position:fixed;bottom:24px;z-index:2147483647;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}",
       "#av-launcher." + cfg.position + "{" + cfg.position + ":24px;}",
-      "#av-btn{width:60px;height:60px;border-radius:18px;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(0,0,0,.22),0 1px 4px rgba(0,0,0,.12);cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}",
-      "#av-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,0) 60%);pointer-events:none;}",
-      "#av-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 4px;background:#ef4444;border-radius:10px;border:2px solid #fff;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:system-ui,sans-serif;}",
-      "#av-iframe-wrap{position:fixed;bottom:96px;z-index:2147483646;width:380px;height:600px;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.2);transition:opacity .25s,transform .25s;transform:translateY(10px) scale(.97);opacity:0;pointer-events:none;}",
+      "#av-tooltip{background:#1a1a2e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;font-weight:500;padding:8px 14px;border-radius:20px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.18);animation:av-pop .3s ease;cursor:pointer;display:flex;align-items:center;gap:6px;letter-spacing:-.01em;}",
+      "#av-tooltip-dot{width:7px;height:7px;background:#22c55e;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 2px rgba(34,197,94,.3);}",
+      "#av-btn-wrap{position:relative;width:62px;height:62px;flex-shrink:0;}",
+      "#av-pulse{position:absolute;inset:0;border-radius:50%;animation:av-pulse 2.2s ease-out infinite;}",
+      "#av-btn{width:62px;height:62px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;position:relative;z-index:1;box-shadow:0 4px 20px rgba(0,0,0,.25),0 0 0 3px rgba(255,255,255,.9);}",
+      "#av-btn:hover{transform:scale(1.1);box-shadow:0 8px 28px rgba(0,0,0,.3),0 0 0 3px rgba(255,255,255,.9);}",
+      "#av-btn-inner{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 55%);}",
+      "#av-badge{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;padding:0 5px;background:#ef4444;border-radius:10px;border:2px solid #fff;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:system-ui,sans-serif;z-index:2;}",
+      "#av-iframe-wrap{position:fixed;bottom:100px;z-index:2147483646;width:380px;height:600px;border-radius:20px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.22),0 2px 8px rgba(0,0,0,.1);transition:opacity .25s,transform .25s;transform:translateY(12px) scale(.97);opacity:0;pointer-events:none;}",
       "#av-iframe-wrap.av-open{transform:translateY(0) scale(1);opacity:1;pointer-events:all;}",
       "#av-iframe-wrap." + cfg.position + "{" + cfg.position + ":24px;}",
       "#av-iframe-wrap iframe{width:100%;height:100%;border:none;display:block;}",
-      "@media(max-width:480px){#av-iframe-wrap{width:calc(100vw - 16px);height:calc(100svh - 100px);bottom:84px;" + cfg.position + ":8px;border-radius:12px;}}",
+      "@media(max-width:480px){#av-iframe-wrap{width:calc(100vw - 16px);height:calc(100svh - 100px);bottom:92px;" + cfg.position + ":8px;border-radius:16px;}}",
     ].join("");
     document.head.appendChild(style);
 
@@ -57,21 +63,30 @@
     var launcher = document.createElement("div");
     launcher.id = "av-launcher";
     launcher.className = cfg.position;
+
+    var agentLabel = cfg.name !== "Asistente" ? cfg.name : "¿En qué te ayudamos?";
     launcher.innerHTML =
-      '<button id="av-btn" style="background:' + cfg.color + '" aria-label="Abrir chat">' +
-        '<svg id="av-icon-chat" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-          '<path d="M5 6.5C5 5.12 6.12 4 7.5 4h13C21.88 4 23 5.12 23 6.5v10c0 1.38-1.12 2.5-2.5 2.5H15l-4 4v-4H7.5C6.12 23 5 21.88 5 20.5v-14z" fill="rgba(255,255,255,0.25)"/>' +
-          '<path d="M5 6.5C5 5.12 6.12 4 7.5 4h13C21.88 4 23 5.12 23 6.5v10c0 1.38-1.12 2.5-2.5 2.5H15l-4 4v-4H7.5C6.12 23 5 21.88 5 20.5v-14z" stroke="white" stroke-width="1.75" stroke-linejoin="round"/>' +
-          '<circle cx="10" cy="12" r="1.5" fill="white"/>' +
-          '<circle cx="14" cy="12" r="1.5" fill="white"/>' +
-          '<circle cx="18" cy="12" r="1.5" fill="white"/>' +
-          '<path d="M19.5 3.5 L20.2 5.3 L22 6 L20.2 6.7 L19.5 8.5 L18.8 6.7 L17 6 L18.8 5.3 Z" fill="white" opacity="0.9"/>' +
-        "</svg>" +
-        '<svg id="av-icon-close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">' +
-          '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
-        "</svg>" +
-      "</button>" +
-      '<div id="av-badge">1</div>';
+      '<div id="av-tooltip">' +
+        '<span id="av-tooltip-dot"></span>' + agentLabel +
+      '</div>' +
+      '<div id="av-btn-wrap">' +
+        '<div id="av-pulse" style="background:' + cfg.color + '"></div>' +
+        '<button id="av-btn" style="background:' + cfg.color + '" aria-label="Abrir chat">' +
+          '<div id="av-btn-inner">' +
+            '<svg id="av-icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+              '<path d="M12 3C7.03 3 3 6.58 3 11c0 2.05.85 3.92 2.25 5.35L4 21l5.1-1.55C10.33 19.8 11.15 20 12 20c4.97 0 9-3.58 9-8s-4.03-9-9-9z" fill="rgba(255,255,255,0.2)"/>' +
+              '<path d="M12 3C7.03 3 3 6.58 3 11c0 2.05.85 3.92 2.25 5.35L4 21l5.1-1.55C10.33 19.8 11.15 20 12 20c4.97 0 9-3.58 9-8s-4.03-9-9-9z" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>' +
+              '<circle cx="8.5" cy="11" r="1.3" fill="white"/>' +
+              '<circle cx="12" cy="11" r="1.3" fill="white"/>' +
+              '<circle cx="15.5" cy="11" r="1.3" fill="white"/>' +
+            '</svg>' +
+            '<svg id="av-icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">' +
+              '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+            '</svg>' +
+          '</div>' +
+        '</button>' +
+        '<div id="av-badge">1</div>' +
+      '</div>';
     document.body.appendChild(launcher);
 
     /* ── iFrame ───────────────────────────────────────────────────────── */
@@ -93,6 +108,8 @@
       wrap.classList.toggle("av-open", isOpen);
       document.getElementById("av-icon-chat").style.display  = isOpen ? "none"  : "block";
       document.getElementById("av-icon-close").style.display = isOpen ? "block" : "none";
+      var tooltip = document.getElementById("av-tooltip");
+      if (tooltip) tooltip.style.display = isOpen ? "none" : "flex";
       if (isOpen) {
         document.getElementById("av-badge").style.display = "none";
         hasUnread = false;
@@ -100,6 +117,18 @@
     }
 
     document.getElementById("av-btn").addEventListener("click", toggle);
+    var tooltip = document.getElementById("av-tooltip");
+    if (tooltip) tooltip.addEventListener("click", toggle);
+
+    /* ── Ocultar tooltip al hacer scroll ─────────────────────────────── */
+    var tooltipHidden = false;
+    window.addEventListener("scroll", function() {
+      if (!tooltipHidden) {
+        var t = document.getElementById("av-tooltip");
+        if (t) { t.style.opacity = "0"; t.style.pointerEvents = "none"; }
+        tooltipHidden = true;
+      }
+    }, { passive: true });
 
     /* ── Badge de notificación ────────────────────────────────────────── */
     setTimeout(function () {
