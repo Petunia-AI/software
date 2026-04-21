@@ -325,7 +325,7 @@ async def ayrshare_register_webhook(
 
     # Obtener el negocio del usuario para registrar también en el sub-perfil
     biz_result = await db.execute(
-        select(Business).where(Business.owner_id == current_user.id).limit(1)
+        select(Business).where(Business.id == current_user.business_id).limit(1)
     )
     business = biz_result.scalar_one_or_none()
     profile_key = business.ayrshare_profile_key if business else None
