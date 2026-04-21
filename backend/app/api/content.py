@@ -119,6 +119,11 @@ async def _do_publish(post_id: str, db: AsyncSession):
     if not post:
         return
 
+    # Obtener el profileKey de Ayrshare del negocio
+    biz_result = await db.execute(select(Business).where(Business.id == post.business_id))
+    business = biz_result.scalar_one_or_none()
+    ayrshare_profile_key = business.ayrshare_profile_key if business else None
+
     caption_with_hashtags = post.caption
     if post.hashtags:
         tags = " ".join(f"#{h.lstrip('#')}" for h in post.hashtags)
@@ -128,6 +133,7 @@ async def _do_publish(post_id: str, db: AsyncSession):
         channel=post.channel.value,
         caption=caption_with_hashtags,
         image_url=post.image_url,
+        ayrshare_profile_key=ayrshare_profile_key,
     )
 
     post.status = ContentStatus.published if result["success"] else ContentStatus.failed
