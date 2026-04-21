@@ -330,17 +330,16 @@ class AyrshareService:
 
     # ── Registrar webhook ─────────────────────────────────────────────────────
 
-    async def register_webhook(self, webhook_url: str) -> dict:
+    async def register_webhook(self, webhook_url: str, profile_key: str | None = None) -> dict:
         """
         Registra la URL de webhook en Ayrshare para recibir notificaciones
-        de comentarios, menciones y mensajes en tiempo real.
-
-        POST /api/hook  { "action": "subscribe", "url": "https://..." }
+        de mensajes en tiempo real. Si se pasa profile_key, registra para ese sub-perfil.
         """
+        headers = _headers(profile_key) if profile_key else _headers()
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
                 f"{AYRSHARE_BASE}/hook/webhook",
-                headers=_headers(),
+                headers=headers,
                 json={"action": "messages", "url": webhook_url},
             )
             if resp.status_code >= 400:

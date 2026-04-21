@@ -322,13 +322,33 @@ async def ayrshare_register_webhook(
     PUBLIC_URL = "https://gentes-de-ventas-production.up.railway.app"
     base = PUBLIC_URL.rstrip("/")
     webhook_url = f"{base}/api/webhooks/ayrshare"
+
+    # Obtener el negocio del usuario para registrar también en el sub-perfil
+    biz_result = await db.execute(
+        select(Business).where(Business.owner_id == current_user.id).limit(1)
+    )
+    business = biz_result.scalar_one_or_none()
+    profile_key = business.ayrshare_profile_key if business else None
+
+    results = {}
+    # Registrar en perfil primario
     try:
-        result = await ayrshare_service.register_webhook(webhook_url)
-        logger.info("ayrshare_webhook_registered", url=webhook_url, result=result)
-        return {"ok": True, "webhook_url": webhook_url, "ayrshare_response": result}
+        results["primary"] = await ayrshare_service.register_webhook(webhook_url)
+        logger.info("ayrshare_webhook_registered_primary", url=webhook_url)
     except Exception as e:
-        logger.error("ayrshare_register_webhook_failed", error=str(e))
-        raise HTTPException(502, f"Error al registrar webhook: {str(e)}")
+        logger.warning("ayrshare_webhook_primary_failed", error=str(e))
+        results["primary_error"] = str(e)
+
+    # Registrar también en el sub-perfil del negocio (si tiene)
+    if profile_key:
+        try:
+            results["sub_profile"] = await ayrshare_service.register_webhook(webhook_url, profile_key=profile_key)
+            logger.info("ayrshare_webhook_registered_sub", url=webhook_url, profile_key=profile_key[:8])
+        except Exception as e:
+            logger.warning("ayrshare_webhook_sub_failed", error=str(e))
+            results["sub_profile_error"] = str(e)
+
+    return {"ok": True, "webhook_url": webhook_url, "results": results}
 
 
 # Settings (autoresponder toggle)

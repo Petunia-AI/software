@@ -23,9 +23,11 @@ import uuid
 import hmac
 import hashlib
 import httpx
+import structlog
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 orchestrator = AgentOrchestrator()
+logger = structlog.get_logger()
 
 
 def _build_business_dict(business: Business) -> dict:
@@ -1373,15 +1375,26 @@ async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db))
     except Exception:
         return Response(status_code=200)
 
+    # Log ALL incoming payloads for debugging
+    log = structlog.get_logger()
+    log.info("ayrshare_webhook_received",
+        action=payload.get("action"),
+        type=payload.get("type"),
+        subAction=payload.get("subAction"),
+        platform=payload.get("platform"),
+        refId=payload.get("refId"),
+        keys=list(payload.keys()),
+    )
+
     action = payload.get("action", "").lower()
 
     # Detectar formato de mensajería de Ayrshare (DMs via messaging API)
     # Formato: {"action":"messages","type":"received","subAction":"messageCreated","refId":"..."}
     if action == "messages" or (payload.get("type") == "received" and payload.get("refId")):
         try:
-            await _process_ayrshare_dm(payload, db, logger)
+            await _process_ayrshare_dm(payload, db, log)
         except Exception as e:
-            logger.error("ayrshare_webhook_dm_error", error=str(e), exc_info=True)
+            log.error("ayrshare_webhook_dm_error", error=str(e), exc_info=True)
         return {"ok": True}
 
     platform    = payload.get("platform", "").lower()
