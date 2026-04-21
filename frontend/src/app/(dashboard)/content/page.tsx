@@ -945,11 +945,11 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
             <CheckCircle size={12} /> Aprobar
           </button>
         )}
-        {/* Publish + Schedule — only for approved */}
-        {post.status === "approved" && (
+        {/* Publish + Schedule — for approved or failed (retry) */}
+        {(post.status === "approved" || post.status === "failed") && (
           <>
-            <button onClick={onPublish} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90" style={{ background: "linear-gradient(135deg, #635BFF, #7C3AED)" }}><Send size={12} /> Publicar</button>
-            <button onClick={onSchedule} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition-colors"><Clock size={12} /> Programar</button>
+            <button onClick={onPublish} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90" style={{ background: "linear-gradient(135deg, #635BFF, #7C3AED)" }}><Send size={12} />{post.status === "failed" ? "Reintentar" : "Publicar"}</button>
+            {post.status === "approved" && <button onClick={onSchedule} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition-colors"><Clock size={12} /> Programar</button>}
           </>
         )}
         {post.status !== "published" && (
@@ -1327,8 +1327,18 @@ export default function ContentPage() {
   }
 
   async function publishPost(id: string) {
-    await fetch(`${API}/content/posts/${id}/publish`, { method: "POST", headers });
-    setPosts((p) => p.map((x) => x.id === id ? { ...x, status: "scheduled" as PostStatus } : x));
+    const toastId = toast.loading("Publicando en redes sociales...");
+    const res = await fetch(`${API}/content/posts/${id}/publish`, { method: "POST", headers });
+    if (res.ok) {
+      setPosts((p) => p.map((x) => x.id === id ? { ...x, status: "scheduled" as PostStatus } : x));
+      toast.success("Publicando… el estado se actualizará en segundos", { id: toastId });
+      // Refresh after a few seconds to show published/failed status from background task
+      setTimeout(() => silentRefresh(), 5000);
+      setTimeout(() => silentRefresh(), 12000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.detail || "Error al publicar", { id: toastId });
+    }
   }
 
   async function schedulePost() {

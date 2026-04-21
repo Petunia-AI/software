@@ -819,6 +819,8 @@ async def publish_now(
         raise HTTPException(status_code=400, detail="El post ya fue publicado")
     if post.status == ContentStatus.draft:
         raise HTTPException(status_code=400, detail="Debes aprobar el post antes de publicarlo")
+    if post.status == ContentStatus.scheduled:
+        raise HTTPException(status_code=400, detail="El post ya está en proceso de publicación")
 
     post.status = ContentStatus.scheduled
     await db.commit()
