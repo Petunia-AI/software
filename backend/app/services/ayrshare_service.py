@@ -246,7 +246,7 @@ class AyrshareService:
             resp = await client.get(
                 f"{AYRSHARE_BASE}/history/{platform}",
                 headers=_headers(profile_key),
-                params={"limit": limit, "skipAnalytics": "true"},
+                params={"limit": limit},
             )
             if resp.status_code != 200:
                 logger.warning(
@@ -311,8 +311,12 @@ class AyrshareService:
                 )
                 for post in posts:
                     post_id = post.get("id", "")
-                    comments_count = post.get("commentsCount", 0) or 0
-                    if not post_id or comments_count == 0:
+                    if not post_id:
+                        continue
+                    # Always try to fetch comments — commentsCount can be null
+                    # when analytics are computed asynchronously
+                    comments_count = post.get("commentsCount")
+                    if comments_count is not None and comments_count == 0:
                         continue
                     comments = await self.get_comments_for_post(
                         profile_key=profile_key,
