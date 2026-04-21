@@ -1145,6 +1145,21 @@ export default function ContentPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, filterChannel, filterStatus]);
 
+  const silentRefresh = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ limit: "100" });
+      if (filterChannel) params.set("channel", filterChannel);
+      if (filterStatus) params.set("status", filterStatus);
+      const [postsRes, statsRes] = await Promise.all([
+        fetch(`${API}/content/posts?${params}`, { headers }),
+        fetch(`${API}/content/stats`, { headers }),
+      ]);
+      if (postsRes.ok) setPosts(await postsRes.json());
+      if (statsRes.ok) setStats(await statsRes.json());
+    } catch { /* silent */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, filterChannel, filterStatus]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
 
   async function generatePost(opts: { channel: Channel; type: ContentType; topic: string; format: FormatType; genImage: boolean; genVideo: boolean; propImageUrl?: string }) {
@@ -1168,6 +1183,7 @@ export default function ContentPage() {
         if (post.image_url) msg += " con imagen ✨";
         if (post.video_job_id) msg += " · video HeyGen en proceso 🎬";
         toast.success(msg, { id: toastId });
+        silentRefresh();
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.detail || "Error al generar el post", { id: toastId });
@@ -1198,6 +1214,7 @@ export default function ContentPage() {
         if (p?.rationale) msg += ` — ${p.rationale}`;
         if (post.image_url) msg += " 🎨";
         toast.success(msg, { id: toastId, duration: 5000 });
+        silentRefresh();
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.detail || "Error al generar el post con IA", { id: toastId });
