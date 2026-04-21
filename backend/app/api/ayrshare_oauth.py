@@ -258,18 +258,25 @@ async def ayrshare_debug_profile(
             jwt_error = str(e)
         return {
             "sub_profile_key": business.ayrshare_profile_key[:8] + "...",
+            "db_ayrshare_ref_id": business.ayrshare_ref_id,
+            "db_autoresponder_enabled": business.ayrshare_autoresponder_enabled,
+            "db_autoresponder_channels": business.ayrshare_autoresponder_channels,
             "jwt_url_generated": jwt_url,
             "jwt_error": jwt_error,
             "sub_profile": {
                 "activeSocialAccounts": profile.get("activeSocialAccounts"),
+                "messagingEnabled": profile.get("messagingEnabled"),
+                "messagingConversationMonthlyCount": profile.get("messagingConversationMonthlyCount"),
+                "refId": profile.get("refId"),
+                "title": profile.get("title"),
                 "displayNames_count": len(profile.get("displayNames", [])),
                 "displayNames_platforms": [e.get("platform") for e in profile.get("displayNames", [])],
                 "raw_keys": list(profile.keys()),
             },
             "primary_profile": {
                 "activeSocialAccounts": primary.get("activeSocialAccounts"),
-                "displayNames_count": len(primary.get("displayNames", [])),
-                "displayNames_platforms": [e.get("platform") for e in primary.get("displayNames", [])],
+                "messagingEnabled": primary.get("messagingEnabled"),
+                "refId": primary.get("refId"),
                 "raw_keys": list(primary.keys()),
             },
         }
