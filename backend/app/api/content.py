@@ -130,7 +130,11 @@ async def _do_publish(post_id: str, _unused_db: AsyncSession | None = None):
 
         caption_with_hashtags = post.caption
         if post.hashtags:
-            tags = " ".join(f"#{h.lstrip('#')}" for h in post.hashtags)
+            # Instagram recomienda máx 5 hashtags; otros canales hasta 30
+            channel = post.channel.value
+            max_tags = 5 if channel == "instagram" else 30
+            tags_list = post.hashtags[:max_tags]
+            tags = " ".join(f"#{h.lstrip('#')}" for h in tags_list)
             caption_with_hashtags = f"{post.caption}\n\n{tags}"
 
         pub_result = await publish_post(
