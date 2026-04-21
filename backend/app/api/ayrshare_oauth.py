@@ -57,8 +57,17 @@ async def _create_ayrshare_profile(business, db: AsyncSession) -> None:
             logger.error("ayrshare_no_profile_key", data=profile_data)
             raise HTTPException(500, "Ayrshare no devolvio un profileKey")
         business.ayrshare_profile_key = profile_key
-        business.ayrshare_ref_id = str(business.id)
+        business.ayrshare_ref_id = str(business.id)  # placeholder; se sobreescribe en refresh
         await db.commit()
+        # Leer el refId real que Ayrshare asigna al perfil (usado en webhooks)
+        try:
+            created_profile = await ayrshare_service.get_profile(profile_key)
+            real_ref_id = created_profile.get("refId")
+            if real_ref_id:
+                business.ayrshare_ref_id = real_ref_id
+                await db.commit()
+        except Exception:
+            pass  # El placeholder es suficiente por ahora; refresh lo actualizará
         logger.info("ayrshare_profile_created", business_id=business.id, profile_key=profile_key[:8])
     except HTTPException:
         raise
@@ -168,10 +177,21 @@ async def ayrshare_refresh(
     platforms = await ayrshare_service.get_connected_platforms(business.ayrshare_profile_key)
     business.ayrshare_connected_platforms = platforms
     business.ayrshare_enabled = len(platforms) > 0
+
+    # Sincronizar el refId real que Ayrshare usa en sus webhooks
+    try:
+        profile = await ayrshare_service.get_profile(business.ayrshare_profile_key)
+        ayrshare_ref_id = profile.get("refId")
+        if ayrshare_ref_id:
+            business.ayrshare_ref_id = ayrshare_ref_id
+            logger.info("ayrshare_ref_id_synced", business_id=business.id, ref_id=ayrshare_ref_id)
+    except Exception as e:
+        logger.warning("ayrshare_ref_id_sync_failed", error=str(e))
+
     await db.commit()
 
     logger.info("ayrshare_refreshed", business_id=business.id, platforms=platforms)
-    return {"connected_platforms": platforms, "enabled": business.ayrshare_enabled}
+    return {"connected_platforms": platforms, "enabled": business.ayrshare_enabled, "ref_id_synced": business.ayrshare_ref_id}
 
 
 # Disconnect
