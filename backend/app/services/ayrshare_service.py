@@ -140,20 +140,38 @@ class AyrshareService:
         Si no hay imagen se omiten automáticamente de la lista de plataformas.
         """
         # Plataformas que requieren media obligatorio
-        requires_media = {"tiktok", "instagram"}
+        requires_media = {"instagram"}
+        # TikTok solo acepta VIDEO (no imágenes estáticas) vía API
+        requires_video = {"tiktok"}
+
         if not media_urls:
-            filtered = [p for p in platforms if p not in requires_media]
+            filtered = [p for p in platforms if p not in requires_media and p not in requires_video]
             if filtered != platforms:
                 logger.warning(
                     "ayrshare_platforms_filtered_no_media",
-                    removed=[p for p in platforms if p in requires_media],
+                    removed=[p for p in platforms if p in requires_media or p in requires_video],
                     remaining=filtered,
                 )
             platforms = filtered
+        else:
+            # Hay media pero puede ser imagen — TikTok necesita video
+            # Detectar si la URL es un video por extensión
+            is_video = any(
+                url.lower().endswith((".mp4", ".mov", ".avi", ".webm"))
+                for url in media_urls
+            )
+            if not is_video:
+                tiktok_removed = [p for p in platforms if p in requires_video]
+                if tiktok_removed:
+                    logger.warning(
+                        "ayrshare_tiktok_filtered_no_video",
+                        reason="TikTok requiere video (mp4/mov), no imágenes estáticas",
+                    )
+                platforms = [p for p in platforms if p not in requires_video]
 
         if not platforms:
             logger.warning("ayrshare_post_skipped_no_valid_platforms")
-            return {"skipped": True, "reason": "No hay plataformas válidas (TikTok/Instagram requieren imagen)"}
+            return {"skipped": True, "reason": "TikTok solo acepta videos (mp4/mov). Instagram requiere imagen o video. Genera un video HeyGen para publicar en TikTok."}
 
         body: dict = {"post": text, "platforms": platforms}
         if media_urls:
