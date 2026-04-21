@@ -1,7 +1,7 @@
 """
 Panel Super Admin — solo accesible para usuarios con is_superuser=True.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
@@ -12,6 +12,7 @@ from app.models.conversation import Conversation
 from app.models.lead import Lead, LeadStage
 from app.models.message import Message
 from app.models.plan_config import PlanConfig, DEFAULT_PLANS
+from app.models.subscription import Subscription, SubscriptionStatus, PlanTier
 from app.api.auth import get_current_user
 from app.core.security import get_password_hash
 from pydantic import BaseModel, EmailStr
@@ -484,3 +485,34 @@ async def update_plan(
     await db.commit()
     await db.refresh(plan)
     return plan.to_dict()
+
+
+# ── Force-upgrade plan for a business ─────────────────────────────────────
+
+class ForceUpgradeBody(BaseModel):
+    business_id: str
+    plan: str  # "starter" | "pro" | "enterprise"
+
+@router.post("/force-upgrade")
+async def force_upgrade_plan(
+    body: ForceUpgradeBody,
+    _: User = Depends(require_superuser),
+    db: AsyncSession = Depends(get_db),
+):
+    """Asigna un plan directamente a un negocio (sin Stripe)."""
+    try:
+        tier = PlanTier(body.plan)
+    except ValueError:
+        raise HTTPException(400, f"Plan inválido: {body.plan}. Opciones: starter, pro, enterprise")
+
+    result = await db.execute(select(Subscription).where(Subscription.business_id == body.business_id))
+    sub = result.scalar_one_or_none()
+    if not sub:
+        sub = Subscription(business_id=body.business_id)
+        db.add(sub)
+
+    sub.plan = tier
+    sub.status = SubscriptionStatus.active
+    sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=365)
+    await db.commit()
+    return {"ok": True, "business_id": body.business_id, "plan": tier.value}
