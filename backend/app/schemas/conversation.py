@@ -19,6 +19,7 @@ class ConversationOut(BaseModel):
     id: str
     business_id: str
     lead_id: Optional[str] = None
+    lead_name: Optional[str] = None
     channel: str
     status: str
     current_agent: Optional[str] = None

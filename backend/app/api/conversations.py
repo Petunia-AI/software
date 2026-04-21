@@ -66,7 +66,7 @@ async def list_conversations(
     query = (
         select(Conversation)
         .where(Conversation.business_id == current_user.business_id)
-        .options(selectinload(Conversation.messages))
+        .options(selectinload(Conversation.messages), selectinload(Conversation.lead))
         .order_by(desc(Conversation.last_message_at))
         .limit(limit)
         .offset(offset)
@@ -76,7 +76,17 @@ async def list_conversations(
     if channel:
         query = query.where(Conversation.channel == channel)
     result = await db.execute(query)
-    return result.scalars().all()
+    convs = result.scalars().all()
+    # Inyectar lead_name en cada conversación para el listado
+    out = []
+    for conv in convs:
+        d = ConversationOut.model_validate(conv)
+        if conv.lead and conv.lead.name:
+            d.lead_name = conv.lead.name
+        elif conv.channel_contact_id:
+            d.lead_name = conv.channel_contact_id
+        out.append(d)
+    return out
 
 
 @router.get("/{conversation_id}", response_model=ConversationOut)

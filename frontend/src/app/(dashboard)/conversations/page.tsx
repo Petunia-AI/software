@@ -169,8 +169,8 @@ function ConversationsInner() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-foreground font-mono">
-                      #{(conv.id as string).slice(0, 8)}
+                    <span className="text-sm font-semibold text-foreground">
+                      {(conv.lead_name as string) || `#${(conv.id as string).slice(0, 8)}`}
                     </span>
                     {!!conv.is_human_takeover && (
                       <span className="badge badge-orange text-[10px]">
