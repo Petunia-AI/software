@@ -86,6 +86,7 @@ class Business(Base):
     ayrshare_connected_platforms: Mapped[dict] = mapped_column(JSON, default=list)  # ["instagram","twitter",...]
     ayrshare_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     ayrshare_autoresponder_enabled: Mapped[bool] = mapped_column(Boolean, default=False)  # responder comentarios/DMs automáticamente
+    ayrshare_autoresponder_channels: Mapped[dict] = mapped_column(JSON, default=list)    # ["facebook","instagram",...] canales habilitados
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())

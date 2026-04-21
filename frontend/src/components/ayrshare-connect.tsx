@@ -35,6 +35,7 @@ interface AyrshareStatus {
   profile_key_set: boolean;
   connected_platforms: string[];
   autoresponder_enabled?: boolean;
+  autoresponder_channels?: string[];
 }
 
 interface AyrshareConnectProps {
@@ -45,6 +46,7 @@ interface AyrshareConnectProps {
 export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
   const [connecting, setConnecting] = useState(false);
   const [togglingAutoresponder, setTogglingAutoresponder] = useState(false);
+  const [savingChannels, setSavingChannels] = useState(false);
   const [registeringWebhook, setRegisteringWebhook] = useState(false);
   const visibilityListenerRef = useRef<(() => void) | null>(null);
 
@@ -74,13 +76,35 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
   const handleToggleAutoresponder = async (enabled: boolean) => {
     setTogglingAutoresponder(true);
     try {
-      await ayrshareApi.updateSettings(enabled);
+      const channels = status?.autoresponder_channels;
+      await ayrshareApi.updateSettings(enabled, channels);
       toast.success(enabled ? "Auto-respondedor activado ✓" : "Auto-respondedor desactivado");
       onUpdate();
     } catch {
       toast.error("Error al actualizar configuración");
     } finally {
       setTogglingAutoresponder(false);
+    }
+  };
+
+  const handleToggleChannel = async (platform: string, checked: boolean) => {
+    setSavingChannels(true);
+    try {
+      const current: string[] = status?.autoresponder_channels ?? [];
+      const updated = checked
+        ? [...current.filter((c) => c !== platform), platform]
+        : current.filter((c) => c !== platform);
+      await ayrshareApi.updateSettings(status?.autoresponder_enabled ?? true, updated);
+      toast.success(
+        checked
+          ? `${PLATFORM_META[platform]?.label ?? platform} habilitado ✓`
+          : `${PLATFORM_META[platform]?.label ?? platform} deshabilitado`
+      );
+      onUpdate();
+    } catch {
+      toast.error("Error al actualizar canales");
+    } finally {
+      setSavingChannels(false);
     }
   };
 
@@ -274,39 +298,104 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
       </div>
 
       {/* Auto-respondedor */}
-      <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+      <div className={`rounded-xl border transition-all ${
         status.autoresponder_enabled
           ? "bg-violet-50 border-violet-200"
           : "bg-secondary/50 border-border"
       }`}>
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            status.autoresponder_enabled ? "bg-violet-100" : "bg-secondary"
-          }`}>
-            <Bot size={16} className={status.autoresponder_enabled ? "text-violet-700" : "text-muted-foreground"} />
+        {/* Toggle principal */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              status.autoresponder_enabled ? "bg-violet-100" : "bg-secondary"
+            }`}>
+              <Bot size={16} className={status.autoresponder_enabled ? "text-violet-700" : "text-muted-foreground"} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Auto-respondedor</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Los agentes IA responden automáticamente en los canales seleccionados
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">Auto-respondedor de comentarios</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Los agentes IA responden automáticamente comentarios y mensajes en todas las redes
+          <button
+            onClick={() => handleToggleAutoresponder(!status.autoresponder_enabled)}
+            disabled={togglingAutoresponder}
+            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ml-4 focus:outline-none ${
+              status.autoresponder_enabled ? "bg-violet-600" : "bg-gray-200"
+            }`}
+          >
+            {togglingAutoresponder ? (
+              <Loader2 size={12} className="animate-spin absolute inset-0 m-auto text-white" />
+            ) : (
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                status.autoresponder_enabled ? "translate-x-5" : "translate-x-0"
+              }`} />
+            )}
+          </button>
+        </div>
+
+        {/* Selector de canales — visible cuando el autoresponder está activo */}
+        {status.autoresponder_enabled && platforms.length > 0 && (
+          <div className="px-4 pb-4 border-t border-violet-200 pt-3">
+            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2.5">
+              Canales activos para respuesta automática
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {platforms.map((p) => {
+                const meta = PLATFORM_META[p.toLowerCase()] ?? {
+                  label: p,
+                  color: "text-foreground",
+                  bg: "bg-secondary",
+                };
+                const enabledChannels: string[] = status.autoresponder_channels ?? [];
+                // Si la lista está vacía se consideran todos activos (legacy)
+                const isChecked = enabledChannels.length === 0 || enabledChannels.includes(p.toLowerCase());
+                return (
+                  <label
+                    key={p}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all select-none ${
+                      isChecked
+                        ? "bg-white border-violet-300 shadow-sm"
+                        : "bg-violet-50/50 border-violet-100 opacity-60"
+                    } ${savingChannels ? "pointer-events-none" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => handleToggleChannel(p.toLowerCase(), e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-all ${
+                      isChecked ? "bg-violet-600 border-violet-600" : "bg-white border-gray-300"
+                    }`}>
+                      {isChecked && (
+                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                          <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium ${meta.color}`}>{meta.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+            {savingChannels && (
+              <p className="text-xs text-violet-500 mt-2 flex items-center gap-1">
+                <Loader2 size={10} className="animate-spin" /> Guardando...
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Mensaje cuando activo pero sin redes vinculadas */}
+        {status.autoresponder_enabled && platforms.length === 0 && (
+          <div className="px-4 pb-4 border-t border-violet-200 pt-3">
+            <p className="text-xs text-violet-600">
+              Vincula al menos una red social para activar la respuesta automática por canal.
             </p>
           </div>
-        </div>
-        <button
-          onClick={() => handleToggleAutoresponder(!status.autoresponder_enabled)}
-          disabled={togglingAutoresponder}
-          className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ml-4 focus:outline-none ${
-            status.autoresponder_enabled ? "bg-violet-600" : "bg-gray-200"
-          }`}
-        >
-          {togglingAutoresponder ? (
-            <Loader2 size={12} className="animate-spin absolute inset-0 m-auto text-white" />
-          ) : (
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
-              status.autoresponder_enabled ? "translate-x-5" : "translate-x-0"
-            }`} />
-          )}
-        </button>
+        )}
       </div>
 
       {/* Registrar webhook */}
@@ -331,8 +420,8 @@ export function AyrshareConnect({ status, onUpdate }: AyrshareConnectProps) {
 
       <p className="text-xs text-muted-foreground">
         {status.autoresponder_enabled
-          ? "Los agentes están respondiendo comentarios y mensajes automáticamente."
-          : "Activa el auto-respondedor para que los agentes respondan en todas las redes."}
+          ? `Los agentes están respondiendo automáticamente en ${(status.autoresponder_channels ?? []).length > 0 ? `${(status.autoresponder_channels ?? []).length} canal(es) seleccionado(s)` : "todos los canales"}.`
+          : "Activa el auto-respondedor para que los agentes respondan en las redes seleccionadas."}
       </p>
     </div>
   );

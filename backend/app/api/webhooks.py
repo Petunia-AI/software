@@ -1405,6 +1405,11 @@ async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db))
     if not business:
         return {"ok": True}
 
+    # Verificar que el canal esté habilitado para auto-respuesta
+    enabled_channels: list = business.ayrshare_autoresponder_channels or []
+    if enabled_channels and platform.lower() not in [c.lower() for c in enabled_channels]:
+        return {"ok": True}
+
     channel = _PLATFORM_TO_CHANNEL.get(platform, Channel.WEBCHAT)
 
     await _process_ayrshare_event(
@@ -1683,6 +1688,12 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
     # Verificar que el autoresponder esté habilitado
     if not business.ayrshare_autoresponder_enabled:
         log.info("ayrshare_dm_autoresponder_disabled", business_id=business.id)
+        return {"ok": True}
+
+    # Verificar que el canal esté habilitado para auto-respuesta
+    enabled_channels: list = business.ayrshare_autoresponder_channels or []
+    if enabled_channels and platform.lower() not in [c.lower() for c in enabled_channels]:
+        log.info("ayrshare_dm_channel_disabled", business_id=business.id, platform=platform)
         return {"ok": True}
 
     # Verificar que el negocio tenga profileKey para poder responder

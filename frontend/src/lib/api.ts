@@ -204,9 +204,9 @@ export const ayrshareApi = {
   /** Publica contenido en redes sociales del cliente */
   post:        (text: string, platforms: string[], media_urls?: string[], scheduled_date?: string) =>
     api.post("/ayrshare/post", { text, platforms, media_urls, scheduled_date }),
-  /** Activa o desactiva el auto-respondedor de comentarios/mensajes */
-  updateSettings: (autoresponder_enabled: boolean) =>
-    api.patch("/ayrshare/settings", { autoresponder_enabled }),
+  /** Activa o desactiva el auto-respondedor y configura los canales habilitados */
+  updateSettings: (autoresponder_enabled: boolean, autoresponder_channels?: string[]) =>
+    api.patch("/ayrshare/settings", { autoresponder_enabled, autoresponder_channels }),
   /** Registra el webhook de Petunia en Ayrshare */
   registerWebhook: () => api.post("/ayrshare/register-webhook"),
 };

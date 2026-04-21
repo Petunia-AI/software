@@ -146,6 +146,7 @@ async def ayrshare_status(
         "profile_key_set": bool(business.ayrshare_profile_key),
         "connected_platforms": business.ayrshare_connected_platforms or [],
         "autoresponder_enabled": bool(business.ayrshare_autoresponder_enabled),
+        "autoresponder_channels": business.ayrshare_autoresponder_channels or [],
     }
 
 
@@ -304,6 +305,7 @@ async def ayrshare_register_webhook(
 
 class AyrshareSettingsRequest(BaseModel):
     autoresponder_enabled: bool
+    autoresponder_channels: list[str] | None = None
 
 
 @router.patch("/settings")
@@ -312,20 +314,27 @@ async def ayrshare_update_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Activa o desactiva el auto-respondedor de comentarios/mensajes."""
+    """Activa o desactiva el auto-respondedor y configura los canales habilitados."""
     result = await db.execute(select(Business).where(Business.id == current_user.business_id))
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(404, "Negocio no encontrado")
 
     business.ayrshare_autoresponder_enabled = body.autoresponder_enabled
+    if body.autoresponder_channels is not None:
+        business.ayrshare_autoresponder_channels = body.autoresponder_channels
     await db.commit()
     logger.info(
         "ayrshare_autoresponder_toggled",
         business_id=business.id,
         enabled=body.autoresponder_enabled,
+        channels=body.autoresponder_channels,
     )
-    return {"ok": True, "autoresponder_enabled": body.autoresponder_enabled}
+    return {
+        "ok": True,
+        "autoresponder_enabled": body.autoresponder_enabled,
+        "autoresponder_channels": business.ayrshare_autoresponder_channels or [],
+    }
 
 
 # Post
