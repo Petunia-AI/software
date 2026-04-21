@@ -124,8 +124,14 @@ function WidgetChat() {
         className="flex items-center gap-3 px-4 py-3.5 text-white flex-shrink-0"
         style={{ background: primaryColor }}
       >
-        <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-lg flex-shrink-0">
-          🤖
+        <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C9.79 2 8 3.79 8 6v1H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2V6c0-2.21-1.79-4-4-4z" fill="rgba(255,255,255,0.3)"/>
+            <circle cx="9" cy="13" r="1.5" fill="white"/>
+            <circle cx="15" cy="13" r="1.5" fill="white"/>
+            <path d="M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M12 2 L12.6 3.6 L14.5 4 L12.6 4.4 L12 6 L11.4 4.4 L9.5 4 L11.4 3.6 Z" fill="white"/>
+          </svg>
         </div>
         <div className="flex-1">
           <p className="font-semibold text-sm leading-tight">{agentName}</p>
@@ -140,10 +146,16 @@ function WidgetChat() {
       {step === "form" && (
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-lg"
-            style={{ background: primaryColor + "20", border: `2px solid ${primaryColor}30` }}
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 shadow-lg"
+            style={{ background: primaryColor + "15", border: `2px solid ${primaryColor}25` }}
           >
-            👋
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: primaryColor }}>
+              <path d="M20 2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4l4 4 4-4h4a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" fill="currentColor" fillOpacity="0.15"/>
+              <path d="M20 2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4l4 4 4-4h4a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+              <circle cx="8.5" cy="11" r="1.5" fill="currentColor"/>
+              <circle cx="12" cy="11" r="1.5" fill="currentColor"/>
+              <circle cx="15.5" cy="11" r="1.5" fill="currentColor"/>
+            </svg>
           </div>
           <h2 className="text-lg font-bold text-gray-900 text-center mb-1">¡Bienvenido!</h2>
           <p className="text-sm text-gray-500 text-center mb-6 leading-relaxed">
@@ -189,10 +201,15 @@ function WidgetChat() {
               >
                 {msg.role === "assistant" && (
                   <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 text-white"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-white"
                     style={{ background: primaryColor }}
                   >
-                    🤖
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <circle cx="9" cy="13" r="2" fill="white"/>
+                      <circle cx="15" cy="13" r="2" fill="white"/>
+                      <path d="M8 9h8M10 6h4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                      <rect x="3" y="9" width="18" height="12" rx="3" stroke="white" strokeWidth="1.5" fill="none"/>
+                    </svg>
                   </div>
                 )}
                 <div className={`max-w-[80%] flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
@@ -216,10 +233,15 @@ function WidgetChat() {
             {loading && (
               <div className="flex items-end gap-2">
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-sm text-white flex-shrink-0"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-white flex-shrink-0"
                   style={{ background: primaryColor }}
                 >
-                  🤖
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="9" cy="13" r="2" fill="white"/>
+                    <circle cx="15" cy="13" r="2" fill="white"/>
+                    <path d="M8 9h8M10 6h4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    <rect x="3" y="9" width="18" height="12" rx="3" stroke="white" strokeWidth="1.5" fill="none"/>
+                  </svg>
                 </div>
                 <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
                   <div className="flex gap-1 items-center h-4">
@@ -263,7 +285,7 @@ function WidgetChat() {
           </div>
 
           <p className="text-center text-[10px] text-gray-400 py-1.5 flex-shrink-0">
-            Powered by Agente Ventas AI · Claude claude-sonnet-4-6
+            Powered by <span style={{ color: primaryColor }} className="font-medium">Petunia AI</span>
           </p>
         </>
       )}
