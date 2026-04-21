@@ -112,37 +112,41 @@ async def _get_plan_limits(db: AsyncSession, business_id: str) -> dict:
     return PLAN_LIMITS.get(sub.plan.value, PLAN_LIMITS.get("trial", {}))
 
 
-async def _do_publish(post_id: str, db: AsyncSession):
-    """Tarea de background: publica el post en la red social y actualiza estado."""
-    result = await db.execute(select(SocialPost).where(SocialPost.id == post_id))
-    post = result.scalar_one_or_none()
-    if not post:
-        return
+async def _do_publish(post_id: str, _unused_db: AsyncSession | None = None):
+    """Tarea de background: publica el post en la red social y actualiza estado.
+    Usa su propia sesión de DB para evitar problemas con la sesión de la petición HTTP.
+    """
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(SocialPost).where(SocialPost.id == post_id))
+        post = result.scalar_one_or_none()
+        if not post:
+            return
 
-    # Obtener el profileKey de Ayrshare del negocio
-    biz_result = await db.execute(select(Business).where(Business.id == post.business_id))
-    business = biz_result.scalar_one_or_none()
-    ayrshare_profile_key = business.ayrshare_profile_key if business else None
+        # Obtener el profileKey de Ayrshare del negocio
+        biz_result = await db.execute(select(Business).where(Business.id == post.business_id))
+        business = biz_result.scalar_one_or_none()
+        ayrshare_profile_key = business.ayrshare_profile_key if business else None
 
-    caption_with_hashtags = post.caption
-    if post.hashtags:
-        tags = " ".join(f"#{h.lstrip('#')}" for h in post.hashtags)
-        caption_with_hashtags = f"{post.caption}\n\n{tags}"
+        caption_with_hashtags = post.caption
+        if post.hashtags:
+            tags = " ".join(f"#{h.lstrip('#')}" for h in post.hashtags)
+            caption_with_hashtags = f"{post.caption}\n\n{tags}"
 
-    result = await publish_post(
-        channel=post.channel.value,
-        caption=caption_with_hashtags,
-        image_url=post.image_url,
-        ayrshare_profile_key=ayrshare_profile_key,
-    )
+        pub_result = await publish_post(
+            channel=post.channel.value,
+            caption=caption_with_hashtags,
+            image_url=post.image_url,
+            ayrshare_profile_key=ayrshare_profile_key,
+        )
 
-    post.status = ContentStatus.published if result["success"] else ContentStatus.failed
-    post.published_at = datetime.now(timezone.utc) if result["success"] else None
-    post.platform_post_id = result.get("platform_post_id")
-    post.platform_url = result.get("platform_url")
-    post.error_message = result.get("error") if not result["success"] else None
-    await db.commit()
-    logger.info("post_publish_done", post_id=post_id, success=result["success"])
+        post.status = ContentStatus.published if pub_result["success"] else ContentStatus.failed
+        post.published_at = datetime.now(timezone.utc) if pub_result["success"] else None
+        post.platform_post_id = pub_result.get("platform_post_id")
+        post.platform_url = pub_result.get("platform_url")
+        post.error_message = pub_result.get("error") if not pub_result["success"] else None
+        await db.commit()
+        logger.info("post_publish_done", post_id=post_id, success=pub_result["success"])
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -819,7 +823,7 @@ async def publish_now(
     post.status = ContentStatus.scheduled
     await db.commit()
 
-    background_tasks.add_task(_do_publish, post_id, db)
+    background_tasks.add_task(_do_publish, post_id)
     return {"id": post_id, "status": "publishing", "message": "Publicando en background..."}
 
 
