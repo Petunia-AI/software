@@ -318,7 +318,10 @@ async def ayrshare_register_webhook(
     """
     _require_config()
 
-    webhook_url = f"{settings.backend_url.rstrip('/')}/api/webhooks/ayrshare"
+    # Usar siempre la URL pública de producción para que Ayrshare pueda acceder
+    PUBLIC_URL = "https://gentes-de-ventas-production.up.railway.app"
+    base = PUBLIC_URL.rstrip("/")
+    webhook_url = f"{base}/api/webhooks/ayrshare"
     try:
         result = await ayrshare_service.register_webhook(webhook_url)
         logger.info("ayrshare_webhook_registered", url=webhook_url, result=result)

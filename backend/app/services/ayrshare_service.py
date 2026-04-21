@@ -343,7 +343,8 @@ class AyrshareService:
                 headers=_headers(),
                 json={"action": "subscribe", "url": webhook_url},
             )
-            resp.raise_for_status()
+            if resp.status_code >= 400:
+                raise Exception(f"Ayrshare error {resp.status_code}: {resp.text}")
             return resp.json()
 
 
