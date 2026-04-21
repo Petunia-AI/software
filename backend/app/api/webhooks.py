@@ -1653,13 +1653,23 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
     except Exception:
         return {"ok": True}
 
-    # Sólo procesar mensajes recibidos nuevos
+    try:
+        await _process_ayrshare_dm(payload, db, log)
+    except Exception as e:
+        log.error("ayrshare_dm_webhook_unhandled", error=str(e), exc_info=True)
+
+    # Siempre devolver 200 para que Ayrshare no reintente
+    return {"ok": True}
+
+
+async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
+    """Procesa un DM entrante de Ayrshare y genera respuesta con IA."""
     action     = payload.get("action")
     msg_type   = payload.get("type")
     sub_action = payload.get("subAction", "")
 
     if action != "messages" or msg_type != "received" or sub_action != "messageCreated":
-        return {"ok": True}
+        return
 
     platform        = payload.get("platform", "").lower()
     message_text    = payload.get("message", "").strip()
@@ -1670,9 +1680,9 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
     sender_name     = sender_details.get("name") or sender_details.get("username") or sender_id
 
     if not message_text or not sender_id or not platform:
-        return {"ok": True}
+        return
 
-    # Buscar negocio por refId (= business_id almacenado al crear el perfil Ayrshare)
+    # Buscar negocio por refId real de Ayrshare
     biz_result = await db.execute(
         select(Business).where(
             Business.ayrshare_ref_id == ref_id,
@@ -1683,23 +1693,23 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
 
     if not business:
         log.warning("ayrshare_dm_business_not_found", ref_id=ref_id, platform=platform)
-        return {"ok": True}
+        return
 
     # Verificar que el autoresponder esté habilitado
     if not business.ayrshare_autoresponder_enabled:
         log.info("ayrshare_dm_autoresponder_disabled", business_id=business.id)
-        return {"ok": True}
+        return
 
     # Verificar que el canal esté habilitado para auto-respuesta
     enabled_channels: list = business.ayrshare_autoresponder_channels or []
     if enabled_channels and platform.lower() not in [c.lower() for c in enabled_channels]:
         log.info("ayrshare_dm_channel_disabled", business_id=business.id, platform=platform)
-        return {"ok": True}
+        return
 
     # Verificar que el negocio tenga profileKey para poder responder
     if not business.ayrshare_profile_key:
         log.warning("ayrshare_dm_no_profile_key", business_id=business.id)
-        return {"ok": True}
+        return
 
     # Mapear plataforma a Channel enum
     channel_map = {
@@ -1709,13 +1719,14 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
     channel = channel_map.get(platform)
     if not channel:
         log.warning("ayrshare_dm_unsupported_platform", platform=platform)
-        return {"ok": True}
+        return
 
     # Buscar o crear lead por (business_id, platform, senderId)
+    lead_key = f"ayrshare_dm:{platform}:{sender_id}"
     lead_result = await db.execute(
         select(Lead).where(
             Lead.business_id == business.id,
-            Lead.notes.contains(f"ayrshare_dm:{platform}:{sender_id}"),
+            Lead.notes.like(f"%{lead_key}%"),
         ).limit(1)
     )
     lead = lead_result.scalar_one_or_none()
@@ -1725,7 +1736,7 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
             business_id=business.id,
             name=sender_name,
             source=platform,
-            notes=f"ayrshare_dm:{platform}:{sender_id}",
+            notes=lead_key,
             tags=[],
             is_active=True,
         )
@@ -1774,7 +1785,7 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
     # Si está en control humano, no responder con IA
     if conv.is_human_takeover:
         await db.commit()
-        return {"ok": True}
+        return
 
     # Cargar configs de agentes
     configs_result = await db.execute(
@@ -1874,5 +1885,3 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
         sender_id=sender_id,
         agent=agent_used,
     )
-
-    return {"ok": True}
