@@ -73,12 +73,11 @@
         '<div id="av-pulse" style="background:' + cfg.color + '"></div>' +
         '<button id="av-btn" style="background:' + cfg.color + '" aria-label="Abrir chat">' +
           '<div id="av-btn-inner">' +
-            '<svg id="av-icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-              '<path d="M12 3C7.03 3 3 6.58 3 11c0 2.05.85 3.92 2.25 5.35L4 21l5.1-1.55C10.33 19.8 11.15 20 12 20c4.97 0 9-3.58 9-8s-4.03-9-9-9z" fill="rgba(255,255,255,0.2)"/>' +
-              '<path d="M12 3C7.03 3 3 6.58 3 11c0 2.05.85 3.92 2.25 5.35L4 21l5.1-1.55C10.33 19.8 11.15 20 12 20c4.97 0 9-3.58 9-8s-4.03-9-9-9z" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>' +
-              '<circle cx="8.5" cy="11" r="1.3" fill="white"/>' +
-              '<circle cx="12" cy="11" r="1.3" fill="white"/>' +
-              '<circle cx="15.5" cy="11" r="1.3" fill="white"/>' +
+            '<svg id="av-icon-chat" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+              '<path d="M16 4C9.37 4 4 8.93 4 15c0 2.7 1.05 5.18 2.8 7.1L4 28l6.4-2.1C11.84 26.6 13.88 27 16 27c6.63 0 12-4.93 12-11S22.63 4 16 4z" fill="white"/>' +
+              '<circle cx="10.5" cy="15" r="1.8" fill="' + cfg.color + '"/>' +
+              '<circle cx="16" cy="15" r="1.8" fill="' + cfg.color + '"/>' +
+              '<circle cx="21.5" cy="15" r="1.8" fill="' + cfg.color + '"/>' +
             '</svg>' +
             '<svg id="av-icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">' +
               '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
