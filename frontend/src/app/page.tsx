@@ -920,52 +920,224 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-24 px-6 bg-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Cómo funciona</p>
-          <h2 className="text-4xl font-bold text-gray-900 mb-16">Empieza en 3 pasos</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <section className="relative py-28 px-6 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-hidden">
+        {/* Animated background orbs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <motion.div animate={{ x: [0, 40, 0], y: [0, -30, 0] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-10 left-1/4 w-96 h-96 rounded-full opacity-20"
+            style={{ background: "radial-gradient(circle, #7c3aed 0%, transparent 70%)" }} />
+          <motion.div animate={{ x: [0, -50, 0], y: [0, 40, 0] }} transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            className="absolute bottom-10 right-1/4 w-80 h-80 rounded-full opacity-15"
+            style={{ background: "radial-gradient(circle, #0ea5e9 0%, transparent 70%)" }} />
+          {/* Grid lines */}
+          <div className="absolute inset-0 opacity-[0.04]"
+            style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        </div>
+
+        <div className="relative max-w-5xl mx-auto">
+          <div className="text-center mb-20">
+            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/20 border border-violet-400/30 text-violet-300 text-sm font-medium mb-5">
+              <Zap size={13} /> Automatización en minutos
+            </motion.div>
+            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
+              className="text-5xl font-bold text-white mb-4">Empieza en <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">3 pasos</span></motion.h2>
+            <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              className="text-white/50 text-lg max-w-xl mx-auto">Sin técnicos, sin semanas de setup. Tu agente de ventas IA funcionando hoy.</motion.p>
+          </div>
+
+          {/* Steps */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+            {/* Connector line desktop */}
+            <div className="hidden md:block absolute top-16 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px">
+              <motion.div className="h-full bg-gradient-to-r from-amber-400 via-violet-400 to-emerald-400"
+                initial={{ scaleX: 0, transformOrigin: "left" }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, delay: 0.4, ease: "easeOut" }} />
+            </div>
+
             {[
-              { step: "01", title: "Instala el widget", desc: "Copia una línea de código en tu web. Listo en menos de 10 minutos.", icon: Zap, gradient: "from-amber-400 to-orange-500" },
-              { step: "02", title: "Configura tus agentes", desc: "Define tu producto, precios y guión de ventas. La IA aprende tu negocio.", icon: Bot, gradient: "from-violet-500 to-purple-600" },
-              { step: "03", title: "Recibe leads calificados", desc: "Tus 5 agentes trabajan 24/7 calificando, nutriendo y cerrando ventas.", icon: TrendingUp, gradient: "from-emerald-400 to-teal-500" },
+              {
+                step: "01", title: "Instala el widget", icon: Zap,
+                gradient: "from-amber-400 to-orange-500", glow: "shadow-amber-500/30",
+                desc: "Copia una línea de código en tu web. Listo en menos de 10 minutos.",
+                detail: "Compatible con cualquier CMS, web o landing page.",
+              },
+              {
+                step: "02", title: "Configura tus agentes", icon: Bot,
+                gradient: "from-violet-500 to-purple-600", glow: "shadow-violet-500/30",
+                desc: "Define tu producto, precios y guión de ventas. La IA aprende tu negocio.",
+                detail: "5 agentes especializados listos en minutos.",
+              },
+              {
+                step: "03", title: "Recibe leads calificados", icon: TrendingUp,
+                gradient: "from-emerald-400 to-teal-500", glow: "shadow-emerald-500/30",
+                desc: "Tus agentes trabajan 24/7 calificando, nutriendo y cerrando ventas.",
+                detail: "Notificaciones en tiempo real cuando un lead está listo.",
+              },
             ].map((item, i) => (
-              <motion.div key={item.step} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ delay: i * 0.12 }} className="flex flex-col items-center text-center">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-4 shadow-lg`}>
-                  <item.icon size={26} className="text-white" />
+              <motion.div key={item.step}
+                initial={{ opacity: 0, y: 32 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15, type: "spring", stiffness: 180, damping: 22 }}
+                whileHover={{ y: -6, transition: { duration: 0.22 } }}
+                className="relative bg-white/5 border border-white/10 backdrop-blur-sm rounded-3xl p-7 flex flex-col items-center text-center group hover:bg-white/10 hover:border-white/20 transition-all cursor-default"
+              >
+                {/* Glow on hover */}
+                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
+
+                {/* Step number */}
+                <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white/40 text-xs font-black mb-5 tracking-widest">
+                  {item.step}
                 </div>
-                <span className="text-xs font-bold text-gray-300 mb-2 tracking-widest">{item.step}</span>
-                <h3 className="font-bold text-gray-900 mb-2 text-lg">{item.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+
+                {/* Icon */}
+                <motion.div
+                  animate={{ rotate: [0, -4, 4, 0], y: [0, -3, 0] }}
+                  transition={{ duration: 3.5, delay: i * 0.7, repeat: Infinity, ease: "easeInOut" }}
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-5 shadow-2xl ${item.glow}`}
+                >
+                  <item.icon size={28} className="text-white" />
+                </motion.div>
+
+                <h3 className="font-bold text-white text-xl mb-2">{item.title}</h3>
+                <p className="text-white/60 text-sm leading-relaxed mb-3">{item.desc}</p>
+                <p className="text-white/30 text-xs italic">{item.detail}</p>
               </motion.div>
             ))}
           </div>
+
+          {/* CTA inline */}
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 }}
+            className="text-center mt-14">
+            <a href="/login" className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold rounded-2xl hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-0.5 transition-all text-sm">
+              Empieza gratis ahora <ArrowRight size={16} />
+            </a>
+            <p className="text-white/30 text-xs mt-3">Sin tarjeta de crédito · Setup en 10 minutos</p>
+          </motion.div>
         </div>
       </section>
 
       {/* Channels */}
-      <section className="py-20 px-6 bg-gray-50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Conecta todos tus canales</h2>
-          <p className="text-gray-500 mb-12">Tus agentes responden donde están tus clientes, sin importar el canal.</p>
+      <section className="relative py-28 px-6 bg-white overflow-hidden">
+        {/* Subtle dot grid */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(circle, #e5e7eb 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+
+        <div className="relative max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <motion.p initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Omnicanal</motion.p>
+            <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
+              className="text-5xl font-bold text-gray-900 mb-4">Donde están tus clientes,<br /><span className="bg-gradient-to-r from-violet-600 to-cyan-500 bg-clip-text text-transparent">ahí está Petunia.</span></motion.h2>
+            <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              className="text-gray-400 text-lg max-w-xl mx-auto">Tus agentes responden en todos los canales desde una sola plataforma, sin perder ninguna conversación.</motion.p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { icon: Globe, label: "Webchat", desc: "Widget instalable en cualquier sitio web con una línea de código.", gradient: "from-blue-500 to-cyan-500" },
-              { icon: Phone, label: "WhatsApp Business", desc: "Responde mensajes de WhatsApp 24/7 sin bot de número compartido.", gradient: "from-emerald-500 to-green-500" },
-              { icon: Instagram, label: "Instagram", desc: "Califica leads que llegan por DM de Instagram automáticamente.", gradient: "from-pink-500 to-rose-500" },
+              {
+                icon: Globe,
+                label: "Webchat",
+                tag: "Instalación inmediata",
+                desc: "Embeds en cualquier web con una línea de código. Tus visitantes reciben atención al instante.",
+                gradient: "from-blue-500 to-cyan-500",
+                glow: "group-hover:shadow-blue-200",
+                stats: [{ v: "< 10 min", l: "setup" }, { v: "100%", l: "personalizable" }],
+                animate: { x: [0, 3, -3, 0], transition: { duration: 4, repeat: Infinity } },
+              },
+              {
+                icon: Phone,
+                label: "WhatsApp Business",
+                tag: "Canal #1 en LATAM",
+                desc: "Responde mensajes de WhatsApp 24/7 con tu propio número. Sin bots genéricos.",
+                gradient: "from-emerald-500 to-green-500",
+                glow: "group-hover:shadow-emerald-200",
+                stats: [{ v: "24/7", l: "disponible" }, { v: "2 seg", l: "respuesta" }],
+                animate: { y: [0, -4, 0], transition: { duration: 3.5, repeat: Infinity } },
+              },
+              {
+                icon: Instagram,
+                label: "Instagram DMs",
+                tag: "Leads desde stories y posts",
+                desc: "Califica automáticamente cada DM. Nunca más pierdas un prospecto que llegó por Instagram.",
+                gradient: "from-pink-500 to-rose-500",
+                glow: "group-hover:shadow-pink-200",
+                stats: [{ v: "+40%", l: "leads capturados" }, { v: "Auto", l: "calificación" }],
+                animate: { rotate: [0, 2, -2, 0], transition: { duration: 5, repeat: Infinity } },
+              },
             ].map((c, i) => (
-              <motion.div key={c.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ delay: i * 0.09 }} whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${c.gradient} flex items-center justify-center mx-auto mb-4 shadow-md`}>
-                  <c.icon size={24} className="text-white" />
+              <motion.div key={c.label}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.12, type: "spring", stiffness: 160, damping: 22 }}
+                className={`group relative bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl ${c.glow} transition-all duration-300 p-7 overflow-hidden`}
+              >
+                {/* Gradient background on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${c.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300`} />
+
+                {/* Tag */}
+                <div className="mb-5">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r ${c.gradient} text-white shadow-sm`}>{c.tag}</span>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">{c.label}</h3>
-                <p className="text-sm text-gray-500">{c.desc}</p>
+
+                {/* Animated icon */}
+                <motion.div
+                  animate={c.animate}
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${c.gradient} flex items-center justify-center mb-5 shadow-xl`}
+                >
+                  <c.icon size={26} className="text-white" />
+                </motion.div>
+
+                <h3 className="font-bold text-gray-900 text-xl mb-2">{c.label}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-6">{c.desc}</p>
+
+                {/* Stats row */}
+                <div className="flex gap-4 pt-5 border-t border-gray-50">
+                  {c.stats.map((s) => (
+                    <div key={s.l}>
+                      <p className={`text-lg font-bold bg-gradient-to-r ${c.gradient} bg-clip-text text-transparent`}>{s.v}</p>
+                      <p className="text-xs text-gray-400">{s.l}</p>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             ))}
           </div>
+
+          {/* Floating connection visual */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 }}
+            className="mt-14 flex items-center justify-center gap-4 flex-wrap">
+            {[
+              { label: "Webchat", color: "bg-blue-500" },
+              { label: "WhatsApp", color: "bg-emerald-500" },
+              { label: "Instagram", color: "bg-pink-500" },
+            ].map((ch, i) => (
+              <React.Fragment key={ch.label}>
+                <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, delay: i * 0.4, repeat: Infinity }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-full shadow-sm">
+                  <span className={`w-2 h-2 rounded-full ${ch.color} animate-pulse`} />
+                  <span className="text-sm text-gray-600 font-medium">{ch.label}</span>
+                </motion.div>
+                {i < 2 && (
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, delay: i * 0.4, repeat: Infinity }}
+                    className="hidden sm:block">
+                    <ArrowRight size={16} className="text-gray-300" />
+                  </motion.div>
+                )}
+              </React.Fragment>
+            ))}
+            <div className="hidden sm:flex items-center gap-2 ml-2">
+              <ArrowRight size={16} className="text-gray-300" />
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full shadow-lg shadow-violet-200">
+                <Bot size={14} className="text-white" />
+                <span className="text-sm text-white font-semibold">Petunia AI</span>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
