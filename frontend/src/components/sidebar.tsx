@@ -71,6 +71,12 @@ const navItems = [
     glow: "rgba(139,92,246,0.35)",
   },
   {
+    href: "/integrations/whatsapp", icon: MessageCircle, label: "WhatsApp Business",
+    badge: null,
+    color: "from-green-500 to-emerald-600",
+    glow: "rgba(16,185,129,0.35)",
+  },
+  {
     href: "/properties",    icon: Building2,        label: "Propiedades",
     badge: null,
     color: "from-teal-500 to-green-600",

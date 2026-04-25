@@ -310,6 +310,10 @@ async def _process_meta_wa_message(
     if not business.meta_wa_token:
         return
 
+    # Respetar el toggle whatsapp_enabled del negocio
+    if not getattr(business, "whatsapp_enabled", True):
+        return
+
     # Buscar conversación activa del número
     conv_result = await db.execute(
         select(Conversation)
