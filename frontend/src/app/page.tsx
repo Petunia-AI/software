@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Users, TrendingUp, Bot, Check,
@@ -22,12 +22,12 @@ interface Plan {
 }
 
 const FEATURES = [
-  { icon: Bot, title: "5 Agentes IA especializados", desc: "Calificador BANT, Cerrador, Nutridor, Soporte y Analista trabajando 24/7 en paralelo.", gradient: "from-violet-500 to-purple-600" },
-  { icon: MessageSquare, title: "Omnicanal integrado", desc: "WhatsApp Business, webchat embeddable e Instagram en una sola bandeja de entrada.", gradient: "from-blue-500 to-cyan-500" },
-  { icon: TrendingUp, title: "Calificación BANT automática", desc: "Cada lead puntuado por Budget, Authority, Need y Timeline. Solo los mejores llegan a tu equipo.", gradient: "from-emerald-500 to-teal-500" },
-  { icon: BarChart3, title: "Analytics en tiempo real", desc: "Dashboard con tendencias, performance por agente y distribución de canales.", gradient: "from-amber-500 to-orange-500" },
-  { icon: Users, title: "Handoff a humanos", desc: "El agente pasa la conversación a tu equipo sin perder contexto cuando el cliente lo necesita.", gradient: "from-rose-500 to-pink-500" },
-  { icon: Shield, title: "Multi-tenant seguro", desc: "Datos completamente aislados por empresa. Cumplimiento GDPR y LGPD.", gradient: "from-indigo-500 to-violet-500" },
+  { animType: "agents",    title: "5 Agentes IA especializados",   desc: "Calificador BANT, Cerrador, Nutridor, Soporte y Analista trabajando 24/7 en paralelo.",                         gradient: "from-violet-500 to-purple-600" },
+  { animType: "omni",      title: "Omnicanal integrado",            desc: "WhatsApp Business, webchat embeddable e Instagram en una sola bandeja de entrada.",                             gradient: "from-blue-500 to-cyan-500" },
+  { animType: "bant",      title: "Calificación BANT automática",   desc: "Cada lead puntuado por Budget, Authority, Need y Timeline. Solo los mejores llegan a tu equipo.",               gradient: "from-emerald-500 to-teal-500" },
+  { animType: "analytics", title: "Analytics en tiempo real",       desc: "Dashboard con tendencias, performance por agente y distribución de canales.",                                    gradient: "from-amber-500 to-orange-500" },
+  { animType: "handoff",   title: "Handoff a humanos",              desc: "El agente pasa la conversación a tu equipo sin perder contexto cuando el cliente lo necesita.",                  gradient: "from-rose-500 to-pink-500" },
+  { animType: "security",  title: "Multi-tenant seguro",            desc: "Datos completamente aislados por empresa. Cumplimiento GDPR y LGPD.",                                            gradient: "from-indigo-500 to-violet-500" },
 ];
 
 const STATS = [
@@ -269,6 +269,108 @@ function SupportWidget() {
   );
 }
 
+function FeatureAnimation({ type }: { type: string }) {
+  if (type === "agents") {
+    return (
+      <div className="flex items-center gap-1.5">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <motion.div
+            key={i}
+            className="w-2.5 h-2.5 rounded-full bg-white"
+            animate={{ scale: [0.5, 1.4, 0.5], opacity: [0.25, 1, 0.25] }}
+            transition={{ duration: 1.5, delay: i * 0.24, repeat: Infinity, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
+    );
+  }
+  if (type === "omni") {
+    return (
+      <div className="flex items-center gap-3">
+        {([Globe, Phone, Instagram] as React.ElementType[]).map((Icon, i) => (
+          <motion.div
+            key={i}
+            animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10] }}
+            transition={{ duration: 2.2, delay: i * 0.65, repeat: Infinity, repeatDelay: 0.4, ease: "easeInOut" }}
+          >
+            <Icon size={17} className="text-white" />
+          </motion.div>
+        ))}
+      </div>
+    );
+  }
+  if (type === "bant") {
+    return (
+      <div className="w-full px-1">
+        <p className="text-white/70 text-[9px] font-black tracking-[0.2em] mb-1.5">BANT SCORE</p>
+        <div className="w-full bg-white/30 rounded-full h-2">
+          <motion.div
+            className="bg-white rounded-full h-2"
+            animate={{ width: ["0%", "92%", "92%", "0%"] }}
+            transition={{ duration: 3, times: [0, 0.5, 0.82, 1], repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+        <motion.p
+          className="text-white text-xs font-bold text-right mt-1"
+          animate={{ opacity: [0, 0, 1, 1, 0] }}
+          transition={{ duration: 3, times: [0, 0.42, 0.54, 0.82, 1], repeat: Infinity }}
+        >92%</motion.p>
+      </div>
+    );
+  }
+  if (type === "analytics") {
+    const bars = [55, 80, 42, 95, 68];
+    return (
+      <div className="flex items-end gap-1 w-full" style={{ height: 40 }}>
+        {bars.map((h, i) => (
+          <motion.div
+            key={i}
+            className="flex-1 bg-white rounded-sm"
+            animate={{ height: ["0%", `${h}%`, `${h}%`, "0%"] }}
+            transition={{ duration: 2.8, delay: i * 0.13, repeat: Infinity, repeatDelay: 0.7, ease: "easeOut" }}
+          />
+        ))}
+      </div>
+    );
+  }
+  if (type === "handoff") {
+    return (
+      <div className="flex items-center gap-2">
+        <motion.div animate={{ x: [0, 2, 0] }} transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}>
+          <Bot size={18} className="text-white" />
+        </motion.div>
+        <motion.div
+          animate={{ x: [-2, 3, -2], opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ArrowRight size={15} className="text-white" />
+        </motion.div>
+        <motion.div
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 1.3, delay: 0.35, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Users size={18} className="text-white" />
+        </motion.div>
+      </div>
+    );
+  }
+  if (type === "security") {
+    return (
+      <div className="relative flex items-center justify-center">
+        <Shield size={28} className="text-white/30" />
+        <motion.div
+          className="absolute"
+          animate={{ scale: [0, 1.2, 1, 1, 0], opacity: [0, 1, 1, 1, 0] }}
+          transition={{ duration: 2.5, times: [0, 0.25, 0.4, 0.75, 1], repeat: Infinity, repeatDelay: 0.6, ease: "backOut" }}
+        >
+          <Check size={14} className="text-white" strokeWidth={3} />
+        </motion.div>
+      </div>
+    );
+  }
+  return null;
+}
+
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -385,8 +487,8 @@ export default function LandingPage() {
               <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                 transition={{ delay: i * 0.07 }} whileHover={{ y: -5, transition: { duration: 0.2 } }}
                 className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-default">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${f.gradient} flex items-center justify-center mb-4 shadow-md`}>
-                  <f.icon size={20} className="text-white" />
+                <div className={`w-full h-14 rounded-2xl bg-gradient-to-br ${f.gradient} flex items-center justify-center mb-5 shadow-md px-4 overflow-hidden`}>
+                  <FeatureAnimation type={f.animType} />
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
