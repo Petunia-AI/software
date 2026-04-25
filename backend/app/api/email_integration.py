@@ -30,6 +30,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from anthropic import AsyncAnthropic
 from app.api.auth import get_current_user
 from app.config import settings
 from app.database import get_db
@@ -657,3 +658,122 @@ async def delete_template(
         raise HTTPException(status_code=404, detail="Plantilla no encontrada")
     await db.delete(tmpl)
     await db.commit()
+
+
+# ── AI Draft ─────────────────────────────────────────────────────────────────
+
+class AiDraftRequest(BaseModel):
+    from_email: str
+    from_name: Optional[str] = None
+    subject: Optional[str] = None
+    body_text: Optional[str] = None
+    body_html: Optional[str] = None
+    account_id: Optional[str] = None  # to include signature in draft
+
+
+class AiDraftResponse(BaseModel):
+    subject: str
+    body_html: str
+    body_text: str
+
+
+@router.post("/ai-draft", response_model=AiDraftResponse)
+async def generate_ai_draft(
+    payload: AiDraftRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Genera un borrador de respuesta de email usando Claude (Petunia)."""
+    biz = await _get_business(db, current_user)
+
+    # Obtain signature if an account is specified
+    signature_html = ""
+    if payload.account_id:
+        r = await db.execute(
+            select(EmailAccount).where(
+                EmailAccount.id == payload.account_id,
+                EmailAccount.business_id == biz.id,
+            )
+        )
+        acc = r.scalar_one_or_none()
+        if acc and acc.signature_html:
+            signature_html = acc.signature_html
+
+    # Build business context
+    biz_ctx = "\n".join(filter(None, [
+        f"Empresa: {biz.name}" if biz.name else "",
+        f"Industria: {biz.industry}" if getattr(biz, "industry", None) else "",
+        f"Descripción: {biz.description}" if getattr(biz, "description", None) else "",
+        f"Producto/Servicio: {biz.product_description}" if getattr(biz, "product_description", None) else "",
+        f"Propuesta de valor: {biz.value_proposition}" if getattr(biz, "value_proposition", None) else "",
+    ]))
+
+    # Clean body (prefer text over HTML)
+    original_body = (payload.body_text or "").strip()
+    if not original_body and payload.body_html:
+        # Very naive HTML → text strip
+        import re
+        original_body = re.sub(r"<[^>]+>", " ", payload.body_html).strip()
+
+    system_prompt = f"""Eres Petunia, asistente de ventas de IA para la siguiente empresa:
+
+{biz_ctx}
+
+Tu tarea es redactar una respuesta profesional, cálida y persuasiva a un email recibido.
+- Responde SIEMPRE en el mismo idioma del email original (si está en español, responde en español; si está en inglés, responde en inglés).
+- El tono debe ser profesional pero cercano, orientado a ventas/CRM.
+- No incluyas la firma (se agrega automáticamente).
+- Devuelve SOLO el cuerpo del email como HTML limpio (sin <html>, <head>, <body> externos). Usa <p>, <br>, <b> si es necesario pero mantén el HTML simple.
+- NO incluyas líneas como "Estimado/a [nombre]:" a menos que sepas el nombre real.
+- El asunto de respuesta debe empezar con "Re: " seguido del asunto original."""
+
+    original_subject = payload.subject or "(sin asunto)"
+    from_label = payload.from_name or payload.from_email
+
+    user_message = f"""Email recibido:
+De: {from_label} <{payload.from_email}>
+Asunto: {original_subject}
+
+{original_body}
+
+---
+Redacta una respuesta profesional a este email. Primero devuelve el ASUNTO (en una línea que empiece con "ASUNTO:") y luego el CUERPO en HTML en las líneas siguientes (sin marcador especial)."""
+
+    try:
+        client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        message = await client.messages.create(
+            model=settings.claude_model,
+            max_tokens=1500,
+            temperature=0.6,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}],
+        )
+        raw = message.content[0].text.strip()
+    except Exception as e:
+        logger.error("ai_draft_error", error=str(e))
+        raise HTTPException(status_code=502, detail=f"Error al generar borrador con IA: {str(e)}")
+
+    # Parse subject line and body
+    lines = raw.splitlines()
+    reply_subject = f"Re: {original_subject}"
+    body_lines_start = 0
+    for i, line in enumerate(lines):
+        if line.strip().upper().startswith("ASUNTO:"):
+            reply_subject = line.split(":", 1)[1].strip()
+            body_lines_start = i + 1
+            break
+
+    body_html = "\n".join(lines[body_lines_start:]).strip()
+
+    # Wrap plain text blocks in <p> if the model returned plain text
+    if not body_html.startswith("<"):
+        body_html = "".join(f"<p>{p.strip()}</p>" for p in body_html.split("\n\n") if p.strip())
+
+    import re
+    body_text = re.sub(r"<[^>]+>", " ", body_html).strip()
+
+    return AiDraftResponse(
+        subject=reply_subject,
+        body_html=body_html,
+        body_text=body_text,
+    )

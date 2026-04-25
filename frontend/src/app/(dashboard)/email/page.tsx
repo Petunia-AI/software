@@ -6,7 +6,7 @@ import {
   Mail, Inbox, Send, Plus, RefreshCw, Settings, Trash2, Eye, EyeOff,
   Search, ChevronDown, X, Check, AlertCircle, Loader2, ExternalLink,
   FileText, Reply, Clock, User, AtSign, Link2, Zap, Pencil, Bold,
-  Italic, List, AlignLeft, Signature,
+  Italic, List, AlignLeft, Signature, Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/auth";
@@ -123,7 +123,7 @@ function ComposeModal({
   accounts: EmailAccount[];
   templates: EmailTemplate[];
   token: string;
-  prefill?: { toEmail?: string; leadId?: string; subject?: string; replyAccountId?: string };
+  prefill?: { toEmail?: string; leadId?: string; subject?: string; replyAccountId?: string; bodyHtml?: string };
   onSent: (email: Email) => void;
 }) {
   const [accountId, setAccountId] = useState(prefill?.replyAccountId ?? accounts[0]?.id ?? "");
@@ -137,16 +137,22 @@ function ComposeModal({
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const prefillApplied = useRef(false);
 
   const currentAccount = accounts.find((a) => a.id === accountId);
 
-  // Initialize contenteditable with signature
+  // Initialize contenteditable with signature (and AI prefill on first render)
   useEffect(() => {
     if (bodyRef.current) {
       const sig = currentAccount?.signature_html
         ? `<br/><br/><div data-sig="1" style="border-top:1px solid #e2e8f0;margin-top:8px;padding-top:8px;color:#64748b;font-size:13px">${currentAccount.signature_html}</div>`
         : "";
-      bodyRef.current.innerHTML = sig;
+      if (!prefillApplied.current && prefill?.bodyHtml) {
+        bodyRef.current.innerHTML = prefill.bodyHtml + sig;
+        prefillApplied.current = true;
+      } else {
+        bodyRef.current.innerHTML = sig;
+      }
       // Move cursor to start
       const range = document.createRange();
       const sel = window.getSelection();
@@ -827,11 +833,53 @@ function AccountSettingsModal({
 
 // ── Email Detail Panel ────────────────────────────────────────────────────────
 
-function EmailDetail({ email, onClose, onReply }: { email: Email; onClose: () => void; onReply: () => void }) {
+interface AiDraft { subject: string; body_html: string; body_text: string; }
+
+function EmailDetail({
+  email, onClose, onReply, onAiReply, token, accountId,
+}: {
+  email: Email;
+  onClose: () => void;
+  onReply: () => void;
+  onAiReply: (draft: AiDraft) => void;
+  token: string;
+  accountId: string;
+}) {
+  const [aiDrafting, setAiDrafting] = useState(false);
   const dateStr = email.received_at || email.sent_at || email.created_at;
   const date = dateStr ? new Date(dateStr).toLocaleString("es-MX", { dateStyle: "long", timeStyle: "short" }) : "";
   const ini = initials(email.from_name, email.from_email);
   const avatarBg = avatarColor(email.from_email);
+
+  async function handleAiReply() {
+    setAiDrafting(true);
+    const toastId = toast.loading("Petunia está redactando la respuesta...");
+    try {
+      const res = await fetch(`${API}/email/ai-draft`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from_email: email.from_email,
+          from_name: email.from_name,
+          subject: email.subject,
+          body_text: email.body_text,
+          body_html: email.body_html,
+          account_id: accountId,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Error al generar borrador");
+      }
+      const draft: AiDraft = await res.json();
+      toast.success("Borrador generado por Petunia ✨", { id: toastId });
+      onAiReply(draft);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error", { id: toastId });
+    } finally {
+      setAiDrafting(false);
+    }
+  }
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -894,6 +942,17 @@ function EmailDetail({ email, onClose, onReply }: { email: Email; onClose: () =>
           style={{ background: "linear-gradient(135deg, #1e40af, #1d4ed8)" }}
         >
           <Reply size={14} /> Responder
+        </button>
+        <button
+          onClick={handleAiReply}
+          disabled={aiDrafting}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all hover:opacity-90 shadow-sm"
+          style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+          title="Petunia redacta la respuesta automáticamente"
+        >
+          {aiDrafting
+            ? <><Loader2 size={14} className="animate-spin" />Redactando...</>
+            : <><Sparkles size={14} />Responder con AI</>}
         </button>
       </div>
     </div>
@@ -1024,6 +1083,7 @@ export default function EmailPage() {
   const [filterDir, setFilterDir] = useState<"" | "inbound" | "outbound">("");
   const [search, setSearch] = useState("");
   const [replyTo, setReplyTo] = useState<Email | null>(null);
+  const [aiDraft, setAiDraft] = useState<AiDraft | null>(null);
 
   const headers = { Authorization: `Bearer ${token ?? ""}`, "Content-Type": "application/json" };
 
@@ -1231,8 +1291,16 @@ export default function EmailPage() {
         {selectedEmail ? (
           <EmailDetail
             email={selectedEmail}
+            token={token ?? ""}
+            accountId={selectedEmail.email_account_id}
             onClose={() => setSelectedEmail(null)}
             onReply={() => {
+              setAiDraft(null);
+              setReplyTo(selectedEmail);
+              setShowCompose(true);
+            }}
+            onAiReply={(draft) => {
+              setAiDraft(draft);
               setReplyTo(selectedEmail);
               setShowCompose(true);
             }}
@@ -1271,11 +1339,12 @@ export default function EmailPage() {
             token={token ?? ""}
             accounts={accounts}
             templates={templates}
-            onClose={() => { setShowCompose(false); setReplyTo(null); }}
+            onClose={() => { setShowCompose(false); setReplyTo(null); setAiDraft(null); }}
             prefill={replyTo ? {
               toEmail: replyTo.from_email,
-              subject: replyTo.subject || "",
+              subject: aiDraft?.subject || replyTo.subject || "",
               replyAccountId: replyTo.email_account_id,
+              bodyHtml: aiDraft?.body_html,
             } : undefined}
             onSent={(email) => setEmails((prev) => [email, ...prev])}
           />
