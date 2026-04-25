@@ -1276,7 +1276,7 @@ export default function ContentPage() {
 
   async function generatePost(opts: { channel: Channel; type: ContentType; topic: string; format: FormatType; genImage: boolean; genVideo: boolean; propImageUrl?: string }) {
     setGenerating(true);
-    const parts = ["Generando post con Claude AI"];
+    const parts = ["Generando post con Petunia AI"];
     if (opts.propImageUrl) parts.push("+ foto de propiedad");
     else if (opts.genImage) parts.push("+ imagen fal.ai");
     if (opts.genVideo) parts.push("+ video HeyGen");
