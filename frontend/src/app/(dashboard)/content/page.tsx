@@ -245,6 +245,18 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
 
   const canImage = features?.image_generation ?? false;
   const canVideo = features?.heygen ?? false;
+  const isTikTok = channel === "tiktok";
+
+  // TikTok siempre usa formato reel
+  function handleChannelChange(ch: Channel) {
+    setChannel(ch);
+    if (ch === "tiktok") {
+      setFormat("reel");
+      setGenImage(false);
+      setUsePropImage(false);
+      setSelectedPropImage(null);
+    }
+  }
 
   async function loadPropertyImages() {
     if (propImages.length > 0) return;
@@ -361,13 +373,21 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
           <>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Canal <span className="text-red-500 normal-case font-normal">*</span></label>
-              <ChannelSelector value={channel} onChange={setChannel} features={features} />
+              <ChannelSelector value={channel} onChange={handleChannelChange} features={features} />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Formato <span className="text-red-500 normal-case font-normal">*</span></label>
-              <FormatSelector value={format} onChange={setFormat} features={features} />
-            </div>
+            {isTikTok ? (
+              <div className="flex items-center gap-2 bg-black/5 border border-black/10 rounded-xl px-4 py-2.5">
+                <Film size={14} className="text-gray-500" />
+                <span className="text-sm text-gray-600">Formato: <strong>Reel / Video</strong></span>
+                <span className="ml-auto text-[10px] bg-black text-white font-bold px-2 py-0.5 rounded-full">TikTok solo acepta video</span>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Formato <span className="text-red-500 normal-case font-normal">*</span></label>
+                <FormatSelector value={format} onChange={setFormat} features={features} />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -386,32 +406,57 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
             </div>
 
             <div className="space-y-2">
-              <div className="flex gap-3">
-                <button onClick={() => { if (!usePropImage) canImage && setGenImage(!genImage); }} disabled={!canImage || usePropImage}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex-1 justify-center ${!canImage || usePropImage ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : genImage ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300"}`}>
-                  {canImage ? <Image size={14} className={genImage ? "text-violet-600" : ""} /> : <Lock size={14} />}
-                  <span>Generar imagen</span>
-                  {!canImage && <span className="ml-auto flex items-center gap-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full"><Crown size={7} />Starter+</span>}
-                </button>
-                <button onClick={() => canVideo && setGenVideo(!genVideo)} disabled={!canVideo}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex-1 justify-center ${!canVideo ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : genVideo ? "border-pink-400 bg-pink-50 text-pink-700" : "border-border bg-white text-muted-foreground hover:border-pink-300"}`}>
-                  {canVideo ? <Video size={14} className={genVideo ? "text-pink-600" : ""} /> : <Lock size={14} />}
-                  <span>Video HeyGen</span>
-                  {!canVideo && <span className="ml-auto flex items-center gap-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full"><Crown size={7} />Premium</span>}
-                </button>
-              </div>
-              <button onClick={toggleUsePropImage}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${usePropImage ? "border-teal-400 bg-teal-50 text-teal-700" : "border-border bg-white text-muted-foreground hover:border-teal-300 hover:text-teal-700"}`}>
-                <Building2 size={14} className={usePropImage ? "text-teal-600" : ""} />
-                <span>Foto de propiedad</span>
-                {selectedPropImage && <span className="ml-auto text-[9px] font-bold bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded-full">✓ Seleccionada</span>}
-              </button>
-              <button onClick={toggleUseLibraryImage}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${useLibraryImage ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300 hover:text-violet-700"}`}>
-                <HardDrive size={14} className={useLibraryImage ? "text-violet-600" : ""} />
-                <span>De mi biblioteca</span>
-                {selectedLibraryUrl && <span className="ml-auto text-[9px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">✓ Seleccionada</span>}
-              </button>
+              {isTikTok ? (
+                /* TikTok: solo video de biblioteca o HeyGen */
+                <>
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                    <AlertCircle size={13} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-amber-700">TikTok solo acepta videos. Sube un video a tu biblioteca o genera uno con HeyGen.</p>
+                  </div>
+                  <button onClick={() => canVideo && setGenVideo(!genVideo)} disabled={!canVideo}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${!canVideo ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : genVideo ? "border-pink-400 bg-pink-50 text-pink-700" : "border-border bg-white text-muted-foreground hover:border-pink-300"}`}>
+                    {canVideo ? <Video size={14} className={genVideo ? "text-pink-600" : ""} /> : <Lock size={14} />}
+                    <span>Generar video con HeyGen</span>
+                    {!canVideo && <span className="ml-auto flex items-center gap-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full"><Crown size={7} />Premium</span>}
+                  </button>
+                  <button onClick={toggleUseLibraryImage}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${useLibraryImage ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300 hover:text-violet-700"}`}>
+                    <HardDrive size={14} className={useLibraryImage ? "text-violet-600" : ""} />
+                    <span>Video de mi biblioteca</span>
+                    {selectedLibraryUrl && <span className="ml-auto text-[9px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">✓ Seleccionado</span>}
+                  </button>
+                </>
+              ) : (
+                /* Otros canales: todas las opciones */
+                <>
+                  <div className="flex gap-3">
+                    <button onClick={() => { if (!usePropImage) canImage && setGenImage(!genImage); }} disabled={!canImage || usePropImage}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex-1 justify-center ${!canImage || usePropImage ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : genImage ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300"}`}>
+                      {canImage ? <Image size={14} className={genImage ? "text-violet-600" : ""} /> : <Lock size={14} />}
+                      <span>Generar imagen</span>
+                      {!canImage && <span className="ml-auto flex items-center gap-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full"><Crown size={7} />Starter+</span>}
+                    </button>
+                    <button onClick={() => canVideo && setGenVideo(!genVideo)} disabled={!canVideo}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex-1 justify-center ${!canVideo ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : genVideo ? "border-pink-400 bg-pink-50 text-pink-700" : "border-border bg-white text-muted-foreground hover:border-pink-300"}`}>
+                      {canVideo ? <Video size={14} className={genVideo ? "text-pink-600" : ""} /> : <Lock size={14} />}
+                      <span>Video HeyGen</span>
+                      {!canVideo && <span className="ml-auto flex items-center gap-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full"><Crown size={7} />Premium</span>}
+                    </button>
+                  </div>
+                  <button onClick={toggleUsePropImage}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${usePropImage ? "border-teal-400 bg-teal-50 text-teal-700" : "border-border bg-white text-muted-foreground hover:border-teal-300 hover:text-teal-700"}`}>
+                    <Building2 size={14} className={usePropImage ? "text-teal-600" : ""} />
+                    <span>Foto de propiedad</span>
+                    {selectedPropImage && <span className="ml-auto text-[9px] font-bold bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded-full">✓ Seleccionada</span>}
+                  </button>
+                  <button onClick={toggleUseLibraryImage}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${useLibraryImage ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300 hover:text-violet-700"}`}>
+                    <HardDrive size={14} className={useLibraryImage ? "text-violet-600" : ""} />
+                    <span>De mi biblioteca</span>
+                    {selectedLibraryUrl && <span className="ml-auto text-[9px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">✓ Seleccionada</span>}
+                  </button>
+                </>
+              )}
             </div>
 
             {useLibraryImage && (
