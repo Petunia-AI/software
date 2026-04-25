@@ -37,6 +37,7 @@ def _get_s3_client():
     """Devuelve un cliente boto3 para R2 o S3. None si no está configurado."""
     try:
         import boto3  # type: ignore
+        from botocore.config import Config as BotoCfg  # type: ignore
         if settings.r2_bucket_name and settings.r2_access_key_id and settings.r2_secret_access_key:
             endpoint = f"https://{settings.r2_account_id}.r2.cloudflarestorage.com"
             return boto3.client(
@@ -45,6 +46,11 @@ def _get_s3_client():
                 aws_access_key_id=settings.r2_access_key_id,
                 aws_secret_access_key=settings.r2_secret_access_key,
                 region_name="auto",
+                config=BotoCfg(
+                    connect_timeout=10,
+                    read_timeout=60,
+                    retries={"max_attempts": 2},
+                ),
             )
     except ImportError:
         logger.warning("storage_boto3_not_installed", hint="pip install boto3")
@@ -57,6 +63,7 @@ def _upload_to_s3(client, key: str, data: bytes, mime_type: str) -> None:
         Key=key,
         Body=data,
         ContentType=mime_type,
+        # R2 no requiere ACL — no lo pasamos para evitar errores
     )
 
 
@@ -85,7 +92,17 @@ async def save_media(
     s3 = _get_s3_client()
     if s3:
         # ── R2 / S3 mode ──
-        await asyncio.to_thread(_upload_to_s3, s3, key, file_bytes, mime_type)
+        try:
+            await asyncio.wait_for(
+                asyncio.to_thread(_upload_to_s3, s3, key, file_bytes, mime_type),
+                timeout=90,
+            )
+        except asyncio.TimeoutError:
+            logger.error("storage_r2_timeout", key=key)
+            raise RuntimeError("Timeout al subir a R2 — verifica las credenciales y el bucket")
+        except Exception as e:
+            logger.error("storage_r2_error", key=key, error=str(e))
+            raise RuntimeError(f"Error R2: {e}")
         if settings.r2_public_url:
             public_url = f"{settings.r2_public_url.rstrip('/')}/{key}"
         else:

@@ -176,7 +176,10 @@ async def upload_media(
 
     # ── Guardar archivo ──
     original_name = file.filename or "archivo"
-    storage_path, public_url = await save_media(biz.id, original_name, file_bytes, mime)
+    try:
+        storage_path, public_url = await save_media(biz.id, original_name, file_bytes, mime)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
     stored_filename = storage_path.rsplit("/", 1)[-1]
 
     # ── Persistir en BD ──
