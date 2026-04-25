@@ -50,6 +50,7 @@ def _get_s3_client():
                     connect_timeout=10,
                     read_timeout=60,
                     retries={"max_attempts": 2},
+                    s3={"addressing_style": "path"},  # R2 requiere path-style, no virtual-hosted
                 ),
             )
     except ImportError:
