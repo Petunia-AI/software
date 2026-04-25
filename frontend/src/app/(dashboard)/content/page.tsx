@@ -9,10 +9,11 @@ import {
   ChevronDown, Plus, Filter, LayoutGrid, List, X,
   TrendingUp, Eye, Image, Lock, Crown,
   Wand2, Film, FileImage, Newspaper, Zap, Building2,
-  Pencil, AlertCircle, ImagePlus,
+  Pencil, AlertCircle, ImagePlus, HardDrive,
   ChevronLeft, ChevronRight, CalendarDays, MapPin, Layers, Rocket,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import MediaLibrary, { type MediaAsset } from "./MediaLibrary";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -231,6 +232,8 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
   const [genImage, setGenImage] = useState(false);
   const [genVideo, setGenVideo] = useState(false);
   const [usePropImage, setUsePropImage] = useState(false);
+  const [useLibraryImage, setUseLibraryImage] = useState(false);
+  const [selectedLibraryUrl, setSelectedLibraryUrl] = useState<string | null>(null);
   const [propImages, setPropImages] = useState<PropImageItem[]>([]);
   const [loadingProps, setLoadingProps] = useState(false);
   const [selectedPropImage, setSelectedPropImage] = useState<string | null>(null);
@@ -255,7 +258,15 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
   function toggleUsePropImage() {
     const next = !usePropImage;
     setUsePropImage(next);
-    if (next) { loadPropertyImages(); setGenImage(false); } else { setSelectedPropImage(null); }
+    if (next) { loadPropertyImages(); setGenImage(false); setUseLibraryImage(false); setSelectedLibraryUrl(null); }
+    else { setSelectedPropImage(null); }
+  }
+
+  function toggleUseLibraryImage() {
+    const next = !useLibraryImage;
+    setUseLibraryImage(next);
+    if (next) { setGenImage(false); setUsePropImage(false); setSelectedPropImage(null); }
+    else { setSelectedLibraryUrl(null); }
   }
 
   function validateManual() {
@@ -267,7 +278,8 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
 
   function handleManualSubmit() {
     if (!validateManual()) return;
-    onGenerate({ channel, type, topic, format, genImage, genVideo, propImageUrl: selectedPropImage ?? undefined });
+    const propUrl = useLibraryImage ? (selectedLibraryUrl ?? undefined) : (selectedPropImage ?? undefined);
+    onGenerate({ channel, type, topic, format, genImage, genVideo, propImageUrl: propUrl });
   }
 
   function handleSmartSubmit() {
@@ -394,7 +406,26 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
                 <span>Foto de propiedad</span>
                 {selectedPropImage && <span className="ml-auto text-[9px] font-bold bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded-full">✓ Seleccionada</span>}
               </button>
+              <button onClick={toggleUseLibraryImage}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${useLibraryImage ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300 hover:text-violet-700"}`}>
+                <HardDrive size={14} className={useLibraryImage ? "text-violet-600" : ""} />
+                <span>De mi biblioteca</span>
+                {selectedLibraryUrl && <span className="ml-auto text-[9px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">✓ Seleccionada</span>}
+              </button>
             </div>
+
+            {useLibraryImage && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Elige un archivo de tu biblioteca</p>
+                <div className="max-h-72 overflow-y-auto">
+                  <MediaLibrary
+                    token={token}
+                    onSelect={(asset: MediaAsset) => setSelectedLibraryUrl(asset.public_url)}
+                    selectedUrl={selectedLibraryUrl}
+                  />
+                </div>
+              </motion.div>
+            )}
 
             {usePropImage && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden space-y-3">
@@ -1198,6 +1229,7 @@ export default function ContentPage() {
   const [calendarViewMode, setCalendarViewMode] = useState<"week" | "month">("week");
   const [calendarAnchorDate, setCalendarAnchorDate] = useState(new Date());
   const [panel, setPanel] = useState<"none" | "generate" | "calendar" | "monthly">("none");
+  const [activeMainTab, setActiveMainTab] = useState<"posts" | "biblioteca">("posts");
   const [schedulingPost, setSchedulingPost] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState("");
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -1469,6 +1501,33 @@ export default function ContentPage() {
         </div>
       </div>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveMainTab("posts")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeMainTab === "posts" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Sparkles size={13} /> Posts
+        </button>
+        <button
+          onClick={() => setActiveMainTab("biblioteca")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeMainTab === "biblioteca" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <HardDrive size={13} /> Biblioteca de medios
+        </button>
+      </div>
+
+      {/* Biblioteca tab */}
+      {activeMainTab === "biblioteca" && (
+        <MediaLibrary token={token ?? ""} />
+      )}
+
+      {activeMainTab === "posts" && <>
+
       <StatStrip total={stats.total} byStatus={stats.by_status} />
 
       {/* Panels */}
@@ -1598,7 +1657,7 @@ export default function ContentPage() {
             onPublish={() => publishPost(editingPost.id)}
             onSchedule={() => { setSchedulingPost(editingPost.id); setEditingPost(null); }} />
         )}
-      </AnimatePresence>
+      </> /* end activeMainTab === posts */}
 
       {/* View post modal (from calendar click) */}
       <AnimatePresence>

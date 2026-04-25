@@ -98,6 +98,14 @@ class Settings(BaseSettings):
     tiktok_oauth_redirect_uri: str = ""
     # Legacy (token estático, deprecado)
     tiktok_access_token: str = ""
+
+    # Cloudflare R2 / S3 — almacenamiento de media (opcional)
+    # Si no se configura, se usa almacenamiento local en uploads/media/
+    r2_account_id:       str = ""    # Cloudflare Account ID
+    r2_access_key_id:    str = ""    # R2 Access Key ID
+    r2_secret_access_key: str = ""   # R2 Secret Access Key
+    r2_bucket_name:      str = ""    # Nombre del bucket R2
+    r2_public_url:       str = ""    # URL pública del bucket (CDN o custom domain)
     tiktok_open_id:      str = ""
 
     # Ayrshare — Social Media Auto Global OAuth

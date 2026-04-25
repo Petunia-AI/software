@@ -45,6 +45,8 @@ PLAN_LIMITS: dict[str, dict] = {
         "video_generation":        False,
         "heygen":                  False,
         "content_posts_per_month": 10,
+        # Almacenamiento de media
+        "media_storage_bytes":     500 * 1024 * 1024,          # 500 MB
     },
     "starter": {
         "conversations_per_month": 500,
@@ -60,6 +62,8 @@ PLAN_LIMITS: dict[str, dict] = {
         "video_generation":        False,
         "heygen":                  False,
         "content_posts_per_month": 30,
+        # Almacenamiento de media
+        "media_storage_bytes":     500 * 1024 * 1024,          # 500 MB
     },
     "pro": {
         "conversations_per_month": 2000,
@@ -75,6 +79,8 @@ PLAN_LIMITS: dict[str, dict] = {
         "video_generation":        False,
         "heygen":                  False,
         "content_posts_per_month": 100,
+        # Almacenamiento de media
+        "media_storage_bytes":     2 * 1024 * 1024 * 1024,    # 2 GB
     },
     "enterprise": {
         "conversations_per_month": -1,   # ilimitado
@@ -90,6 +96,8 @@ PLAN_LIMITS: dict[str, dict] = {
         "video_generation":        True,
         "heygen":                  True,
         "content_posts_per_month": -1,   # ilimitado
+        # Almacenamiento de media
+        "media_storage_bytes":     10 * 1024 * 1024 * 1024,   # 10 GB
     },
 }
 

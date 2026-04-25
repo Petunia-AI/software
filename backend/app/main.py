@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import init_db
 from app.api import auth, conversations, leads, analytics, webhooks, business, admin, billing, content
+from app.api import media as media_router_module
 from app.api import properties as properties_router
 from app.api import meta_oauth
 from app.api import followups as followups_router
@@ -71,6 +72,7 @@ app.include_router(business.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
+app.include_router(media_router_module.router, prefix="/api")
 app.include_router(properties_router.router, prefix="/api")
 app.include_router(meta_oauth.router, prefix="/api")
 app.include_router(followups_router.router, prefix="/api")
@@ -81,6 +83,7 @@ app.include_router(widget_router.router, prefix="/api")
 
 # Servir imágenes subidas como archivos estáticos
 os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/media", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
