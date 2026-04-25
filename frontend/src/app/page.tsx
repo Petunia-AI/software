@@ -326,7 +326,7 @@ export default function LandingPage() {
         </div>
         <div className="relative max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
+            <div className="order-last lg:order-first">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-600 text-sm font-medium mb-7">
                 <Sparkles size={13} /> Agente de ventas IA para LATAM
@@ -355,7 +355,7 @@ export default function LandingPage() {
             </div>
             <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 120, damping: 20 }}
-              className="flex justify-center lg:justify-end pr-8">
+              className="order-first lg:order-last flex justify-center lg:justify-end pr-8">
               <AnimatedChatDemo />
             </motion.div>
           </div>
