@@ -162,7 +162,7 @@ function Navbar() {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-petunia.svg" alt="Petunia AI" className="w-9 h-9 drop-shadow-lg" />
+          <img src="/logo.png" alt="Petunia AI" className="w-9 h-9 drop-shadow-lg" />
           <div>
             <span className="font-bold text-white text-lg">Petunia AI</span>
             <span className="ml-2 text-xs text-white/40 font-normal hidden sm:inline">Real Estate Automation</span>

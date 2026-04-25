@@ -65,7 +65,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-petunia.svg" alt="Petunia AI" className="w-12 h-12 drop-shadow-lg" />
+          <img src="/logo.png" alt="Petunia AI" className="w-12 h-12 drop-shadow-lg" />
           <div>
             <p className="text-white font-bold text-lg leading-tight">Petunia AI</p>
             <p className="text-white/40 text-xs">Real Estate Automation</p>
@@ -124,7 +124,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-petunia.svg" alt="Petunia AI" className="w-9 h-9" />
+            <img src="/logo.png" alt="Petunia AI" className="w-9 h-9" />
             <p className="font-bold text-foreground">Petunia AI</p>
           </div>
 
