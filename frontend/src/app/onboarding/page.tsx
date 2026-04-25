@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import {
   Building2, Sparkles, MessageSquare, Code2, Rocket,
   ArrowRight, ArrowLeft, Check, Zap, Globe, Phone, Instagram,
+  Bot, BarChart3,
 } from "lucide-react";
 
 // ── Steps ──────────────────────────────────────────────────────────────────
@@ -505,12 +506,14 @@ function Step5({ name }: { name: string }) {
 
       <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto">
         {[
-          { icon: "🤖", label: "5 agentes activos" },
-          { icon: "⚡", label: "Respuesta < 3 seg" },
-          { icon: "📊", label: "Analytics en vivo" },
+          { icon: Bot, label: "5 agentes activos", color: "text-violet-600", bg: "bg-violet-50" },
+          { icon: Zap, label: "Respuesta < 3 seg", color: "text-amber-500", bg: "bg-amber-50" },
+          { icon: BarChart3, label: "Analytics en vivo", color: "text-emerald-600", bg: "bg-emerald-50" },
         ].map((item) => (
           <div key={item.label} className="p-3 rounded-xl bg-secondary/50 border border-border">
-            <div className="text-2xl mb-1">{item.icon}</div>
+            <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center mb-2`}>
+              <item.icon size={18} className={item.color} />
+            </div>
             <p className="text-xs text-muted-foreground font-medium">{item.label}</p>
           </div>
         ))}

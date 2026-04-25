@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Users, TrendingUp, Bot, Check,
   ArrowRight, Star, Globe, Phone, Instagram,
-  BarChart3, Shield, Sparkles, X, Send, Zap,
+  BarChart3, Shield, Sparkles, X, Send, Zap, RefreshCw, Bell,
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -1154,14 +1154,16 @@ export default function LandingPage() {
                 className="text-gray-500 leading-relaxed mb-6">Cada prospecto es calificado con BANT y empujado automáticamente por el pipeline — de &ldquo;Nuevo&rdquo; a &ldquo;Ganado&rdquo; sin intervención manual.</motion.p>
               <div className="space-y-3">
                 {[
-                  { label: "Calificación BANT automática en segundos", icon: "⚡" },
-                  { label: "Avance de etapa según respuestas del lead", icon: "🔄" },
-                  { label: "Alerta a tu equipo cuando el lead está listo", icon: "🔔" },
+                  { label: "Calificación BANT automática en segundos", icon: Zap, color: "text-amber-500", bg: "bg-amber-50" },
+                  { label: "Avance de etapa según respuestas del lead", icon: RefreshCw, color: "text-violet-600", bg: "bg-violet-50" },
+                  { label: "Alerta a tu equipo cuando el lead está listo", icon: Bell, color: "text-emerald-600", bg: "bg-emerald-50" },
                 ].map((item, i) => (
                   <motion.div key={item.label} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
                     transition={{ delay: 0.14 + i * 0.08 }}
                     className="flex items-center gap-3 text-sm text-gray-600">
-                    <span className="text-lg">{item.icon}</span>
+                    <span className={`w-8 h-8 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
+                      <item.icon size={15} className={item.color} />
+                    </span>
                     {item.label}
                   </motion.div>
                 ))}
