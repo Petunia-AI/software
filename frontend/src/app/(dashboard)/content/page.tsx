@@ -17,6 +17,18 @@ import MediaLibrary, { type MediaAsset } from "./MediaLibrary";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
+/**
+ * Normaliza URLs de media del backend a rutas relativas (/uploads/...) para que
+ * vayan siempre por el proxy de Next.js (mismo origen → sin CORS, sin CSP issues).
+ * URLs de R2/CDN externas (sin "/uploads/" en el path) se devuelven sin cambios.
+ */
+function normalizeMediaUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  const idx = url.indexOf("/uploads/");
+  if (idx !== -1) return url.slice(idx); // → "/uploads/media/business_id/file.mp4"
+  return url;
+}
+
 type PostStatus = "draft" | "approved" | "scheduled" | "published" | "failed";
 type Channel = "instagram" | "facebook" | "linkedin" | "twitter" | "tiktok";
 type ContentType = "educational" | "testimonial" | "product" | "engagement" | "trend" | "behind_scenes";
@@ -954,24 +966,24 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
       
       {post.image_url && (() => {
         const isVideo = /\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i.test(post.image_url ?? "");
+        const mediaUrl = normalizeMediaUrl(post.image_url);
         return (
           <div className="relative rounded-xl overflow-hidden bg-slate-100" style={{ aspectRatio: post.format_type === "post" ? "1/1" : "9/16", maxHeight: post.format_type === "post" ? 220 : 300 }}>
             {isVideo ? (
               <video
-                key={post.image_url}
-                crossOrigin="anonymous"
+                key={mediaUrl}
                 controls
                 playsInline
                 preload="auto"
                 className="w-full h-full"
                 style={{ objectFit: "contain", background: "#0f0f0f" }}
               >
-                <source src={post.image_url} type="video/mp4" />
-                <source src={post.image_url} />
+                <source src={mediaUrl} type="video/mp4" />
+                <source src={mediaUrl} />
               </video>
             ) : (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={post.image_url} alt="Imagen generada por IA" className="w-full h-full object-cover" />
+              <img src={mediaUrl} alt="Imagen generada por IA" className="w-full h-full object-cover" />
             )}
             <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
               <span className="text-[10px] font-bold bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">{isVideo ? "📹" : "AI"} · {fmt.ratio}</span>
@@ -995,7 +1007,7 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
 
       {post.video_url && (
         <div className="rounded-xl overflow-hidden bg-slate-900">
-          <video src={post.video_url} controls className="w-full max-h-48" />
+          <video src={normalizeMediaUrl(post.video_url)} controls playsInline preload="auto" className="w-full max-h-48" />
         </div>
       )}
 

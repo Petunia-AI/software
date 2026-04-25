@@ -38,6 +38,7 @@ const securityHeaders = [
           "img-src 'self' data: blob: https:",
           "font-src 'self' data:",
           "connect-src 'self' https: wss: https://js.stripe.com https://api.stripe.com",
+          "media-src 'self' blob: data: https:",
           "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
           "frame-ancestors 'self'",
           "base-uri 'self'",
@@ -80,7 +81,12 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
       },
-
+      // Proxy /uploads/* al backend para que los videos/imágenes carguen desde el mismo origen
+      // (evita CORS y problemas de CSP en producción)
+      {
+        source: "/uploads/:path*",
+        destination: `${backendUrl}/uploads/:path*`,
+      },
     ];
   },
   async headers() {
