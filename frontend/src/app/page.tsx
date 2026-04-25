@@ -1408,6 +1408,8 @@ export default function LandingPage() {
           <p className="text-gray-500 text-sm flex items-center gap-1.5">© 2026 Petunia AI · Construido para LATAM <Globe size={13} className="text-gray-400" /></p>
           <div className="flex items-center gap-6 text-sm text-gray-500">
             <Link href="/login" className="hover:text-gray-300 transition-colors">Acceso</Link>
+            <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacidad</Link>
+            <Link href="/terms" className="hover:text-gray-300 transition-colors">Términos</Link>
             <a href="mailto:api@aipetunia.com" className="hover:text-gray-300 transition-colors">Contacto</a>
           </div>
         </div>
