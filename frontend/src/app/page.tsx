@@ -31,10 +31,10 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: "3x", label: "más leads calificados" },
-  { value: "87%", label: "menos tiempo de respuesta" },
-  { value: "24/7", label: "cobertura automática" },
-  { value: "10min", label: "para instalar" },
+  { value: "3x",    numericTarget: 3,  suffix: "x",   label: "más leads calificados",    icon: TrendingUp, gradient: "from-violet-500 to-purple-600",  glow: "shadow-violet-500/25", bar: "from-violet-400 to-purple-500" },
+  { value: "87%",  numericTarget: 87, suffix: "%",   label: "menos tiempo de respuesta", icon: Zap,         gradient: "from-amber-400 to-orange-500",  glow: "shadow-amber-500/25",  bar: "from-amber-400 to-orange-400" },
+  { value: "24/7", numericTarget: null, suffix: "",  label: "cobertura automática",      icon: Bot,         gradient: "from-emerald-500 to-teal-500", glow: "shadow-emerald-500/25", bar: "from-emerald-400 to-teal-400" },
+  { value: "10m",  numericTarget: 10, suffix: "m",   label: "para instalar",              icon: Sparkles,    gradient: "from-cyan-500 to-blue-500",    glow: "shadow-cyan-500/25",   bar: "from-cyan-400 to-blue-400" },
 ];
 
 const TESTIMONIALS = [
@@ -925,12 +925,29 @@ export default function LandingPage() {
             </motion.div>
           </div>
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4">
+            className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4">
             {STATS.map((s, i) => (
-              <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 + i * 0.07 }}
-                className="text-center p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100">
-                <p className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">{s.value}</p>
-                <p className="text-sm text-gray-500 mt-1">{s.label}</p>
+              <motion.div key={s.label}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.42 + i * 0.08, type: "spring", stiffness: 160, damping: 22 }}
+                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                className={`relative group overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-2xl ${s.glow} transition-all duration-300 p-6`}
+              >
+                {/* Top accent gradient bar */}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${s.bar} rounded-t-2xl`} />
+                {/* Subtle gradient bg on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${s.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300`} />
+                {/* Icon top-right */}
+                <div className={`absolute top-4 right-4 w-8 h-8 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shadow-md`}>
+                  <s.icon size={14} className="text-white" />
+                </div>
+                {/* Number */}
+                <p className={`text-4xl font-black tracking-tight bg-gradient-to-r ${s.gradient} bg-clip-text text-transparent leading-none mb-2 mt-1`}>
+                  {s.value}
+                </p>
+                {/* Label */}
+                <p className="text-sm text-gray-500 font-medium leading-snug">{s.label}</p>
               </motion.div>
             ))}
           </motion.div>
