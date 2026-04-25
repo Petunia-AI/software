@@ -1173,15 +1173,22 @@ function EditPostModal({ post, token, onClose, onSaved, onPublish, onSchedule }:
                 Biblioteca
               </button>
             </div>
-            {imageUrl && (
-              <div className="relative rounded-xl overflow-hidden bg-slate-100 mb-2" style={{ aspectRatio: "16/9", maxHeight: 160 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imageUrl} alt="preview" className="w-full h-full object-cover" />
-                <button onClick={() => setImageUrl("")} className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500 transition-colors">
-                  <X size={12} />
-                </button>
-              </div>
-            )}
+            {imageUrl && (() => {
+              const isVid = /\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i.test(imageUrl);
+              return (
+                <div className="relative rounded-xl overflow-hidden bg-slate-100 mb-2" style={{ aspectRatio: "16/9", maxHeight: 160 }}>
+                  {isVid ? (
+                    <video src={imageUrl} controls className="w-full h-full object-cover" />
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={imageUrl} alt="preview" className="w-full h-full object-cover" />
+                  )}
+                  <button onClick={() => setImageUrl("")} className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500 transition-colors">
+                    <X size={12} />
+                  </button>
+                </div>
+              );
+            })()}
             {showLibrary && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden mt-2 max-h-72 overflow-y-auto rounded-xl border border-border">
                 <MediaLibrary

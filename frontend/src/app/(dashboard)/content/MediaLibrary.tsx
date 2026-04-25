@@ -308,7 +308,7 @@ function MediaThumb({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={asset.public_url} alt={asset.original_filename} className="w-full rounded-2xl shadow-2xl max-h-[80vh] object-contain" />
               ) : (
-                <video src={asset.public_url} controls autoPlay className="w-full rounded-2xl shadow-2xl max-h-[80vh]" />
+                <video src={asset.public_url} controls muted autoPlay playsInline className="w-full rounded-2xl shadow-2xl max-h-[80vh]" />
               )}
               <div className="mt-3 flex items-center justify-between px-1">
                 <div>
