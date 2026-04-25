@@ -113,9 +113,16 @@ class Settings(BaseSettings):
     ayrshare_domain:      str = ""   # Domain / ID único de la cuenta (ej: id-f9Dl5)
     ayrshare_jwt_secret:  str = ""   # Private key RSA PEM (de Ayrshare dashboard → JWT settings)
 
-    # Google OAuth2 (Gmail CRM integration)
+    # Google OAuth2 (Gmail CRM + Google Calendar / Meet integration)
     google_client_id:     str = ""   # Google Cloud Console → OAuth 2.0 Client ID
     google_client_secret: str = ""   # Google Cloud Console → OAuth 2.0 Client Secret
+
+    # Gemini API (meeting transcription + summary)
+    gemini_api_key: str = ""   # Google AI Studio → API Key
+
+    # Zoom OAuth (meetings integration)
+    zoom_client_id:     str = ""   # Zoom App → Client ID
+    zoom_client_secret: str = ""   # Zoom App → Client Secret
 
     # Microsoft OAuth2 (Outlook CRM integration)
     microsoft_client_id:     str = ""  # Azure AD → App registrations → Application (client) ID

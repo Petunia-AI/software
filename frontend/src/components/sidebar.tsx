@@ -9,7 +9,7 @@ import {
   LayoutGrid, MessageCircle, UsersRound, BellDot,
   TrendingUp, BrainCircuit, PenLine, Building2,
   SlidersHorizontal, Wallet, ChevronDown, Search,
-  LogOut, Globe, Camera, Mail,
+  LogOut, Globe, Camera, Mail, CalendarDays,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -63,6 +63,12 @@ const navItems = [
     badge: null,
     color: "from-sky-500 to-blue-600",
     glow: "rgba(14,165,233,0.35)",
+  },
+  {
+    href: "/meetings",      icon: CalendarDays,     label: "Reuniones",
+    badge: null,
+    color: "from-violet-500 to-purple-600",
+    glow: "rgba(139,92,246,0.35)",
   },
   {
     href: "/properties",    icon: Building2,        label: "Propiedades",

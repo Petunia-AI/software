@@ -105,6 +105,39 @@ services:
       - /app/node_modules
       - /app/.next
 
+  # ============ MINIO (S3-compatible storage) ============
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console → http://localhost:9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Crea el bucket automáticamente al arrancar
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minioadmin123};
+        mc mb --ignore-existing local/$${MINIO_BUCKET_NAME:-petunia-media};
+        mc anonymous set download local/$${MINIO_BUCKET_NAME:-petunia-media};
+        echo 'Bucket listo.';
+      "
+
   # ============ NGINX (producción) ============
   nginx:
     image: nginx:alpine
@@ -126,5 +159,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  minio_data:
   nginx_certs:
   nginx_logs:

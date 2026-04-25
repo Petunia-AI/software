@@ -18,6 +18,7 @@ from app.api import tiktok_oauth
 from app.api import ayrshare_oauth
 from app.api import widget as widget_router
 from app.api import email_integration as email_router
+from app.api import meetings as meetings_router
 from app.core.scheduler import start_scheduler, stop_scheduler
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 import structlog
@@ -99,6 +100,7 @@ app.include_router(tiktok_oauth.router, prefix="/api")
 app.include_router(ayrshare_oauth.router, prefix="/api")
 app.include_router(widget_router.router, prefix="/api")
 app.include_router(email_router.router, prefix="/api")
+app.include_router(meetings_router.router, prefix="/api")
 
 # Servir imágenes subidas como archivos estáticos
 os.makedirs("uploads", exist_ok=True)
