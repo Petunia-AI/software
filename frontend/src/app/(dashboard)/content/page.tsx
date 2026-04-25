@@ -1657,7 +1657,7 @@ export default function ContentPage() {
             onPublish={() => publishPost(editingPost.id)}
             onSchedule={() => { setSchedulingPost(editingPost.id); setEditingPost(null); }} />
         )}
-      </> /* end activeMainTab === posts */}
+      </>}
 
       {/* View post modal (from calendar click) */}
       <AnimatePresence>
