@@ -214,13 +214,14 @@ interface PropImageItem {
   property_currency: string;
 }
 
-function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, features, token }: {
+function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, features, token, initialDate }: {
   onClose: () => void;
-  onGenerate: (opts: { channel: Channel; type: ContentType; topic: string; format: FormatType; genImage: boolean; genVideo: boolean; propImageUrl?: string }) => void;
+  onGenerate: (opts: { channel: Channel; type: ContentType; topic: string; format: FormatType; genImage: boolean; genVideo: boolean; propImageUrl?: string; scheduledAt?: string }) => void;
   onGenerateSmart: (opts: { description: string; genImage: boolean }) => void;
   generating: boolean;
   features: PlanFeatures | null;
   token: string;
+  initialDate?: string; // YYYY-MM-DD
 }) {
   const [mode, setMode] = useState<"ai" | "manual">("ai");
 
@@ -234,6 +235,9 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
   const [usePropImage, setUsePropImage] = useState(false);
   const [useLibraryImage, setUseLibraryImage] = useState(false);
   const [selectedLibraryUrl, setSelectedLibraryUrl] = useState<string | null>(null);
+  // Fecha de publicación opcional
+  const [schedulePost, setSchedulePost] = useState(!!initialDate);
+  const [scheduledAt, setScheduledAt] = useState(initialDate ? `${initialDate}T10:00` : "");
   const [propImages, setPropImages] = useState<PropImageItem[]>([]);
   const [loadingProps, setLoadingProps] = useState(false);
   const [selectedPropImage, setSelectedPropImage] = useState<string | null>(null);
@@ -291,7 +295,7 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
   function handleManualSubmit() {
     if (!validateManual()) return;
     const propUrl = useLibraryImage ? (selectedLibraryUrl ?? undefined) : (selectedPropImage ?? undefined);
-    onGenerate({ channel, type, topic, format, genImage, genVideo, propImageUrl: propUrl });
+    onGenerate({ channel, type, topic, format, genImage, genVideo, propImageUrl: propUrl, scheduledAt: schedulePost && scheduledAt ? scheduledAt : undefined });
   }
 
   function handleSmartSubmit() {
@@ -506,9 +510,30 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
               </motion.div>
             )}
 
+            {/* Fecha de publicación */}
+            <div>
+              <button
+                type="button"
+                onClick={() => { setSchedulePost(!schedulePost); if (schedulePost) setScheduledAt(""); }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${
+                  schedulePost ? "border-blue-400 bg-blue-50 text-blue-700" : "border-border bg-white text-muted-foreground hover:border-blue-300 hover:text-blue-600"
+                }`}>
+                <Calendar size={14} className={schedulePost ? "text-blue-600" : ""} />
+                <span>{schedulePost ? "Programar para:" : "Programar fecha de publicación"}</span>
+              </button>
+              {schedulePost && (
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={e => setScheduledAt(e.target.value)}
+                  className="mt-2 w-full px-3 py-2 rounded-xl text-sm bg-white border border-blue-200 text-foreground outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                />
+              )}
+            </div>
+
             <div className="flex gap-2 pt-1">
               <button onClick={handleManualSubmit} disabled={generating} className="btn-primary flex-1 justify-center">
-                {generating ? <><RefreshCw size={14} className="animate-spin" />Generando...</> : <><Sparkles size={14} />Generar post</>}
+                {generating ? <><RefreshCw size={14} className="animate-spin" />Generando...</> : schedulePost && scheduledAt ? <><Calendar size={14} />Generar y programar</> : <><Sparkles size={14} />Generar post</>}
               </button>
               <button onClick={onClose} className="btn-secondary">Cancelar</button>
             </div>
@@ -793,8 +818,8 @@ function ContentThemeWizard({ onClose, onGenerate, generating, features, token }
 
 // ── Week Calendar ─────────────────────────────────────────────────────────
 
-function WeekCalendar({ posts, onClickPost, calendarDate, onNavigate }: {
-  posts: Post[]; onClickPost: (p: Post) => void; calendarDate: Date; onNavigate: (delta: number) => void;
+function WeekCalendar({ posts, onClickPost, onClickDay, calendarDate, onNavigate }: {
+  posts: Post[]; onClickPost: (p: Post) => void; onClickDay?: (date: string) => void; calendarDate: Date; onNavigate: (delta: number) => void;
 }) {
   const weekStart = new Date(calendarDate);
   const dow = weekStart.getDay();
@@ -839,7 +864,14 @@ function WeekCalendar({ posts, onClickPost, calendarDate, onNavigate }: {
                     </button>
                   );
                 })}
-                {dayPosts.length === 0 && <div className="flex-1 flex items-center justify-center"><span className="text-[9px] text-slate-300">—</span></div>}
+                {dayPosts.length === 0 && (
+                  <div className="flex-1 flex items-center justify-center">
+                    <button onClick={() => onClickDay?.(key)} className="text-[9px] text-slate-300 hover:text-violet-400 hover:bg-violet-50 rounded-lg px-2 py-1 transition-colors">+ post</button>
+                  </div>
+                )}
+                {dayPosts.length > 0 && (
+                  <button onClick={() => onClickDay?.(key)} className="text-[9px] text-slate-400 hover:text-violet-500 text-center mt-0.5 transition-colors">+ añadir</button>
+                )}
               </div>
             </div>
           );
@@ -851,8 +883,8 @@ function WeekCalendar({ posts, onClickPost, calendarDate, onNavigate }: {
 
 // ── Month Calendar ────────────────────────────────────────────────────────
 
-function MonthCalendar({ posts, onClickPost, calendarDate, onNavigate }: {
-  posts: Post[]; onClickPost: (p: Post) => void; calendarDate: Date; onNavigate: (delta: number) => void;
+function MonthCalendar({ posts, onClickPost, onClickDay, calendarDate, onNavigate }: {
+  posts: Post[]; onClickPost: (p: Post) => void; onClickDay?: (date: string) => void; calendarDate: Date; onNavigate: (delta: number) => void;
 }) {
   const year = calendarDate.getFullYear();
   const month = calendarDate.getMonth();
@@ -883,7 +915,7 @@ function MonthCalendar({ posts, onClickPost, calendarDate, onNavigate }: {
           const dayPosts = byDate[dateStr] ?? [];
           const isToday = dateStr === today;
           return (
-            <div key={dateStr} className={`min-h-[80px] flex flex-col p-1 cursor-default transition-colors ${isToday ? "bg-violet-50/40" : "bg-white hover:bg-slate-50/80"}`}>
+            <div key={dateStr} className={`min-h-[80px] flex flex-col p-1 transition-colors ${isToday ? "bg-violet-50/40" : "bg-white hover:bg-slate-50/80"}`}>
               <span className={`self-end text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-0.5 ${isToday ? "bg-violet-600 text-white" : "text-muted-foreground"}`}>{day}</span>
               <div className="flex flex-col gap-0.5">
                 {dayPosts.slice(0, 2).map((post) => {
@@ -897,6 +929,7 @@ function MonthCalendar({ posts, onClickPost, calendarDate, onNavigate }: {
                   );
                 })}
                 {dayPosts.length > 2 && <span className="text-[8px] text-muted-foreground pl-0.5">+{dayPosts.length - 2} más</span>}
+                <button onClick={() => onClickDay?.(dateStr)} className="text-[8px] text-slate-300 hover:text-violet-500 text-left mt-0.5 transition-colors">+ post</button>
               </div>
             </div>
           );
@@ -1314,6 +1347,7 @@ export default function ContentPage() {
   const [scheduleDate, setScheduleDate] = useState("");
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [viewingPost, setViewingPost] = useState<Post | null>(null);
+  const [calendarClickDate, setCalendarClickDate] = useState<string | undefined>(undefined);
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
@@ -1354,7 +1388,7 @@ export default function ContentPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  async function generatePost(opts: { channel: Channel; type: ContentType; topic: string; format: FormatType; genImage: boolean; genVideo: boolean; propImageUrl?: string }) {
+  async function generatePost(opts: { channel: Channel; type: ContentType; topic: string; format: FormatType; genImage: boolean; genVideo: boolean; propImageUrl?: string; scheduledAt?: string }) {
     setGenerating(true);
     const parts = ["Generando post con Petunia AI"];
     if (opts.propImageUrl) parts.push("+ foto de propiedad");
@@ -1368,10 +1402,22 @@ export default function ContentPage() {
       });
       if (res.ok) {
         const post = await res.json();
+        // Si hay fecha de publicación, aprobar + programar automáticamente
+        if (opts.scheduledAt) {
+          try {
+            await fetch(`${API}/content/posts/${post.id}/approve`, { method: "POST", headers });
+            await fetch(`${API}/content/posts/${post.id}/schedule`, {
+              method: "POST", headers,
+              body: JSON.stringify({ post_id: post.id, scheduled_at: new Date(opts.scheduledAt).toISOString() }),
+            });
+            post.status = "scheduled";
+            post.scheduled_at = opts.scheduledAt;
+          } catch { /* si falla el schedule, el post queda como draft */ }
+        }
         setPosts((prev) => [post, ...prev]);
         setStats((s) => ({ ...s, total: s.total + 1, by_status: { ...s.by_status, draft: (s.by_status.draft ?? 0) + 1 } }));
         setPanel("none");
-        let msg = "Post generado exitosamente";
+        let msg = opts.scheduledAt ? `Post programado para ${new Date(opts.scheduledAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })} 📅` : "Post generado exitosamente";
         if (post.image_url) msg += " con imagen ✨";
         if (post.video_job_id) msg += " · video HeyGen en proceso 🎬";
         toast.success(msg, { id: toastId });
@@ -1612,7 +1658,7 @@ export default function ContentPage() {
 
       {/* Panels */}
       <AnimatePresence mode="wait">
-        {panel === "generate" && <GeneratorPanel key="generate" onClose={() => setPanel("none")} onGenerate={generatePost} onGenerateSmart={generateSmart} generating={generating} features={features} token={token ?? ""} />}
+        {panel === "generate" && <GeneratorPanel key={`generate-${calendarClickDate ?? "new"}`} onClose={() => { setPanel("none"); setCalendarClickDate(undefined); }} onGenerate={generatePost} onGenerateSmart={generateSmart} generating={generating} features={features} token={token ?? ""} initialDate={calendarClickDate} />}
         {panel === "calendar" && <ContentThemeWizard key="calendar" onClose={() => setPanel("none")} onGenerate={generateCalendar} generating={generatingCalendar} features={features} token={token ?? ""} />}
         {panel === "monthly" && <MonthlyMarketingPanel key="monthly" onClose={() => setPanel("none")} onGenerate={generateMonthlyCampaign} generating={generatingMonthly} features={features} />}
       </AnimatePresence>
@@ -1667,6 +1713,7 @@ export default function ContentPage() {
           calendarDate={calendarAnchorDate}
           onNavigate={(delta) => setCalendarAnchorDate(d => { const nd = new Date(d); nd.setDate(nd.getDate() + delta); return nd; })}
           onClickPost={(p) => setViewingPost(p)}
+          onClickDay={(date) => { setCalendarClickDate(date); setPanel("generate"); }}
         />
       )}
       {calendarViewMode === "month" && !loading && posts.length > 0 && (
@@ -1675,6 +1722,7 @@ export default function ContentPage() {
           calendarDate={calendarAnchorDate}
           onNavigate={(delta) => setCalendarAnchorDate(d => { const nd = new Date(d); nd.setMonth(nd.getMonth() + delta); return nd; })}
           onClickPost={(p) => setViewingPost(p)}
+          onClickDay={(date) => { setCalendarClickDate(date); setPanel("generate"); }}
         />
       )}
 
