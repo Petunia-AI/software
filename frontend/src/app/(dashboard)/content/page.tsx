@@ -998,13 +998,18 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
 
       {post.status === "scheduled" && post.scheduled_at && (
         <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg border border-blue-100">
-          <Clock size={11} />{new Date(post.scheduled_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
+          <Clock size={11} />Programado: {new Date(post.scheduled_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
         </div>
       )}
       {post.status === "published" && post.published_at && (
         <div className="flex items-center gap-1.5 text-xs text-violet-600 bg-violet-50 px-2.5 py-1.5 rounded-lg border border-violet-100">
           <CheckCircle size={11} />Publicado {new Date(post.published_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
           {post.platform_url && <a href={post.platform_url} target="_blank" rel="noopener noreferrer" className="ml-auto font-semibold underline">ver →</a>}
+        </div>
+      )}
+      {(post.status === "draft" || post.status === "approved") && post.created_at && (
+        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <Clock size={10} />Creado {new Date(post.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
         </div>
       )}
       {post.error_message && <p className="text-xs text-red-600 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-lg">{post.error_message}</p>}

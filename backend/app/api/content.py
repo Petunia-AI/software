@@ -492,7 +492,10 @@ async def _generate_impl(
 
     # ── Validación de formato según plan ─────────────────────────────────────
     allowed_formats = limits.get("content_formats", ["post", "story"])
-    if data.format_type not in allowed_formats:
+    # TikTok siempre requiere reel (video) — permitir aunque el plan no lo liste explícitamente
+    if data.channel == "tiktok" and data.format_type == "reel":
+        pass  # siempre permitido para TikTok
+    elif data.format_type not in allowed_formats:
         raise HTTPException(
             status_code=403,
             detail=f"Formato '{data.format_type}' no disponible en tu plan. "
