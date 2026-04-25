@@ -9,7 +9,7 @@ import {
   LayoutGrid, MessageCircle, UsersRound, BellDot,
   TrendingUp, BrainCircuit, PenLine, Building2,
   SlidersHorizontal, Wallet, ChevronDown, Search,
-  LogOut, Globe, Camera,
+  LogOut, Globe, Camera, Mail,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -57,6 +57,12 @@ const navItems = [
     badge: null,
     color: "from-pink-500 to-rose-500",
     glow: "rgba(236,72,153,0.35)",
+  },
+  {
+    href: "/email",         icon: Mail,             label: "Email CRM",
+    badge: null,
+    color: "from-sky-500 to-blue-600",
+    glow: "rgba(14,165,233,0.35)",
   },
   {
     href: "/properties",    icon: Building2,        label: "Propiedades",

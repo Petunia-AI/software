@@ -113,6 +113,15 @@ class Settings(BaseSettings):
     ayrshare_domain:      str = ""   # Domain / ID único de la cuenta (ej: id-f9Dl5)
     ayrshare_jwt_secret:  str = ""   # Private key RSA PEM (de Ayrshare dashboard → JWT settings)
 
+    # Google OAuth2 (Gmail CRM integration)
+    google_client_id:     str = ""   # Google Cloud Console → OAuth 2.0 Client ID
+    google_client_secret: str = ""   # Google Cloud Console → OAuth 2.0 Client Secret
+
+    # Microsoft OAuth2 (Outlook CRM integration)
+    microsoft_client_id:     str = ""  # Azure AD → App registrations → Application (client) ID
+    microsoft_client_secret: str = ""  # Azure AD → Certificates & secrets
+    microsoft_tenant_id:     str = "common"  # 'common' para cuentas personales y organizacionales
+
     class Config:
         env_file = ".env"
         extra = "ignore"

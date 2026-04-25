@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { leadsApi } from "@/lib/api";
 import { cn, timeAgo } from "@/lib/utils";
@@ -12,8 +12,27 @@ import {
   MessageSquare, Tag, Calendar, ChevronRight, Edit3, Save,
   CheckCircle, XCircle, Clock, ArrowRight, Zap, Target,
   TrendingUp, AlertCircle, Star, Trash2, BotMessageSquare,
+  Loader2, Send, Reply, Inbox,
 } from "lucide-react";
 import { followupsApi } from "@/lib/api";
+import { useAuthStore } from "@/store/auth";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+interface LeadEmail {
+  id: string;
+  direction: "inbound" | "outbound";
+  from_email: string;
+  from_name?: string;
+  to_emails: string[];
+  subject?: string;
+  body_html?: string;
+  body_text?: string;
+  is_read: boolean;
+  sent_at?: string;
+  received_at?: string;
+  created_at: string;
+}
 
 // ─── tipos ─────────────────────────────────────────────────────────────────
 
@@ -126,7 +145,30 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<Partial<Lead>>({});
-  const [activeTab, setActiveTab] = useState<"info" | "bant" | "activity">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "bant" | "activity" | "emails">("info");
+  const { token } = useAuthStore();
+  const [leadEmails, setLeadEmails] = useState<LeadEmail[]>([]);
+  const [emailsLoading, setEmailsLoading] = useState(false);
+  const [selectedLeadEmail, setSelectedLeadEmail] = useState<LeadEmail | null>(null);
+
+  const fetchLeadEmails = useCallback(async (leadId: string) => {
+    if (!token) return;
+    setEmailsLoading(true);
+    try {
+      const r = await fetch(`${API}/email/leads/${leadId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) setLeadEmails(await r.json());
+    } finally {
+      setEmailsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (activeTab === "emails" && lead?.id) {
+      fetchLeadEmails(lead.id);
+    }
+  }, [activeTab, lead?.id, fetchLeadEmails]);
   const [followupDone, setFollowupDone] = useState(false);
 
   const followupMutation = useMutation({
@@ -323,7 +365,7 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
 
             {/* ── Tabs ── */}
             <div className="flex border-b border-border flex-shrink-0">
-              {(["info", "bant", "activity"] as const).map(tab => (
+              {(["info", "bant", "activity", "emails"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -334,7 +376,7 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {tab === "info" ? "Información" : tab === "bant" ? "BANT" : "Actividad"}
+                  {tab === "info" ? "Información" : tab === "bant" ? "BANT" : tab === "activity" ? "Actividad" : <><Mail size={11} className="inline mr-1" />Emails{leadEmails.length > 0 && <span className="ml-1 text-[9px] font-bold bg-sky-500 text-white px-1 py-0.5 rounded-full">{leadEmails.length}</span>}</>}
                 </button>
               ))}
             </div>
@@ -567,6 +609,75 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
                     <Clock size={24} className="mx-auto mb-2 text-muted-foreground/40" />
                     <p className="text-xs text-muted-foreground">Historial de conversaciones próximamente</p>
                   </div>
+                </div>
+              )}
+
+              {/* ════ TAB EMAILS ════ */}
+              {activeTab === "emails" && (
+                <div className="space-y-2">
+                  {/* Compose quick action */}
+                  {data.email && (
+                    <a
+                      href={`/email?compose=1&to=${encodeURIComponent(data.email)}&lead=${data.id}`}
+                      className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs font-semibold text-white transition-all hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #0EA5E9, #2563EB)" }}
+                    >
+                      <Send size={12} /> Enviar email a {data.name || data.email}
+                    </a>
+                  )}
+
+                  {emailsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                    </div>
+                  ) : leadEmails.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 gap-3 text-center">
+                      <Inbox size={28} className="text-muted-foreground/30" />
+                      <p className="text-xs text-muted-foreground">No hay emails registrados con este lead.</p>
+                    </div>
+                  ) : selectedLeadEmail ? (
+                    <div className="rounded-xl border border-border overflow-hidden">
+                      <div className="px-3 py-2.5 border-b border-border bg-slate-50 flex items-center justify-between">
+                        <p className="text-xs font-semibold text-foreground truncate">{selectedLeadEmail.subject || "(sin asunto)"}</p>
+                        <button onClick={() => setSelectedLeadEmail(null)} className="p-1 rounded-lg hover:bg-slate-100 text-muted-foreground transition-colors"><X size={13} /></button>
+                      </div>
+                      <div className="p-3 text-xs text-muted-foreground space-y-1">
+                        <p><span className="font-semibold">De:</span> {selectedLeadEmail.from_name ? `${selectedLeadEmail.from_name} <${selectedLeadEmail.from_email}>` : selectedLeadEmail.from_email}</p>
+                        <p><span className="font-semibold">Para:</span> {selectedLeadEmail.to_emails.join(", ")}</p>
+                        <p><span className="font-semibold">Fecha:</span> {new Date(selectedLeadEmail.received_at || selectedLeadEmail.sent_at || selectedLeadEmail.created_at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}</p>
+                      </div>
+                      <div className="px-3 pb-3">
+                        {selectedLeadEmail.body_html ? (
+                          <div className="prose prose-xs max-w-none text-foreground text-xs border border-border rounded-lg p-3 bg-white max-h-48 overflow-y-auto"
+                            dangerouslySetInnerHTML={{ __html: selectedLeadEmail.body_html }}
+                          />
+                        ) : (
+                          <pre className="text-xs whitespace-pre-wrap font-sans text-foreground bg-white border border-border rounded-lg p-3 max-h-48 overflow-y-auto">{selectedLeadEmail.body_text}</pre>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    leadEmails.map((e) => (
+                      <button
+                        key={e.id}
+                        onClick={() => setSelectedLeadEmail(e)}
+                        className="w-full text-left px-3 py-2.5 rounded-xl border border-border hover:bg-sky-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span className={`text-xs font-semibold truncate ${!e.is_read && e.direction === "inbound" ? "text-foreground" : "text-muted-foreground"}`}>
+                            {e.direction === "inbound" ? (e.from_name || e.from_email) : `→ ${e.to_emails[0] || ""}`}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border flex-shrink-0 ${
+                            e.direction === "inbound" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"
+                          }`}>{e.direction === "inbound" ? "Recibido" : "Enviado"}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{e.subject || "(sin asunto)"}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {new Date(e.received_at || e.sent_at || e.created_at).toLocaleDateString("es-MX", { month: "short", day: "numeric", year: "2-digit" })}
+                        </p>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>

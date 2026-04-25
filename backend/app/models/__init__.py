@@ -8,5 +8,6 @@ from app.models.subscription import Subscription
 from app.models.content import SocialPost
 from app.models.property import Property, PropertyImage
 from app.models.followup import FollowUp, LeadActivity
+from app.models.email_account import EmailAccount, Email, EmailTemplate
 
-__all__ = ["User", "Business", "Lead", "Conversation", "Message", "AgentConfig", "Subscription", "SocialPost", "Property", "PropertyImage", "FollowUp", "LeadActivity"]
+__all__ = ["User", "Business", "Lead", "Conversation", "Message", "AgentConfig", "Subscription", "SocialPost", "Property", "PropertyImage", "FollowUp", "LeadActivity", "EmailAccount", "Email", "EmailTemplate"]

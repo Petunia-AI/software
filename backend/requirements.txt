@@ -59,6 +59,9 @@ requests-oauthlib==1.3.1
 # Cloud storage (Cloudflare R2 / S3 compatible)
 boto3==1.35.0
 
+# Encryption (CRM email credential storage)
+cryptography>=42.0.0
+
 # Scheduling (trial reminders cron)
 apscheduler==3.10.4
 
