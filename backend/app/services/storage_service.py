@@ -11,6 +11,7 @@ Modos:
 import os
 import uuid
 import asyncio
+import warnings
 import structlog
 from app.config import settings
 
@@ -38,6 +39,8 @@ def _get_s3_client():
     try:
         import boto3  # type: ignore
         from botocore.config import Config as BotoCfg  # type: ignore
+        # Suprimir InsecureRequestWarning (verify=False es intencional para R2)
+        warnings.filterwarnings("ignore", message="Unverified HTTPS request")
         if settings.r2_bucket_name and settings.r2_access_key_id and settings.r2_secret_access_key:
             endpoint = f"https://{settings.r2_account_id}.r2.cloudflarestorage.com"
             return boto3.client(
@@ -46,11 +49,12 @@ def _get_s3_client():
                 aws_access_key_id=settings.r2_access_key_id,
                 aws_secret_access_key=settings.r2_secret_access_key,
                 region_name="auto",
+                verify=False,  # TLS cipher mismatch workaround for R2 on some Python envs
                 config=BotoCfg(
                     connect_timeout=10,
                     read_timeout=60,
                     retries={"max_attempts": 2},
-                    s3={"addressing_style": "path"},  # R2 requiere path-style, no virtual-hosted
+                    s3={"addressing_style": "path"},
                 ),
             )
     except ImportError:
