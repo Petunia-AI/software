@@ -6,8 +6,11 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Agente de Ventas AI",
+  title: "Petunia AI",
   description: "Plataforma de IA conversacional para automatizar ventas",
+  icons: {
+    icon: "/favicon petunia.png",
+  },
 };
 
 export default function RootLayout({
