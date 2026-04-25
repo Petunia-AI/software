@@ -12,7 +12,8 @@ import {
   MessageSquare, Tag, Calendar, ChevronRight, Edit3, Save,
   CheckCircle, XCircle, Clock, ArrowRight, Zap, Target,
   TrendingUp, AlertCircle, Star, Trash2, BotMessageSquare,
-  Loader2, Send, Reply, Inbox,
+  Loader2, Send, Reply, Inbox, CalendarDays, Sparkles,
+  ExternalLink, Video, FileText,
 } from "lucide-react";
 import { followupsApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
@@ -32,6 +33,17 @@ interface LeadEmail {
   sent_at?: string;
   received_at?: string;
   created_at: string;
+}
+
+interface LeadMeeting {
+  id: string;
+  title: string;
+  status: "scheduled" | "completed" | "cancelled";
+  provider: "google" | "zoom" | "manual";
+  start_time: string;
+  meeting_url?: string;
+  summary_text?: string;
+  presentation_html?: string;
 }
 
 // ─── tipos ─────────────────────────────────────────────────────────────────
@@ -145,11 +157,14 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<Partial<Lead>>({});
-  const [activeTab, setActiveTab] = useState<"info" | "bant" | "activity" | "emails">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "bant" | "activity" | "emails" | "meetings">("info");
   const { token } = useAuthStore();
   const [leadEmails, setLeadEmails] = useState<LeadEmail[]>([]);
   const [emailsLoading, setEmailsLoading] = useState(false);
   const [selectedLeadEmail, setSelectedLeadEmail] = useState<LeadEmail | null>(null);
+  const [leadMeetings, setLeadMeetings] = useState<LeadMeeting[]>([]);
+  const [meetingsLoading, setMeetingsLoading] = useState(false);
+  const [generatingPresentationId, setGeneratingPresentationId] = useState<string | null>(null);
 
   const fetchLeadEmails = useCallback(async (leadId: string) => {
     if (!token) return;
@@ -169,6 +184,59 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
       fetchLeadEmails(lead.id);
     }
   }, [activeTab, lead?.id, fetchLeadEmails]);
+
+  const fetchLeadMeetings = useCallback(async (leadId: string) => {
+    if (!token) return;
+    setMeetingsLoading(true);
+    try {
+      const r = await fetch(`${API}/meetings?lead_id=${leadId}&limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) setLeadMeetings(await r.json());
+    } finally {
+      setMeetingsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (activeTab === "meetings" && lead?.id) {
+      fetchLeadMeetings(lead.id);
+    }
+  }, [activeTab, lead?.id, fetchLeadMeetings]);
+
+  async function generatePresentation(meetingId: string) {
+    if (!token) return;
+    setGeneratingPresentationId(meetingId);
+    try {
+      const r = await fetch(`${API}/meetings/${meetingId}/generate-presentation`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error((err as { detail?: string }).detail || "Error al generar presentación");
+      }
+      const updated: LeadMeeting = await r.json();
+      setLeadMeetings(prev =>
+        prev.map(m => m.id === meetingId ? { ...m, presentation_html: updated.presentation_html } : m)
+      );
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGeneratingPresentationId(null);
+    }
+  }
+
+  function downloadPresentation(meeting: LeadMeeting) {
+    if (!meeting.presentation_html) return;
+    const blob = new Blob([meeting.presentation_html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${meeting.title.replace(/\s+/g, "_")}_presentacion.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   const [followupDone, setFollowupDone] = useState(false);
 
   const followupMutation = useMutation({
@@ -365,18 +433,23 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
 
             {/* ── Tabs ── */}
             <div className="flex border-b border-border flex-shrink-0">
-              {(["info", "bant", "activity", "emails"] as const).map(tab => (
+              {(["info", "bant", "activity", "emails", "meetings"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={cn(
-                    "flex-1 py-2.5 text-xs font-semibold uppercase tracking-wide transition-colors",
+                    "flex-1 py-2.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
                     activeTab === tab
                       ? "border-b-2 border-violet-500 text-violet-600"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {tab === "info" ? "Información" : tab === "bant" ? "BANT" : tab === "activity" ? "Actividad" : <><Mail size={11} className="inline mr-1" />Emails{leadEmails.length > 0 && <span className="ml-1 text-[9px] font-bold bg-sky-500 text-white px-1 py-0.5 rounded-full">{leadEmails.length}</span>}</>}
+                  {tab === "info" ? "Info" :
+                   tab === "bant" ? "BANT" :
+                   tab === "activity" ? "Actividad" :
+                   tab === "emails" ? <><Mail size={10} className="inline mr-0.5" />Emails{leadEmails.length > 0 && <span className="ml-1 text-[9px] font-bold bg-sky-500 text-white px-1 py-0.5 rounded-full">{leadEmails.length}</span>}</> :
+                   <><CalendarDays size={10} className="inline mr-0.5" />Reuniones{leadMeetings.length > 0 && <span className="ml-1 text-[9px] font-bold bg-violet-500 text-white px-1 py-0.5 rounded-full">{leadMeetings.length}</span>}</>
+                  }
                 </button>
               ))}
             </div>
@@ -676,6 +749,97 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
                           {new Date(e.received_at || e.sent_at || e.created_at).toLocaleDateString("es-MX", { month: "short", day: "numeric", year: "2-digit" })}
                         </p>
                       </button>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* ════ TAB REUNIONES ════ */}
+              {activeTab === "meetings" && (
+                <div className="space-y-3">
+                  {/* Ir al módulo de reuniones */}
+                  <button
+                    onClick={() => router.push(`/meetings`)}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs font-semibold text-white transition-all hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)" }}
+                  >
+                    <CalendarDays size={12} /> Agendar nueva reunión
+                  </button>
+
+                  {meetingsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                    </div>
+                  ) : leadMeetings.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 gap-3 text-center">
+                      <CalendarDays size={28} className="text-muted-foreground/30" />
+                      <p className="text-xs text-muted-foreground">No hay reuniones registradas con este lead.</p>
+                    </div>
+                  ) : (
+                    leadMeetings.map(meeting => (
+                      <div key={meeting.id} className="rounded-xl border border-border overflow-hidden">
+                        {/* Header de la reunión */}
+                        <div className="px-3 py-2.5 bg-slate-50 border-b border-border flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {meeting.provider === "google" ? <Video size={13} className="text-green-600 flex-shrink-0" /> :
+                             meeting.provider === "zoom"   ? <Video size={13} className="text-blue-600 flex-shrink-0" /> :
+                             <CalendarDays size={13} className="text-slate-500 flex-shrink-0" />}
+                            <p className="text-xs font-semibold text-foreground truncate">{meeting.title}</p>
+                          </div>
+                          <span className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded-full font-medium border flex-shrink-0",
+                            meeting.status === "completed" ? "bg-green-50 text-green-700 border-green-200" :
+                            meeting.status === "cancelled" ? "bg-red-50 text-red-700 border-red-200" :
+                            "bg-blue-50 text-blue-700 border-blue-200"
+                          )}>
+                            {meeting.status === "completed" ? "Completada" : meeting.status === "cancelled" ? "Cancelada" : "Agendada"}
+                          </span>
+                        </div>
+
+                        <div className="p-3 space-y-2">
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock size={10} />
+                            {new Date(meeting.start_time).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+
+                          {/* Resumen si existe */}
+                          {meeting.summary_text && (
+                            <p className="text-[10px] text-muted-foreground bg-slate-50 rounded-lg p-2 leading-relaxed line-clamp-3">
+                              {meeting.summary_text}
+                            </p>
+                          )}
+
+                          {/* Presentación */}
+                          {meeting.presentation_html ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg flex-1">
+                                <FileText size={10} /> Presentación lista
+                              </div>
+                              <button
+                                onClick={() => downloadPresentation(meeting)}
+                                className="text-[10px] px-2 py-1 rounded-lg border border-border hover:bg-accent transition-colors font-medium flex items-center gap-1"
+                                title="Descargar presentación HTML"
+                              >
+                                <ExternalLink size={10} /> Descargar
+                              </button>
+                            </div>
+                          ) : meeting.status === "completed" ? (
+                            <button
+                              onClick={() => generatePresentation(meeting.id)}
+                              disabled={generatingPresentationId === meeting.id}
+                              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white transition-all disabled:opacity-60"
+                            >
+                              {generatingPresentationId === meeting.id ? (
+                                <><Loader2 size={10} className="animate-spin" /> Generando presentación...</>
+                              ) : (
+                                <><Sparkles size={10} /> Generar presentación para el cliente</>
+                              )}
+                            </button>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground italic">Disponible al completar la reunión</p>
+                          )}
+                        </div>
+                      </div>
                     ))
                   )}
                 </div>
