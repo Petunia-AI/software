@@ -220,7 +220,7 @@ Responde en este formato JSON exacto:
 
     response = await client.messages.create(
         model=settings.claude_model,
-        max_tokens=2000,
+        max_tokens=3000,  # 3000 para TikTok/reel que incluye video_script
         messages=[{"role": "user", "content": user_prompt}],
         system=system_prompt,
     )
@@ -232,7 +232,17 @@ Responde en este formato JSON exacto:
     elif "```" in text:
         text = text.split("```")[1].split("```")[0].strip()
 
-    data = json.loads(text)
+    # Si el JSON está truncado (max_tokens alcanzado), intentar cerrar el objeto
+    if not text.endswith("}"):
+        last_brace = text.rfind("}")
+        if last_brace != -1:
+            text = text[: last_brace + 1]
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        logger.error("content_agent_json_parse_error", raw=text[:300], error=str(exc))
+        raise RuntimeError(f"La IA devolvió JSON inválido para {channel}/{format_type}. Intenta de nuevo.")
     # If property has an image, use it as the post image
     if property_context and property_context.get("cover_image_url") and not data.get("property_image_url"):
         data["property_image_url"] = property_context["cover_image_url"]

@@ -500,14 +500,18 @@ async def generate(
     ctx = _business_ctx(business)
 
     # ── Generar contenido con Claude ──────────────────────────────────────────
-    ai_data = await generate_post(
-        business_context=ctx,
-        channel=data.channel,
-        content_type=data.content_type,
-        topic=data.topic,
-        tone=data.tone,
-        format_type=data.format_type,
-    )
+    try:
+        ai_data = await generate_post(
+            business_context=ctx,
+            channel=data.channel,
+            content_type=data.content_type,
+            topic=data.topic,
+            tone=data.tone,
+            format_type=data.format_type,
+        )
+    except Exception as e:
+        logger.error("content_generate_ai_error", channel=data.channel, format=data.format_type, error=str(e))
+        raise HTTPException(status_code=502, detail=f"Error al generar contenido con IA: {e}")
 
     # ── Generar imagen con fal.ai (si se solicita y no hay imagen de propiedad) ──────
     image_url = data.use_image_url or None
