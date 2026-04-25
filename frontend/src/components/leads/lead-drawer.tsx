@@ -617,13 +617,13 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
                 <div className="space-y-2">
                   {/* Compose quick action */}
                   {data.email && (
-                    <a
-                      href={`/email?compose=1&to=${encodeURIComponent(data.email)}&lead=${data.id}`}
+                    <button
+                      onClick={() => router.push(`/email?compose=1&to=${encodeURIComponent(data.email!)}&lead=${data.id}`)}
                       className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs font-semibold text-white transition-all hover:opacity-90"
                       style={{ background: "linear-gradient(135deg, #0EA5E9, #2563EB)" }}
                     >
                       <Send size={12} /> Enviar email a {data.name || data.email}
-                    </a>
+                    </button>
                   )}
 
                   {emailsLoading ? (
@@ -704,10 +704,13 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
               </button>
               <div className="flex items-center gap-2">
               {data.email && (
-                <a href={`mailto:${data.email}`} className="btn-secondary text-xs flex items-center gap-1.5 flex-1 justify-center">
+                <button
+                  onClick={() => router.push(`/email?compose=1&to=${encodeURIComponent(data.email!)}&lead=${data.id}`)}
+                  className="btn-secondary text-xs flex items-center gap-1.5 flex-1 justify-center"
+                >
                   <Mail size={13} />
                   Email
-                </a>
+                </button>
               )}
               {data.phone && (
                 <a href={`tel:${data.phone}`} className="btn-secondary text-xs flex items-center gap-1.5 flex-1 justify-center">

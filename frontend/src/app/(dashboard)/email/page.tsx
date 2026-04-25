@@ -1084,12 +1084,21 @@ export default function EmailPage() {
   const [search, setSearch] = useState("");
   const [replyTo, setReplyTo] = useState<Email | null>(null);
   const [aiDraft, setAiDraft] = useState<AiDraft | null>(null);
+  const [composePrefill, setComposePrefill] = useState<{ toEmail?: string; leadId?: string } | null>(null);
 
   const headers = { Authorization: `Bearer ${token ?? ""}`, "Content-Type": "application/json" };
 
   useEffect(() => {
     const connected = searchParams.get("connected");
     if (connected) toast.success(`Cuenta de ${connected === "gmail" ? "Gmail" : "Outlook"} conectada correctamente`);
+    // Auto-open compose from leads panel
+    const compose = searchParams.get("compose");
+    const toEmail = searchParams.get("to");
+    const leadId = searchParams.get("lead");
+    if (compose === "1" && toEmail) {
+      setComposePrefill({ toEmail, leadId: leadId ?? undefined });
+      setShowCompose(true);
+    }
   }, [searchParams]);
 
   const fetchAll = useCallback(async () => {
@@ -1339,12 +1348,15 @@ export default function EmailPage() {
             token={token ?? ""}
             accounts={accounts}
             templates={templates}
-            onClose={() => { setShowCompose(false); setReplyTo(null); setAiDraft(null); }}
+            onClose={() => { setShowCompose(false); setReplyTo(null); setAiDraft(null); setComposePrefill(null); }}
             prefill={replyTo ? {
               toEmail: replyTo.from_email,
               subject: aiDraft?.subject || replyTo.subject || "",
               replyAccountId: replyTo.email_account_id,
               bodyHtml: aiDraft?.body_html,
+            } : composePrefill ? {
+              toEmail: composePrefill.toEmail,
+              leadId: composePrefill.leadId,
             } : undefined}
             onSent={(email) => setEmails((prev) => [email, ...prev])}
           />
