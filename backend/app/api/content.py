@@ -460,6 +460,23 @@ async def generate(
     current_user: User = Depends(get_current_user),
 ):
     """Genera un post con IA y lo guarda como borrador."""
+    try:
+        return await _generate_impl(request, data, db, current_user)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("content_generate_unhandled", channel=data.channel, format=data.format_type,
+                     content_type=data.content_type, error=str(exc), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error interno al generar post ({data.channel}/{data.format_type}): {exc}")
+
+
+async def _generate_impl(
+    request: Request,
+    data: GeneratePostRequest,
+    db: AsyncSession,
+    current_user: User,
+):
+    """Genera un post con IA y lo guarda como borrador."""
     business = await _get_business(db, current_user)
     limits = await _get_plan_limits(db, current_user.business_id)
 
