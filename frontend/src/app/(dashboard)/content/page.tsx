@@ -1005,6 +1005,7 @@ function EditPostModal({ post, token, onClose, onSaved, onPublish, onSchedule }:
   const [approving, setApproving] = useState(false);
   const [scheduleMode, setScheduleMode] = useState<"none" | "now" | "schedule">("none");
   const [scheduleDate, setScheduleDate] = useState("");
+  const [showLibrary, setShowLibrary] = useState(false);
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
@@ -1097,28 +1098,41 @@ function EditPostModal({ post, token, onClose, onSaved, onPublish, onSchedule }:
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
-          {/* Image preview + change */}
-          {(imageUrl || post.image_prompt) && (
-            <div>
-              <label className={labelCls}>Imagen</label>
-              {imageUrl ? (
-                <div className="relative rounded-xl overflow-hidden bg-slate-100 mb-2" style={{ aspectRatio: "16/9", maxHeight: 180 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imageUrl} alt="preview" className="w-full h-full object-cover" />
-                  <button onClick={() => setImageUrl("")} className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500 transition-colors">
-                    <X size={12} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2 mb-2 text-xs text-muted-foreground border border-border">
-                  <ImagePlus size={13} className="text-slate-400" />
-                  <span className="italic line-clamp-1">{post.image_prompt}</span>
-                </div>
-              )}
+          {/* (image section moved below) */}
+
+          {/* Media from library */}
+          <div>
+            <label className={labelCls}>Imagen / Video</label>
+            <div className="flex gap-2 mb-2">
               <input value={imageUrl} onChange={e => setImageUrl(e.target.value)}
-                placeholder="URL de imagen (deja vacío para quitar)" className={inputCls} />
+                placeholder="URL de imagen o video (deja vacío para quitar)" className={inputCls} />
+              <button
+                type="button"
+                onClick={() => setShowLibrary(!showLibrary)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${showLibrary ? "border-violet-400 bg-violet-50 text-violet-700" : "border-border bg-white text-muted-foreground hover:border-violet-300 hover:text-violet-600"}`}>
+                <HardDrive size={13} />
+                Biblioteca
+              </button>
             </div>
-          )}
+            {imageUrl && (
+              <div className="relative rounded-xl overflow-hidden bg-slate-100 mb-2" style={{ aspectRatio: "16/9", maxHeight: 160 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="preview" className="w-full h-full object-cover" />
+                <button onClick={() => setImageUrl("")} className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500 transition-colors">
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+            {showLibrary && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden mt-2 max-h-72 overflow-y-auto rounded-xl border border-border">
+                <MediaLibrary
+                  token={token}
+                  onSelect={(asset: MediaAsset) => { setImageUrl(asset.public_url); setShowLibrary(false); }}
+                  selectedUrl={imageUrl}
+                />
+              </motion.div>
+            )}
+          </div>
 
           <div>
             <label className={labelCls}>Hook / Título</label>
