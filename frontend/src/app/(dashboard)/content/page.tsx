@@ -958,13 +958,17 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
           <div className="relative rounded-xl overflow-hidden bg-slate-100" style={{ aspectRatio: post.format_type === "post" ? "1/1" : "9/16", maxHeight: post.format_type === "post" ? 220 : 300 }}>
             {isVideo ? (
               <video
-                src={post.image_url}
+                key={post.image_url}
+                crossOrigin="anonymous"
                 controls
                 playsInline
-                preload="metadata"
+                preload="auto"
                 className="w-full h-full"
                 style={{ objectFit: "contain", background: "#0f0f0f" }}
-              />
+              >
+                <source src={post.image_url} type="video/mp4" />
+                <source src={post.image_url} />
+              </video>
             ) : (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={post.image_url} alt="Imagen generada por IA" className="w-full h-full object-cover" />

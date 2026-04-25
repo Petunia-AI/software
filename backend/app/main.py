@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from contextlib import asynccontextmanager
@@ -47,6 +49,21 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+
+# ── CORS para archivos estáticos (/uploads) ───────────────────────────────────
+# StaticFiles montado con app.mount() bypasea CORSMiddleware, así que
+# añadimos un middleware dedicado que inyecta los headers CORS para /uploads.
+class UploadsCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/uploads"):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Content-Type, Accept-Ranges"
+        return response
+
+app.add_middleware(UploadsCORSMiddleware)
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
 # El dashboard accede al backend a través del proxy Next.js (mismo origen),
