@@ -33,6 +33,9 @@ class EmailAccount(Base):
     sync_error: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    # Email signature (HTML)
+    signature_html: Mapped[str] = mapped_column(Text, nullable=True)
+
     # Relationships
     emails: Mapped[list["Email"]] = relationship("Email", back_populates="account", cascade="all, delete-orphan")
 

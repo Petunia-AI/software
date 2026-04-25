@@ -168,8 +168,14 @@ class EmailAccountOut(BaseModel):
     is_active: bool
     last_synced_at: Optional[datetime]
     sync_error: Optional[str]
+    signature_html: Optional[str] = None
     created_at: datetime
     model_config = {"from_attributes": True}
+
+
+class UpdateAccountRequest(BaseModel):
+    display_name: Optional[str] = None
+    signature_html: Optional[str] = None
 
 
 class EmailTemplateOut(BaseModel):
@@ -196,6 +202,24 @@ async def list_accounts(
         .order_by(EmailAccount.created_at)
     )
     return r.scalars().all()
+
+
+@router.patch("/accounts/{account_id}", response_model=EmailAccountOut)
+async def update_account(
+    account_id: str,
+    body: UpdateAccountRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    biz = await _get_business(db, current_user)
+    acc = await _get_account(db, account_id, biz.id)
+    if body.display_name is not None:
+        acc.display_name = body.display_name
+    if body.signature_html is not None:
+        acc.signature_html = body.signature_html
+    await db.commit()
+    await db.refresh(acc)
+    return acc
 
 
 @router.post("/accounts/connect-imap", response_model=EmailAccountOut)
