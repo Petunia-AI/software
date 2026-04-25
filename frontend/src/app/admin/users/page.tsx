@@ -6,14 +6,38 @@ import { adminApi } from "@/lib/admin-api";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableRowSkeleton } from "@/components/ui/skeleton";
 import { formatDate, cn } from "@/lib/utils";
-import { Users, Plus, Power, ShieldCheck, X } from "lucide-react";
+import { Users, Plus, Power, ShieldCheck, X, CreditCard } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+
+const PLANS = [
+  { value: "trial",      label: "Trial",      color: "badge-gray" },
+  { value: "starter",    label: "Starter",    color: "badge-blue" },
+  { value: "pro",        label: "Pro",         color: "badge-violet" },
+  { value: "enterprise", label: "Enterprise", color: "badge-red" },
+];
+
+function PlanBadge({ plan }: { plan: string }) {
+  const p = PLANS.find((x) => x.value === plan) ?? PLANS[0];
+  const colors: Record<string, string> = {
+    "badge-gray":   "bg-gray-100 text-gray-600 border-gray-200",
+    "badge-blue":   "bg-blue-50 text-blue-700 border-blue-200",
+    "badge-violet": "bg-violet-50 text-violet-700 border-violet-200",
+    "badge-red":    "bg-rose-50 text-rose-700 border-rose-200",
+  };
+  return (
+    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border", colors[p.color])}>
+      <CreditCard size={10} />
+      {p.label}
+    </span>
+  );
+}
 
 export default function AdminUsersPage() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", is_superuser: false });
+  const [changingPlanId, setChangingPlanId] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -23,6 +47,17 @@ export default function AdminUsersPage() {
   const toggleMutation = useMutation({
     mutationFn: (id: string) => adminApi.toggleUser(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success("Estado actualizado"); },
+  });
+
+  const planMutation = useMutation({
+    mutationFn: ({ id, plan }: { id: string; plan: string }) => adminApi.changePlan(id, plan),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      const label = PLANS.find((p) => p.value === vars.plan)?.label ?? vars.plan;
+      toast.success(`Plan cambiado a ${label}`);
+      setChangingPlanId(null);
+    },
+    onError: () => { toast.error("Error al cambiar plan"); setChangingPlanId(null); },
   });
 
   const createMutation = useMutation({
@@ -137,6 +172,7 @@ export default function AdminUsersPage() {
             <tr>
               <th>Usuario</th>
               <th>Email</th>
+              <th>Plan</th>
               <th>Rol</th>
               <th>Registro</th>
               <th className="text-center">Estado</th>
@@ -161,6 +197,29 @@ export default function AdminUsersPage() {
                   </div>
                 </td>
                 <td className="text-sm text-muted-foreground">{user.email as string}</td>
+                <td>
+                  {changingPlanId === (user.id as string) ? (
+                    <select
+                      autoFocus
+                      defaultValue={user.plan as string}
+                      onBlur={() => setChangingPlanId(null)}
+                      onChange={(e) => planMutation.mutate({ id: user.id as string, plan: e.target.value })}
+                      className="text-xs border border-violet-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    >
+                      {PLANS.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      onClick={() => setChangingPlanId(user.id as string)}
+                      className="hover:opacity-70 transition-opacity"
+                      title="Haz clic para cambiar el plan"
+                    >
+                      <PlanBadge plan={user.plan as string ?? "trial"} />
+                    </button>
+                  )}
+                </td>
                 <td>
                   {user.is_superuser ? (
                     <span className="badge badge-red flex items-center gap-1 w-fit">

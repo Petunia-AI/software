@@ -6,6 +6,7 @@ export const adminApi = {
   toggleBiz:  (id: string) => adminAxios.patch(`/admin/businesses/${id}/toggle`),
   users:      () => adminAxios.get("/admin/users"),
   toggleUser: (id: string) => adminAxios.patch(`/admin/users/${id}/toggle`),
+  changePlan: (id: string, plan: string) => adminAxios.patch(`/admin/users/${id}/plan`, { plan }),
   createUser: (data: { email: string; password: string; full_name: string; is_superuser?: boolean }) =>
     adminAxios.post("/admin/users", data),
   analytics:  () => adminAxios.get("/admin/analytics"),

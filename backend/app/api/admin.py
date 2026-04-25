@@ -121,8 +121,14 @@ async def list_users(
         select(User).order_by(desc(User.created_at)).limit(limit)
     )
     users = result.scalars().all()
-    return [
-        {
+
+    rows = []
+    for u in users:
+        sub_result = await db.execute(
+            select(Subscription).where(Subscription.business_id == u.business_id)
+        )
+        sub = sub_result.scalar_one_or_none()
+        rows.append({
             "id": u.id,
             "email": u.email,
             "full_name": u.full_name,
@@ -130,9 +136,10 @@ async def list_users(
             "is_superuser": u.is_superuser,
             "business_id": u.business_id,
             "created_at": str(u.created_at),
-        }
-        for u in users
-    ]
+            "plan": sub.plan.value if sub else "trial",
+            "plan_status": sub.status.value if sub else "trialing",
+        })
+    return rows
 
 
 class CreateUserRequest(BaseModel):
@@ -182,6 +189,45 @@ async def toggle_user(
     user.is_active = not user.is_active
     await db.commit()
     return {"is_active": user.is_active}
+
+
+class ChangePlanRequest(BaseModel):
+    plan: str  # "trial" | "starter" | "pro" | "enterprise"
+
+
+@router.patch("/users/{user_id}/plan")
+async def change_user_plan(
+    user_id: str,
+    data: ChangePlanRequest,
+    _: User = Depends(require_superuser),
+    db: AsyncSession = Depends(get_db),
+):
+    allowed = {t.value for t in PlanTier}
+    if data.plan not in allowed:
+        raise HTTPException(400, f"Plan inválido. Opciones: {', '.join(allowed)}")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "Usuario no encontrado")
+
+    sub_result = await db.execute(
+        select(Subscription).where(Subscription.business_id == user.business_id)
+    )
+    sub = sub_result.scalar_one_or_none()
+    if not sub:
+        sub = Subscription(
+            business_id=user.business_id,
+            plan=PlanTier(data.plan),
+            status=SubscriptionStatus.active,
+        )
+        db.add(sub)
+    else:
+        sub.plan = PlanTier(data.plan)
+        sub.status = SubscriptionStatus.active if data.plan != "trial" else SubscriptionStatus.trialing
+
+    await db.commit()
+    return {"plan": sub.plan.value, "status": sub.status.value}
 
 
 # ── Platform-wide analytics ────────────────────────────────────────────────
