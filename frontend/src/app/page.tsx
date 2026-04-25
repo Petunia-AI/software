@@ -269,6 +269,176 @@ function SupportWidget() {
   );
 }
 
+// ── Social Calendar Demo ──────────────────────────────────────────────────
+
+const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+interface CalPost {
+  id: number;
+  day: number;   // 0-6
+  slot: number;  // 0-2 (mañana / tarde / noche)
+  network: "instagram" | "facebook" | "tiktok" | "linkedin";
+  text: string;
+  emoji: string;
+}
+
+const CALENDAR_POSTS: CalPost[] = [
+  { id: 1,  day: 0, slot: 0, network: "instagram", text: "Nueva propiedad disponible en Miraflores 🏡", emoji: "📸" },
+  { id: 2,  day: 0, slot: 2, network: "facebook",  text: "¿Buscas casa? Te ayudamos a encontrarla 🔑",   emoji: "👍" },
+  { id: 3,  day: 1, slot: 1, network: "tiktok",    text: "Tour virtual · Penthouse vista al mar 🌊",      emoji: "🎬" },
+  { id: 4,  day: 2, slot: 0, network: "linkedin",  text: "Mercado inmobiliario LATAM Q2 2026 📊",         emoji: "💼" },
+  { id: 5,  day: 2, slot: 2, network: "instagram", text: "3 tips para vender más rápido tu propiedad ✅", emoji: "📸" },
+  { id: 6,  day: 3, slot: 1, network: "facebook",  text: "Clientes felices · 150+ cierres este mes 🎉",  emoji: "👍" },
+  { id: 7,  day: 4, slot: 0, network: "tiktok",    text: "Antes vs Después · Remodelación increíble 🔨", emoji: "🎬" },
+  { id: 8,  day: 4, slot: 2, network: "linkedin",  text: "Automatiza tu agencia con IA 🤖",               emoji: "💼" },
+  { id: 9,  day: 5, slot: 1, network: "instagram", text: "Weekend Open House · Sábado 10am–2pm 🏠",      emoji: "📸" },
+  { id: 10, day: 6, slot: 0, network: "facebook",  text: "¡Feliz domingo! Conoce nuestros proyectos 🌟", emoji: "👍" },
+];
+
+const NET_STYLES: Record<string, { bg: string; label: string; dot: string }> = {
+  instagram: { bg: "from-pink-500 to-rose-500",       label: "Instagram", dot: "bg-pink-500"    },
+  facebook:  { bg: "from-blue-500 to-indigo-500",      label: "Facebook",  dot: "bg-blue-500"   },
+  tiktok:    { bg: "from-gray-800 to-gray-600",        label: "TikTok",    dot: "bg-gray-800"   },
+  linkedin:  { bg: "from-sky-600 to-blue-700",         label: "LinkedIn",  dot: "bg-sky-600"    },
+};
+
+const SLOT_LABELS = ["09:00", "14:00", "19:00"];
+
+function SocialCalendarDemo() {
+  const [activePost, setActivePost] = useState<CalPost | null>(null);
+  const [publishedIds, setPublishedIds] = useState<Set<number>>(new Set());
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  // Auto-publish posts one by one
+  useEffect(() => {
+    if (currentIdx >= CALENDAR_POSTS.length) {
+      // Reset after pause
+      const t = setTimeout(() => {
+        setPublishedIds(new Set());
+        setCurrentIdx(0);
+      }, 3000);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => {
+      const post = CALENDAR_POSTS[currentIdx];
+      setPublishedIds((prev) => new Set([...prev, post.id]));
+      setActivePost(post);
+      setCurrentIdx((i) => i + 1);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [currentIdx]);
+
+  return (
+    <div className="w-full max-w-2xl mx-auto">
+      {/* Calendar grid */}
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+          </div>
+          <p className="text-white font-semibold text-sm">Calendario de contenido · IA Petunia</p>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-white/70 text-xs">Publicando...</span>
+          </div>
+        </div>
+
+        {/* Day headers */}
+        <div className="grid grid-cols-8 border-b border-gray-100 bg-gray-50">
+          <div className="px-3 py-2 text-xs text-gray-400 font-medium border-r border-gray-100"></div>
+          {DAYS.map((d) => (
+            <div key={d} className="px-1 py-2 text-center text-xs font-semibold text-gray-500">{d}</div>
+          ))}
+        </div>
+
+        {/* Slots */}
+        {SLOT_LABELS.map((slotLabel, slotIdx) => (
+          <div key={slotIdx} className="grid grid-cols-8 border-b border-gray-100 last:border-b-0">
+            <div className="px-3 py-2 flex items-center justify-center text-xs text-gray-400 border-r border-gray-100 font-mono">
+              {slotLabel}
+            </div>
+            {DAYS.map((_, dayIdx) => {
+              const post = CALENDAR_POSTS.find((p) => p.day === dayIdx && p.slot === slotIdx);
+              const published = post ? publishedIds.has(post.id) : false;
+              const isActive = activePost?.id === post?.id;
+              return (
+                <div key={dayIdx} className="min-h-[56px] p-1 border-r border-gray-50 last:border-r-0 flex items-center justify-center">
+                  <AnimatePresence>
+                    {post && published && (
+                      <motion.button
+                        key={post.id}
+                        initial={{ scale: 0, opacity: 0, rotate: -10 }}
+                        animate={{ scale: isActive ? [1, 1.08, 1] : 1, opacity: 1, rotate: 0 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                        onClick={() => setActivePost(post === activePost ? null : post)}
+                        className={`w-full rounded-xl p-1.5 bg-gradient-to-br ${NET_STYLES[post.network].bg} shadow-md cursor-pointer`}
+                      >
+                        <p className="text-white text-[10px] font-bold leading-none mb-0.5">{post.emoji} {NET_STYLES[post.network].label}</p>
+                        <p className="text-white/80 text-[9px] leading-tight line-clamp-2">{post.text}</p>
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Post preview card */}
+      <AnimatePresence mode="wait">
+        {activePost && (
+          <motion.div
+            key={activePost.id}
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            className="mt-4 bg-white rounded-2xl border border-gray-100 shadow-lg p-4 flex items-start gap-4"
+          >
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${NET_STYLES[activePost.network].bg} flex items-center justify-center flex-shrink-0 shadow-md`}>
+              <span className="text-lg">{activePost.emoji}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold text-gray-700">{NET_STYLES[activePost.network].label}</span>
+                <span className="text-xs text-gray-400">· {DAYS[activePost.day]} {SLOT_LABELS[activePost.slot]}</span>
+                <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                  <Check size={10} strokeWidth={3} /> Publicado
+                </span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{activePost.text}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Counters */}
+      <div className="mt-4 flex items-center justify-center gap-6">
+        {Object.entries(NET_STYLES).map(([net, style]) => {
+          const count = [...publishedIds].filter((id) => CALENDAR_POSTS.find((p) => p.id === id && p.network === net)).length;
+          return (
+            <div key={net} className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span className={`w-2 h-2 rounded-full ${style.dot}`} />
+              <span className="font-medium">{style.label}</span>
+              <motion.span
+                key={count}
+                initial={{ scale: 1.4, color: "#7c3aed" }}
+                animate={{ scale: 1, color: "#6b7280" }}
+                className="font-bold"
+              >{count}</motion.span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function FeatureAnimation({ type }: { type: string }) {
   if (type === "agents") {
     return (
@@ -545,6 +715,18 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Social Calendar */}
+      <section className="py-24 px-6 bg-gray-50 overflow-hidden">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Contenido automático</p>
+            <h2 className="text-4xl font-bold text-gray-900">Publica en todas tus redes, sin esfuerzo</h2>
+            <p className="text-gray-500 mt-4 max-w-xl mx-auto">Petunia crea, programa y publica contenido en Instagram, Facebook, TikTok y LinkedIn de forma completamente automática.</p>
+          </div>
+          <SocialCalendarDemo />
         </div>
       </section>
 
