@@ -44,8 +44,8 @@ const TESTIMONIALS = [
 ];
 
 const DEFAULT_PLANS: Plan[] = [
-  { id: "starter", name: "Starter", price_usd: 49, description: "Para equipos que empiezan a automatizar ventas.", features: ["500 conversaciones / mes", "200 leads / mes", "3 agentes IA activos", "Canal Webchat", "Dashboard analytics", "Soporte por email"], cta: "Empieza gratis 14 días", highlight: false },
-  { id: "pro", name: "Pro", price_usd: 149, description: "El favorito de equipos de ventas en crecimiento.", features: ["2,000 conversaciones / mes", "1,000 leads / mes", "5 agentes IA (todos)", "WhatsApp + Webchat + Instagram", "Analytics avanzado", "Reportes diarios por email", "Soporte prioritario", "Hasta 10 usuarios"], cta: "Empieza gratis 14 días", highlight: true },
+  { id: "starter", name: "Starter", price_usd: 49, description: "Para equipos que empiezan a automatizar ventas.", features: ["500 conversaciones / mes", "200 leads / mes", "3 agentes IA activos", "Canal Webchat", "Dashboard analytics", "Soporte por email"], cta: "Comenzar ahora", highlight: false },
+  { id: "pro", name: "Pro", price_usd: 149, description: "El favorito de equipos de ventas en crecimiento.", features: ["2,000 conversaciones / mes", "1,000 leads / mes", "5 agentes IA (todos)", "WhatsApp + Webchat + Instagram", "Analytics avanzado", "Reportes diarios por email", "Soporte prioritario", "Hasta 10 usuarios"], cta: "Comenzar ahora", highlight: true },
   { id: "enterprise", name: "Enterprise", price_usd: 399, description: "Para empresas con volumen alto y necesidades custom.", features: ["Conversaciones ilimitadas", "Leads ilimitados", "Agentes ilimitados", "Todos los canales", "API access", "SLA 99.9% uptime", "Onboarding dedicado", "Usuarios ilimitados"], cta: "Hablar con ventas", highlight: false },
 ];
 
@@ -61,7 +61,6 @@ const DEMO_MESSAGES = [
 const MARQUEE_ITEMS = [
   "Setup en 10 minutos",
   "+500 empresas en LATAM",
-  "Sin tarjeta de crédito",
   "5 Agentes IA en paralelo",
   "3× más leads calificados",
   "WhatsApp · Instagram · Webchat",
@@ -360,19 +359,19 @@ function LeadPipelineDemo() {
   }, []);
 
   return (
-    <div className="w-full overflow-x-auto pb-2">
-      <div className="min-w-[600px] grid grid-cols-4 gap-3">
+    <div className="w-full">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {PIPELINE_STAGES.map((stage, sIdx) => {
           const stageLeads = leads.filter((l) => l.stageIdx === sIdx);
           return (
-            <div key={stage.id} className={`rounded-2xl border ${stage.color} p-3`}>
+            <div key={stage.id} className={`rounded-2xl border ${stage.color} p-4`}>
               <div className="flex items-center justify-between mb-3">
                 <span className={`text-xs font-bold ${stage.text}`}>{stage.label}</span>
                 <span className={`w-5 h-5 rounded-full ${stage.badge} flex items-center justify-center text-white text-[10px] font-bold`}>
                   {stageLeads.length}
                 </span>
               </div>
-              <div className="space-y-2 min-h-[160px]">
+              <div className="space-y-3 min-h-[200px]">
                 <AnimatePresence>
                   {stageLeads.map((lead) => (
                     <motion.div
@@ -385,7 +384,7 @@ function LeadPipelineDemo() {
                       }}
                       exit={{ opacity: 0, x: 20, scale: 0.9 }}
                       transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                      className="bg-white rounded-xl p-2.5 border border-white/80 shadow-sm"
+                      className="bg-white rounded-2xl p-3.5 border border-white/80 shadow-sm"
                     >
                       <div className="flex items-center gap-2 mb-1.5">
                         <div className={`w-7 h-7 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0`}>
@@ -847,10 +846,7 @@ function Navbar() {
           <a href="#testimonials" className="hover:text-gray-900 transition-colors">Casos de éxito</a>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-3 py-2">Iniciar sesión</Link>
-          <Link href="/login" className="text-sm font-semibold bg-gradient-to-r from-violet-600 to-purple-600 text-white px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-violet-200 hover:-translate-y-0.5">
-            Empieza gratis
-          </Link>
+          <Link href="/login" className="text-sm font-semibold bg-gradient-to-r from-violet-600 to-purple-600 text-white px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-violet-200 hover:-translate-y-0.5">Iniciar sesión</Link>
         </div>
       </div>
     </nav>
@@ -908,15 +904,13 @@ export default function LandingPage() {
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
                 className="flex flex-col sm:flex-row gap-3 mb-7">
                 <Link href="/login" className="flex items-center justify-center gap-2 px-7 py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl transition-all hover:shadow-xl hover:shadow-violet-200 hover:-translate-y-0.5 text-base">
-                  Empieza gratis 14 días <ArrowRight size={17} />
+                  Comenzar ahora <ArrowRight size={17} />
                 </Link>
                 <a href="#pricing" className="flex items-center justify-center gap-2 px-7 py-3.5 border border-gray-200 text-gray-700 hover:border-violet-300 hover:text-violet-600 rounded-xl transition-all text-base">
                   Ver planes
                 </a>
               </motion.div>
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="text-sm text-gray-400">
-                Sin tarjeta de crédito · Cancela cuando quieras · Setup en 10 minutos
-              </motion.p>
+
             </div>
             <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 120, damping: 20 }}
@@ -957,7 +951,7 @@ export default function LandingPage() {
       <MarqueeStrip />
 
       {/* Features */}
-      <section id="features" className="relative py-24 px-6 pb-36 bg-gray-50 overflow-hidden">
+      <section id="features" className="relative py-24 px-6 bg-gray-50 overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Funcionalidades</p>
@@ -978,16 +972,10 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-        {/* Diagonal cut into dark section */}
-        <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
-          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="w-full block" style={{ height: 80 }}>
-            <polygon points="0,80 1440,0 1440,80" fill="#0f172a" />
-          </svg>
-        </div>
       </section>
 
       {/* How it works */}
-      <section className="relative pt-28 pb-44 px-6 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-hidden">
+      <section className="relative py-28 px-6 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-hidden">
         {/* Animated background orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div animate={{ x: [0, 40, 0], y: [0, -30, 0] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -1080,16 +1068,9 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 }}
             className="text-center mt-14">
             <a href="/login" className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold rounded-2xl hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-0.5 transition-all text-sm">
-              Empieza gratis ahora <ArrowRight size={16} />
+              Comenzar ahora <ArrowRight size={16} />
             </a>
-            <p className="text-white/30 text-xs mt-3">Sin tarjeta de crédito · Setup en 10 minutos</p>
           </motion.div>
-        </div>
-        {/* Wave into white */}
-        <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: 90 }}>
-          <svg className="absolute bottom-0 w-full" viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0,45 C180,90 360,0 540,45 C720,90 900,0 1080,45 C1260,90 1380,20 1440,45 L1440,90 L0,90 Z" fill="white" />
-          </svg>
         </div>
       </section>
 
@@ -1216,36 +1197,34 @@ export default function LandingPage() {
 
       {/* Lead Pipeline */}
       <section className="py-24 px-6 bg-white overflow-hidden">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <motion.p initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Pipeline de ventas</motion.p>
-              <motion.h2 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
-                className="text-4xl font-bold text-gray-900 mb-4">Tus leads avanzan solos en el funnel</motion.h2>
-              <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
-                className="text-gray-500 leading-relaxed mb-6">Cada prospecto es calificado con BANT y empujado automáticamente por el pipeline — de &ldquo;Nuevo&rdquo; a &ldquo;Ganado&rdquo; sin intervención manual.</motion.p>
-              <div className="space-y-3">
-                {[
-                  { label: "Calificación BANT automática en segundos", icon: Zap, color: "text-amber-500", bg: "bg-amber-50" },
-                  { label: "Avance de etapa según respuestas del lead", icon: RefreshCw, color: "text-violet-600", bg: "bg-violet-50" },
-                  { label: "Alerta a tu equipo cuando el lead está listo", icon: Bell, color: "text-emerald-600", bg: "bg-emerald-50" },
-                ].map((item, i) => (
-                  <motion.div key={item.label} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                    transition={{ delay: 0.14 + i * 0.08 }}
-                    className="flex items-center gap-3 text-sm text-gray-600">
-                    <span className={`w-8 h-8 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
-                      <item.icon size={15} className={item.color} />
-                    </span>
-                    {item.label}
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.15, type: "spring", stiffness: 120, damping: 22 }}>
-              <LeadPipelineDemo />
-            </motion.div>
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <motion.p initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Pipeline de ventas</motion.p>
+            <motion.h2 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
+              className="text-5xl font-bold text-gray-900 mb-4">Tus leads avanzan solos en el funnel</motion.h2>
+            <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              className="text-gray-500 text-lg max-w-2xl mx-auto">Cada prospecto es calificado con BANT y empujado automáticamente por el pipeline — de &ldquo;Nuevo&rdquo; a &ldquo;Ganado&rdquo; sin intervención manual.</motion.p>
           </div>
+          <div className="flex flex-wrap justify-center gap-6 mb-10">
+            {[
+              { label: "Calificación BANT automática en segundos", icon: Zap, color: "text-amber-500", bg: "bg-amber-50" },
+              { label: "Avance de etapa según respuestas del lead", icon: RefreshCw, color: "text-violet-600", bg: "bg-violet-50" },
+              { label: "Alerta a tu equipo cuando el lead está listo", icon: Bell, color: "text-emerald-600", bg: "bg-emerald-50" },
+            ].map((item, i) => (
+              <motion.div key={item.label} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                transition={{ delay: 0.1 + i * 0.08 }}
+                className="flex items-center gap-2.5 text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-5 py-2.5">
+                <span className={`w-7 h-7 rounded-full ${item.bg} flex items-center justify-center shrink-0`}>
+                  <item.icon size={13} className={item.color} />
+                </span>
+                {item.label}
+              </motion.div>
+            ))}
+          </div>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2, type: "spring", stiffness: 120, damping: 22 }}>
+            <LeadPipelineDemo />
+          </motion.div>
         </div>
       </section>
 
@@ -1312,20 +1291,9 @@ export default function LandingPage() {
           <div className="absolute inset-0 opacity-[0.03]"
             style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
         </div>
-        {/* Wave top (white) */}
-        <div className="absolute top-0 left-0 right-0 pointer-events-none" style={{ height: 80 }}>
-          <svg className="absolute top-0 w-full" viewBox="0 0 1440 80" preserveAspectRatio="none">
-            <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 L1440,0 L0,0 Z" fill="white" />
-          </svg>
-        </div>
-        {/* Wave bottom (gray-50 for pricing) */}
-        <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: 80 }}>
-          <svg className="absolute bottom-0 w-full" viewBox="0 0 1440 80" preserveAspectRatio="none">
-            <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 L1440,80 L0,80 Z" fill="#f9fafb" />
-          </svg>
-        </div>
 
-        <div className="relative max-w-5xl mx-auto pt-8 pb-8">
+
+        <div className="relative max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <motion.div initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
               className="flex items-center justify-center gap-1 mb-5">
@@ -1370,7 +1338,7 @@ export default function LandingPage() {
           <div className="text-center mb-14">
             <p className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Precios</p>
             <h2 className="text-4xl font-bold text-gray-900">Precio simple y transparente</h2>
-            <p className="text-gray-500 mt-4">14 días de prueba gratis en todos los planes. Sin tarjeta de crédito.</p>
+            <p className="text-gray-500 mt-4">Planes desde $50 USD / mes · Cancela cuando quieras.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
             {plans.map((plan, i) => (
@@ -1412,30 +1380,23 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="pt-36 pb-28 px-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-700 relative overflow-hidden">
+      <section className="py-28 px-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-700 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -top-20 left-1/4 w-[500px] h-[500px] rounded-full bg-white/5" />
           <div className="absolute -bottom-20 right-1/4 w-[400px] h-[400px] rounded-full bg-white/5" />
         </div>
-        {/* Wave top from pricing */}
-        <div className="absolute top-0 left-0 right-0 pointer-events-none" style={{ height: 90 }}>
-          <svg className="absolute top-0 w-full" viewBox="0 0 1440 90" preserveAspectRatio="none">
-            <path d="M0,45 C180,90 360,0 540,45 C720,90 900,0 1080,45 C1260,90 1380,20 1440,45 L1440,0 L0,0 Z" fill="#f9fafb" />
-          </svg>
-        </div>
         <div className="relative max-w-2xl mx-auto text-center">
           <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-4xl font-bold text-white mb-4">
-            Empieza hoy, gratis.
+            Empieza hoy.
           </motion.h2>
           <motion.p initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }} className="text-white/80 text-lg mb-10">
-            Configura tus agentes en minutos. Tus primeras 14 días son completamente gratuitas.
+            Configura tus agentes en minutos y empieza a recibir leads calificados desde el primer día.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.12 }}>
             <Link href="/login" className="inline-flex items-center gap-2 px-10 py-4 bg-white text-violet-700 font-bold rounded-2xl hover:bg-white/95 transition-all shadow-2xl text-lg hover:-translate-y-0.5">
-              Crear cuenta gratis <ArrowRight size={20} />
+              Crear mi cuenta <ArrowRight size={20} />
             </Link>
           </motion.div>
-          <p className="text-white/40 text-sm mt-5">Sin tarjeta de crédito · Cancela cuando quieras</p>
         </div>
       </section>
 
