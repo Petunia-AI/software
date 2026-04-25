@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   SquaresFour, ChatCircleText, UsersThree, BellRinging,
   TrendUp, Robot, PenNib, Buildings, SlidersHorizontal,
-  Wallet, ChevronDown, MagnifyingGlass, SignOut,
+  Wallet, CaretDown, MagnifyingGlass, SignOut,
   GlobeHemisphereWest, Camera, EnvelopeSimple, CalendarDots,
   ChatCircle, LinkedinLogo, FacebookLogo,
 } from "@phosphor-icons/react";
@@ -16,86 +16,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { followupsApi, analyticsApi } from "@/lib/api";
 
-const navItems = [
-  {
-    href: "/dashboard",     icon: LayoutGrid,       label: "Dashboard",
-    badge: null,
-    color: "from-violet-500 to-purple-600",
-    glow: "rgba(139,92,246,0.35)",
-  },
-  {
-    href: "/conversations", icon: MessageCircle,    label: "Conversaciones",
-    badge: null,
-    color: "from-blue-500 to-indigo-600",
-    glow: "rgba(99,102,241,0.35)",
-  },
-  {
-    href: "/leads",         icon: UsersRound,       label: "Leads",
-    badge: null,
-    color: "from-emerald-500 to-teal-600",
-    glow: "rgba(16,185,129,0.35)",
-  },
-  {
-    href: "/seguimiento",   icon: BellDot,          label: "Seguimiento",
-    badge: "dynamic",
-    color: "from-amber-500 to-orange-500",
-    glow: "rgba(245,158,11,0.35)",
-  },
-  {
-    href: "/analytics",     icon: TrendingUp,       label: "Analíticas",
-    badge: null,
-    color: "from-cyan-500 to-sky-600",
-    glow: "rgba(6,182,212,0.35)",
-  },
-  {
-    href: "/agents",        icon: BrainCircuit,     label: "Agentes IA",
-    badge: null,
-    color: "from-fuchsia-500 to-purple-600",
-    glow: "rgba(217,70,239,0.35)",
-  },
-  {
-    href: "/content",       icon: PenLine,          label: "Contenido",
-    badge: null,
-    color: "from-pink-500 to-rose-500",
-    glow: "rgba(236,72,153,0.35)",
-  },
-  {
-    href: "/email",         icon: Mail,             label: "Email CRM",
-    badge: null,
-    color: "from-sky-500 to-blue-600",
-    glow: "rgba(14,165,233,0.35)",
-  },
-  {
-    href: "/meetings",      icon: CalendarDays,     label: "Reuniones",
-    badge: null,
-    color: "from-violet-500 to-purple-600",
-    glow: "rgba(139,92,246,0.35)",
-  },
-  {
-    href: "/integrations/whatsapp", icon: MessageCircle, label: "WhatsApp Business",
-    badge: null,
-    color: "from-green-500 to-emerald-600",
-    glow: "rgba(16,185,129,0.35)",
-  },
-  {
-    href: "/properties",    icon: Building2,        label: "Propiedades",
-    badge: null,
-    color: "from-teal-500 to-green-600",
-    glow: "rgba(20,184,166,0.35)",
-  },
-  {
-    href: "/settings",      icon: SlidersHorizontal, label: "Configuración",
-    badge: null,
-    color: "from-slate-500 to-gray-600",
-    glow: "rgba(100,116,139,0.35)",
-  },
-  {
-    href: "/billing",       icon: Wallet,           label: "Plan & Billing",
-    badge: null,
-    color: "from-violet-600 to-indigo-600",
-    glow: "rgba(99,91,255,0.35)",
-  },
-];
+
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -151,7 +72,7 @@ export function Sidebar() {
           </p>
         </div>
 
-        <ChevronDown
+        <CaretDown
           size={13}
           className={cn("transition-transform flex-shrink-0", workspaceOpen && "rotate-180")}
           style={{ color: "rgba(255,255,255,0.2)" }}
