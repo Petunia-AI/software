@@ -10,7 +10,7 @@ import { MetaConnect } from "@/components/meta-connect";
 import { TikTokConnect } from "@/components/tiktok-connect";
 import { AyrshareConnect } from "@/components/ayrshare-connect";
 import toast from "react-hot-toast";
-import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Music2, Share2 } from "lucide-react";
+import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Music2, Share2, Settings2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "https://app.aipetunia.com";
@@ -253,7 +253,12 @@ function SettingsContent() {
 
   return (
     <div className="p-8 max-w-[1280px] mx-auto">
-      <PageHeader title="Configuración" subtitle="Define el contexto que usarán tus agentes de IA" />
+      <PageHeader
+        title="Configuración"
+        subtitle="Define el contexto que usarán tus agentes de IA"
+        icon={<Settings2 size={22} />}
+        gradient="linear-gradient(135deg, hsl(220,70%,50%) 0%, hsl(243,75%,58%) 60%, hsl(263,70%,50%) 100%)"
+      />
 
       <div className="space-y-5">
 

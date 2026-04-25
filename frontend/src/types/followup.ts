@@ -44,11 +44,11 @@ export interface FollowUpStats {
 }
 
 export const FOLLOWUP_TYPES = [
-  { value: "call",     label: "Llamada",    icon: "📞", color: "text-blue-600 bg-blue-50" },
-  { value: "email",    label: "Email",      icon: "📧", color: "text-violet-600 bg-violet-50" },
-  { value: "whatsapp", label: "WhatsApp",   icon: "💬", color: "text-green-600 bg-green-50" },
-  { value: "meeting",  label: "Reunión",    icon: "🤝", color: "text-orange-600 bg-orange-50" },
-  { value: "task",     label: "Tarea",      icon: "✅", color: "text-slate-600 bg-slate-50" },
+  { value: "call",     label: "Llamada",    icon: "📞", color: "text-blue-600 bg-blue-50",   gradient: "linear-gradient(135deg,#3B82F6,#6366F1)" },
+  { value: "email",    label: "Email",      icon: "📧", color: "text-violet-600 bg-violet-50", gradient: "linear-gradient(135deg,#635BFF,#8B5CF6)" },
+  { value: "whatsapp", label: "WhatsApp",   icon: "💬", color: "text-green-600 bg-green-50",  gradient: "linear-gradient(135deg,#10B981,#059669)" },
+  { value: "meeting",  label: "Reunión",    icon: "🤝", color: "text-orange-600 bg-orange-50", gradient: "linear-gradient(135deg,#F97316,#EA580C)" },
+  { value: "task",     label: "Tarea",      icon: "✅", color: "text-slate-600 bg-slate-50",  gradient: "linear-gradient(135deg,#64748B,#475569)" },
 ] as const;
 
 export const PRIORITY_CONFIG = {

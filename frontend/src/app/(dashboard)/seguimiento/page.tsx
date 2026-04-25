@@ -9,7 +9,7 @@ import {
   Calendar, List, Plus, Phone, Mail, MessageSquare, Users,
   CheckSquare, Clock, AlertTriangle, CheckCircle2, ChevronLeft,
   ChevronRight, Bot, Zap, Trash2, Edit3, Check, X, Filter,
-  TrendingUp, Bell,
+  TrendingUp, Bell, CircleDot,
 } from "lucide-react";
 import FollowUpDrawer from "@/components/followups/followup-drawer";
 import type { FollowUp, FollowUpStats } from "@/types/followup";
@@ -69,7 +69,8 @@ function KpiCard({ label, value, icon, color, onClick, active, gradStyle }: {
           <div className="w-2 h-2 rounded-full bg-violet-500 ring-2 ring-violet-200" />
         )}
       </div>
-      <p className="text-2xl font-black text-foreground leading-none tabular-nums">{value}</p>
+  <p className="text-2xl font-black text-foreground leading-none tabular-nums"
+     style={{ background: gradStyle ?? "linear-gradient(135deg,#635BFF,#8B5CF6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{value}</p>
       <p className="text-xs text-muted-foreground mt-1 font-medium">{label}</p>
     </motion.button>
   );
@@ -94,12 +95,23 @@ function FollowUpRow({ fu, onComplete, onEdit, onCancel }: {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       className={cn(
-        "flex items-center gap-3 px-4 py-3 rounded-xl border transition-all group",
+        "flex items-center gap-3 px-4 py-3 rounded-xl border transition-all group relative overflow-hidden",
         overdue && fu.status !== "completed"
-          ? "border-red-100 bg-red-50/50 hover:border-red-200"
-          : "border-border bg-card hover:border-border/80 hover:shadow-sm"
+          ? "border-red-200 bg-red-50/30 hover:border-red-300 hover:shadow-sm"
+          : fu.status === "completed"
+          ? "border-emerald-100 bg-emerald-50/20 hover:border-emerald-200"
+          : "border-border bg-card hover:border-violet-200/60 hover:shadow-sm hover:bg-violet-50/10"
       )}
     >
+      {/* Left accent border */}
+      <div className={cn(
+        "absolute left-0 top-0 bottom-0 w-1 rounded-l-xl",
+        overdue && fu.status !== "completed" ? "bg-gradient-to-b from-red-400 to-red-600"
+          : fu.status === "completed" ? "bg-gradient-to-b from-emerald-400 to-emerald-600"
+          : fu.status === "cancelled" ? "bg-slate-200"
+          : prioCfg.label === "Alta" ? "bg-gradient-to-b from-orange-400 to-red-500"
+          : "bg-gradient-to-b from-violet-400 to-purple-600"
+      )} />
       {/* Complete checkbox */}
       {fu.status !== "completed" && fu.status !== "cancelled" && (
         <button
@@ -121,10 +133,10 @@ function FollowUpRow({ fu, onComplete, onEdit, onCancel }: {
       )}
 
       {/* Type icon */}
-      <div className={cn(
-        "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs",
-        FOLLOWUP_TYPES.find(t => t.value === fu.followup_type)?.color ?? "text-slate-600 bg-slate-50"
-      )}>
+      <div
+        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-sm"
+        style={{ background: FOLLOWUP_TYPES.find(t => t.value === fu.followup_type)?.gradient ?? "linear-gradient(135deg,#635BFF,#8B5CF6)" }}
+      >
         {TYPE_ICON[fu.followup_type]}
       </div>
 
@@ -365,41 +377,69 @@ export default function SeguimientoPage() {
   return (
     <div className="p-8 max-w-[1280px] mx-auto">
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-foreground">Seguimiento</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Gestión de seguimientos con IA · Notificaciones automáticas
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Vista toggle */}
-          <div className="flex items-center border border-border rounded-lg overflow-hidden">
+      {/* ── Hero banner ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative rounded-2xl overflow-hidden mb-6"
+        style={{ background: "linear-gradient(135deg, hsl(243,75%,58%) 0%, hsl(263,70%,50%) 50%, hsl(280,65%,54%) 100%)", boxShadow: "0 8px 40px rgba(99,91,255,0.30)" }}
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />
+        <div className="relative flex items-center justify-between px-8 py-6 gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+              <Bell size={22} className="text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <CircleDot size={10} className="text-emerald-300 animate-pulse" />
+                <span className="text-white/60 text-xs font-medium">Seguimientos activos</span>
+              </div>
+              <h1 className="text-2xl font-black text-white">Seguimiento</h1>
+              <p className="text-white/60 text-sm mt-0.5">Gestión con IA · Notificaciones automáticas</p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-5">
+            {overdueCnt > 0 && (
+              <div className="flex items-center gap-2 bg-red-500/25 backdrop-blur-sm border border-red-300/30 rounded-xl px-3 py-1.5">
+                <AlertTriangle size={13} className="text-red-200" />
+                <span className="text-white text-xs font-bold">{overdueCnt} vencidos</span>
+              </div>
+            )}
+            {todayCnt > 0 && (
+              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-1.5">
+                <Clock size={13} className="text-amber-200" />
+                <span className="text-white text-xs font-bold">{todayCnt} para hoy</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setView("list")}
+                className={cn("px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all",
+                  view === "list" ? "bg-white/25 text-white" : "text-white/60 hover:text-white hover:bg-white/10")}
+              >
+                <List size={13} /> Lista
+              </button>
+              <button
+                onClick={() => setView("calendar")}
+                className={cn("px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all",
+                  view === "calendar" ? "bg-white/25 text-white" : "text-white/60 hover:text-white hover:bg-white/10")}
+              >
+                <Calendar size={13} /> Calendario
+              </button>
+            </div>
             <button
-              onClick={() => setView("list")}
-              className={cn("px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors",
-                view === "list" ? "bg-violet-600 text-white" : "hover:bg-accent text-muted-foreground")}
+              onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl transition-all"
             >
-              <List size={13} /> Lista
-            </button>
-            <button
-              onClick={() => setView("calendar")}
-              className={cn("px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors",
-                view === "calendar" ? "bg-violet-600 text-white" : "hover:bg-accent text-muted-foreground")}
-            >
-              <Calendar size={13} /> Calendario
+              <Plus size={15} /> Nuevo seguimiento
             </button>
           </div>
-          <button
-            onClick={openCreate}
-            className="btn-primary flex items-center gap-2 px-4 py-2 text-sm"
-          >
-            <Plus size={15} /> Nuevo seguimiento
-          </button>
         </div>
-      </div>
-
+      </motion.div>
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <KpiCard
@@ -446,13 +486,14 @@ export default function SeguimientoPage() {
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             onClick={() => setTab("overdue")}
-            className="w-full flex items-center gap-3 px-4 py-3 mb-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700 hover:bg-red-100 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-3.5 mb-4 rounded-xl text-sm font-semibold text-white text-left transition-all hover:brightness-110"
+            style={{ background: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)", boxShadow: "0 4px 16px rgba(239,68,68,0.35)" }}
           >
             <AlertTriangle size={15} className="flex-shrink-0" />
             <span>
-              Tienes <strong>{overdueCnt} seguimiento{overdueCnt > 1 ? "s" : ""} vencido{overdueCnt > 1 ? "s" : ""}</strong> que requieren atención.
+              Tienes <strong>{overdueCnt} seguimiento{overdueCnt > 1 ? "s" : ""} vencido{overdueCnt > 1 ? "s" : ""}</strong> que requieren atención inmediata.
             </span>
-            <span className="ml-auto text-xs underline">Ver ahora →</span>
+            <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-lg">Ver ahora →</span>
           </motion.button>
         )}
       </AnimatePresence>

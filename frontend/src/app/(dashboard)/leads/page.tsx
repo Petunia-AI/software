@@ -14,7 +14,7 @@ import {
   Users, Search, Mail, Phone, Building2, Star,
   Download, Upload, FileSpreadsheet, ChevronDown, CheckCircle2,
   AlertCircle, Loader2, LayoutGrid, List, Filter, X, DollarSign,
-  ArrowUpRight, Award, Trash2,
+  ArrowUpRight, Award, Trash2, CircleDot,
 } from "lucide-react";
 
 function KpiCard({
@@ -162,53 +162,71 @@ export default function LeadsPage() {
       <div className={cn("flex-1", view === "kanban" ? "p-6" : "p-8")}>
         <div className={cn("mx-auto", view === "kanban" ? "max-w-full" : "max-w-[1280px]")}>
 
-          {/* Header */}
-          <div className="flex items-start justify-between mb-6 gap-4">
-            <div>
-              <h1 className="text-2xl font-black text-foreground">Leads</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Pipeline de ventas gestionado por IA</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="flex items-center border border-border rounded-lg overflow-hidden">
-                <button onClick={() => setView("table")}
-                  className={cn("px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors",
-                    view === "table" ? "bg-violet-600 text-white" : "hover:bg-accent text-muted-foreground")}>
-                  <List size={13} /> Tabla
-                </button>
-                <button onClick={() => setView("kanban")}
-                  className={cn("px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors",
-                    view === "kanban" ? "bg-violet-600 text-white" : "hover:bg-accent text-muted-foreground")}>
-                  <LayoutGrid size={13} /> Kanban
-                </button>
+          {/* ── Hero banner ── */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative rounded-2xl overflow-hidden mb-6"
+            style={{ background: "linear-gradient(135deg, hsl(243,75%,58%) 0%, hsl(263,70%,50%) 50%, hsl(280,65%,54%) 100%)", boxShadow: "0 8px 40px rgba(99,91,255,0.30)" }}
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+            <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />
+            <div className="relative flex items-center justify-between px-8 py-6 gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                  <Users size={22} className="text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <CircleDot size={10} className="text-emerald-300 animate-pulse" />
+                    <span className="text-white/60 text-xs font-medium">Pipeline activo</span>
+                  </div>
+                  <h1 className="text-2xl font-black text-white">Leads</h1>
+                  <p className="text-white/60 text-sm mt-0.5">Pipeline de ventas gestionado por IA</p>
+                </div>
               </div>
-              <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImport} />
-              <button onClick={() => fileInputRef.current?.click()} disabled={importing}
-                className="btn-ghost text-xs flex items-center gap-1.5 h-[30px]">
-                {importing ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                Importar
-              </button>
-              <div className="relative">
-                <button onClick={() => setExportOpen(v => !v)}
-                  className="btn-ghost text-xs flex items-center gap-1.5 h-[30px]">
-                  <Download size={13} />Exportar
-                  <ChevronDown size={11} className={cn("transition-transform", exportOpen && "rotate-180")} />
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl overflow-hidden">
+                  <button onClick={() => setView("table")}
+                    className={cn("px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all",
+                      view === "table" ? "bg-white/25 text-white" : "text-white/60 hover:text-white hover:bg-white/10")}>
+                    <List size={13} /> Tabla
+                  </button>
+                  <button onClick={() => setView("kanban")}
+                    className={cn("px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all",
+                      view === "kanban" ? "bg-white/25 text-white" : "text-white/60 hover:text-white hover:bg-white/10")}>
+                    <LayoutGrid size={13} /> Kanban
+                  </button>
+                </div>
+                <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImport} />
+                <button onClick={() => fileInputRef.current?.click()} disabled={importing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all">
+                  {importing ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  Importar
                 </button>
-                <AnimatePresence>
-                  {exportOpen && (
-                    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-xl py-1 min-w-[180px]">
-                      <button onClick={() => handleExport("csv")} className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent flex items-center gap-2.5">
-                        <FileSpreadsheet size={14} className="text-green-600" /> Exportar CSV
-                      </button>
-                      <button onClick={() => handleExport("xlsx")} className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent flex items-center gap-2.5">
-                        <FileSpreadsheet size={14} className="text-emerald-600" /> Exportar Excel (.xlsx)
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div className="relative">
+                  <button onClick={() => setExportOpen(v => !v)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all">
+                    <Download size={13} />Exportar
+                    <ChevronDown size={11} className={cn("transition-transform", exportOpen && "rotate-180")} />
+                  </button>
+                  <AnimatePresence>
+                    {exportOpen && (
+                      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                        className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-xl py-1 min-w-[180px]">
+                        <button onClick={() => handleExport("csv")} className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent flex items-center gap-2.5">
+                          <FileSpreadsheet size={14} className="text-green-600" /> Exportar CSV
+                        </button>
+                        <button onClick={() => handleExport("xlsx")} className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent flex items-center gap-2.5">
+                          <FileSpreadsheet size={14} className="text-emerald-600" /> Exportar Excel (.xlsx)
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* KPIs */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">

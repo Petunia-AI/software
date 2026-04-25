@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -6,26 +8,52 @@ interface PageHeaderProps {
   subtitle?: string;
   children?: React.ReactNode;
   className?: string;
+  gradient?: string;
+  icon?: React.ReactNode;
+  badge?: React.ReactNode;
 }
 
-export function PageHeader({ title, subtitle, children, className }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, children, className, gradient, icon, badge }: PageHeaderProps) {
+  const bg = gradient
+    ?? "linear-gradient(135deg, hsl(243,75%,58%) 0%, hsl(263,70%,50%) 50%, hsl(280,65%,54%) 100%)";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className={cn("flex items-start justify-between mb-8", className)}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className={cn("relative rounded-2xl overflow-hidden mb-8", className)}
+      style={{ background: bg, boxShadow: "0 8px 40px rgba(99,91,255,0.28)" }}
     >
-      <div>
-        <h1 className="text-xl font-bold tracking-tight gradient-text-violet">{title}</h1>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground mt-0.5 font-medium">{subtitle}</p>
+      {/* Decorative circles */}
+      <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />
+      <div className="absolute top-1/2 right-1/3 w-20 h-20 rounded-full bg-white/5 -translate-y-1/2 pointer-events-none" />
+
+      <div className="relative flex items-center justify-between px-8 py-6 gap-6">
+        {/* Left: icon + text */}
+        <div className="flex items-center gap-4">
+          {icon && (
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 text-white shadow-lg">
+              {icon}
+            </div>
+          )}
+          <div>
+            {badge && <div className="mb-1">{badge}</div>}
+            <h1 className="text-2xl font-black text-white">{title}</h1>
+            {subtitle && <p className="text-white/60 text-sm mt-0.5">{subtitle}</p>}
+          </div>
+        </div>
+
+        {/* Right: action buttons */}
+        {children && (
+          <div className="flex items-center gap-2 flex-shrink-0
+            [&_.btn-primary]:!bg-white/25 [&_.btn-primary]:!text-white [&_.btn-primary]:!border [&_.btn-primary]:!border-white/30 [&_.btn-primary]:!shadow-none [&_.btn-primary]:hover:!bg-white/35
+            [&_.btn-ghost]:!text-white/80 [&_.btn-ghost]:hover:!bg-white/20 [&_.btn-ghost]:!border-white/20">
+            {children}
+          </div>
         )}
-        <div className="page-header-accent" />
       </div>
-      {children && (
-        <div className="flex items-center gap-2 flex-shrink-0">{children}</div>
-      )}
     </motion.div>
   );
 }

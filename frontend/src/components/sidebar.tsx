@@ -6,11 +6,12 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import { cn } from "@/lib/utils";
 import {
-  LayoutGrid, MessageCircle, UsersRound, BellDot,
-  TrendingUp, BrainCircuit, PenLine, Building2,
-  SlidersHorizontal, Wallet, ChevronDown, Search,
-  LogOut, Globe, Camera, Mail, CalendarDays,
-} from "lucide-react";
+  SquaresFour, ChatCircleText, UsersThree, BellRinging,
+  TrendUp, Robot, PenNib, Buildings, SlidersHorizontal,
+  Wallet, ChevronDown, MagnifyingGlass, SignOut,
+  GlobeHemisphereWest, Camera, EnvelopeSimple, CalendarDots,
+  ChatCircle, LinkedinLogo, FacebookLogo,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { followupsApi, analyticsApi } from "@/lib/api";
@@ -168,7 +169,7 @@ export function Sidebar() {
             color: "rgba(255,255,255,0.3)"
           }}
         >
-          <Search size={11} />
+          <MagnifyingGlass size={12} />
           <span className="flex-1 text-left">Buscar...</span>
           <kbd className="text-[9px] px-1.5 py-0.5 rounded font-mono"
             style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.08)" }}>
@@ -184,7 +185,7 @@ export function Sidebar() {
           Principal
         </p>
 
-        {navItems.map(({ href, icon: Icon, label, badge, color, glow }) => {
+        {navItems.map(({ href, icon: Icon, label, badge, color, glow, iconWeight }) => {
           const resolvedBadge = badge === "dynamic"
             ? (overdueCount > 0 ? String(overdueCount) : null)
             : badge;
@@ -216,7 +217,8 @@ export function Sidebar() {
                 style={isActive ? { boxShadow: `0 2px 10px ${glow}` } : {}}
               >
                 <Icon
-                  size={13}
+                  size={15}
+                  weight={isActive ? iconWeight : "regular"}
                   className="flex-shrink-0"
                   style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.45)" }}
                 />
@@ -251,10 +253,10 @@ export function Sidebar() {
 
         {(() => {
           const ALL_CHANNELS: { label: string; channel: string; color: string; glow: string; Icon: React.ElementType; customIcon?: React.ReactNode }[] = [
-            { label: "WhatsApp",  channel: "whatsapp",  color: "from-green-500 to-emerald-600", glow: "rgba(16,185,129,0.4)", Icon: MessageCircle },
-            { label: "Webchat",   channel: "webchat",   color: "from-blue-500 to-indigo-600",   glow: "rgba(99,102,241,0.4)", Icon: Globe },
-            { label: "Instagram", channel: "instagram", color: "from-pink-500 to-fuchsia-600",  glow: "rgba(236,72,153,0.4)", Icon: Camera },
-            { label: "Messenger", channel: "messenger", color: "from-blue-600 to-indigo-700",   glow: "rgba(59,130,246,0.4)", Icon: MessageCircle },
+            { label: "WhatsApp",  channel: "whatsapp",  color: "from-green-500 to-emerald-600", glow: "rgba(16,185,129,0.4)",  Icon: ChatCircle },
+            { label: "Webchat",   channel: "webchat",   color: "from-blue-500 to-indigo-600",   glow: "rgba(99,102,241,0.4)",  Icon: GlobeHemisphereWest },
+            { label: "Instagram", channel: "instagram", color: "from-pink-500 to-fuchsia-600",  glow: "rgba(236,72,153,0.4)",  Icon: Camera },
+            { label: "Messenger", channel: "messenger", color: "from-blue-600 to-indigo-700",   glow: "rgba(59,130,246,0.4)",  Icon: FacebookLogo },
             { label: "TikTok",    channel: "tiktok",    color: "from-neutral-800 to-neutral-900", glow: "rgba(255,255,255,0.15)", Icon: Camera,
               customIcon: (
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
@@ -298,7 +300,7 @@ export function Sidebar() {
                   )}
                   style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(255,255,255,0.45)" }}
                 >
-                  {customIcon ?? <Icon size={13} />}
+                  {customIcon ? customIcon : <Icon size={15} weight={isActive ? "duotone" : "regular"} />}
                 </div>
                 <span className="flex-1 truncate">{label}</span>
                 {count > 0 && (
@@ -344,8 +346,9 @@ export function Sidebar() {
             </p>
           </div>
 
-          <LogOut
-            size={13}
+          <SignOut
+            size={14}
+            weight="duotone"
             className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
             style={{ color: "rgba(255,255,255,0.3)" }}
           />

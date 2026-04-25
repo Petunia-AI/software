@@ -73,6 +73,13 @@ function ConversationsInner() {
       <PageHeader
         title="Conversaciones"
         subtitle={`${convs.length} totales · ${activeCount} activas`}
+        icon={<MessageSquare size={22} />}
+        badge={
+          <div className="flex items-center gap-1.5">
+            <CircleDot size={10} className="text-emerald-300 animate-pulse" />
+            <span className="text-white/60 text-xs font-medium">En vivo</span>
+          </div>
+        }
       >
         <button
           onClick={() => startMutation.mutate()}

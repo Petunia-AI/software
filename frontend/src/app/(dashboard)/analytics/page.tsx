@@ -118,17 +118,22 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-8 max-w-[1280px] mx-auto">
-      <PageHeader title="Analíticas" subtitle="Rendimiento completo de tu plataforma">
+      <PageHeader
+        title="Analíticas"
+        subtitle="Rendimiento completo de tu plataforma"
+        icon={<BarChart3 size={22} />}
+        gradient="linear-gradient(135deg, hsl(221,83%,53%) 0%, hsl(243,75%,58%) 50%, hsl(263,70%,50%) 100%)"
+      >
         {/* Period selector */}
-        <div className="flex items-center gap-1 bg-secondary rounded-xl p-1">
+        <div className="flex items-center gap-1 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl p-1">
           {DAYS_OPTIONS.map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 days === d
-                  ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-white text-violet-700 shadow-sm"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
               }`}
             >
               {d}d

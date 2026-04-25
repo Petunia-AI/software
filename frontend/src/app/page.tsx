@@ -109,7 +109,7 @@ function AnimatedChatDemo() {
   }, [visibleCount]);
 
   return (
-    <div className="relative w-full max-w-[340px] mx-auto select-none">
+    <div className="relative w-full max-w-[340px] mx-auto select-none flex-shrink-0">
       <motion.div animate={{ y: [0, -7, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         className="absolute -left-10 top-20 bg-white rounded-2xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2 z-10">
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center flex-shrink-0">
@@ -139,7 +139,7 @@ function AnimatedChatDemo() {
             </div>
           </div>
         </div>
-        <div className="bg-gray-50 px-3 py-4 space-y-3 min-h-[300px]">
+        <div className="bg-gray-50 px-3 py-4 space-y-3 h-[300px] overflow-hidden">
           <AnimatePresence>
             {DEMO_MESSAGES.slice(0, visibleCount).map((msg) => (
               <motion.div key={msg.id} initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -887,7 +887,7 @@ export default function LandingPage() {
         </div>
         <div className="relative max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="order-last lg:order-first">
+            <div className="order-last lg:order-first" style={{ alignSelf: "start" }}>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-600 text-sm font-medium mb-7">
                 <Sparkles size={13} /> Agente de ventas IA para LATAM
@@ -914,7 +914,7 @@ export default function LandingPage() {
             </div>
             <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 120, damping: 20 }}
-              className="order-first lg:order-last flex justify-center lg:justify-end pr-8">
+              className="order-first lg:order-last flex justify-center lg:justify-end pr-8 self-start">
               <AnimatedChatDemo />
             </motion.div>
           </div>
