@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Users, TrendingUp, Bot, Check,
   ArrowRight, Star, Globe, Phone, Instagram,
-  BarChart3, Shield, Sparkles, X, Send, Zap, RefreshCw, Bell,
+  BarChart3, Shield, Sparkles, X, Send, Zap, RefreshCw, Bell, FileText,
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -57,6 +57,39 @@ const DEMO_MESSAGES = [
   { id: 5, from: "agent" as const, text: "¡Encontré 5 propiedades ideales para ti! Te envío los detalles ✨" },
   { id: 6, from: "agent" as const, text: "✅ Lead calificado · BANT score: 92% · Budget confirmado" },
 ];
+
+const MARQUEE_ITEMS = [
+  "Setup en 10 minutos",
+  "+500 empresas en LATAM",
+  "Sin tarjeta de crédito",
+  "5 Agentes IA en paralelo",
+  "3× más leads calificados",
+  "WhatsApp · Instagram · Webchat",
+  "Datos 100% aislados",
+  "Respuesta 24 / 7 automática",
+];
+
+function MarqueeStrip() {
+  const doubled = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+  return (
+    <div className="overflow-hidden bg-gradient-to-r from-violet-700 via-purple-700 to-violet-700 py-4 select-none relative border-y border-violet-500/20">
+      <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-violet-700 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-violet-700 to-transparent z-10 pointer-events-none" />
+      <motion.div
+        className="flex gap-14 whitespace-nowrap"
+        animate={{ x: ["0%", "-50%"] }}
+        transition={{ duration: 32, repeat: Infinity, ease: "linear" }}
+      >
+        {doubled.map((item, i) => (
+          <span key={i} className="inline-flex items-center gap-3 text-white/75 text-sm font-semibold tracking-wide">
+            <Sparkles size={10} className="text-violet-300 shrink-0" />
+            {item}
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
 
 function AnimatedChatDemo() {
   const [visibleCount, setVisibleCount] = useState(0);
@@ -840,12 +873,21 @@ export default function LandingPage() {
       <SupportWidget />
 
       {/* Hero */}
-      <section className="relative pt-28 pb-16 px-6 overflow-hidden">
+      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-20 right-0 w-[700px] h-[700px] rounded-full opacity-[0.06]"
-            style={{ background: "radial-gradient(ellipse, #7c3aed 0%, transparent 70%)" }} />
-          <div className="absolute top-1/2 -left-40 w-[600px] h-[600px] rounded-full opacity-[0.05]"
-            style={{ background: "radial-gradient(ellipse, #0ea5e9 0%, transparent 70%)" }} />
+          {/* Animated gradient orbs */}
+          <motion.div animate={{ scale: [1, 1.18, 1], opacity: [0.07, 0.14, 0.07] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-40 right-0 w-[900px] h-[900px] rounded-full"
+            style={{ background: "radial-gradient(ellipse, #7c3aed 0%, transparent 65%)" }} />
+          <motion.div animate={{ scale: [1, 1.25, 1], opacity: [0.04, 0.09, 0.04] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+            className="absolute top-1/3 -left-60 w-[700px] h-[700px] rounded-full"
+            style={{ background: "radial-gradient(ellipse, #06b6d4 0%, transparent 65%)" }} />
+          <motion.div animate={{ scale: [1, 1.12, 1], opacity: [0.04, 0.08, 0.04] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full"
+            style={{ background: "radial-gradient(ellipse, #a855f7 0%, transparent 65%)" }} />
+          {/* Subtle grid */}
+          <div className="absolute inset-0 opacity-[0.022]"
+            style={{ backgroundImage: "linear-gradient(rgba(124,58,237,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.6) 1px, transparent 1px)", backgroundSize: "80px 80px" }} />
         </div>
         <div className="relative max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -855,12 +897,12 @@ export default function LandingPage() {
                 <Sparkles size={13} /> Agente de ventas IA para LATAM
               </motion.div>
               <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}
-                className="text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6 text-gray-900">
+                className="text-6xl lg:text-[80px] font-black tracking-tighter leading-[0.95] mb-7 text-gray-900">
                 Vende más,<br />
-                <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">sin esfuerzo extra.</span>
+                <span className="bg-gradient-to-r from-violet-600 via-purple-500 to-cyan-500 bg-clip-text text-transparent">sin esfuerzo extra.</span>
               </motion.h1>
               <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
-                className="text-lg text-gray-500 max-w-lg leading-relaxed mb-8">
+                className="text-xl text-gray-500 max-w-lg leading-relaxed mb-8">
                 5 agentes de IA que califican leads BANT, nutren prospectos y cierran ventas — las 24 horas del día en WhatsApp, Instagram y tu sitio web.
               </motion.p>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
@@ -895,8 +937,10 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <MarqueeStrip />
+
       {/* Features */}
-      <section id="features" className="py-24 px-6 bg-gray-50">
+      <section id="features" className="relative py-24 px-6 pb-36 bg-gray-50 overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Funcionalidades</p>
@@ -917,10 +961,16 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
+        {/* Diagonal cut into dark section */}
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
+          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="w-full block" style={{ height: 80 }}>
+            <polygon points="0,80 1440,0 1440,80" fill="#0f172a" />
+          </svg>
+        </div>
       </section>
 
       {/* How it works */}
-      <section className="relative py-28 px-6 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-hidden">
+      <section className="relative pt-28 pb-44 px-6 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-hidden">
         {/* Animated background orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div animate={{ x: [0, 40, 0], y: [0, -30, 0] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -1017,6 +1067,12 @@ export default function LandingPage() {
             </a>
             <p className="text-white/30 text-xs mt-3">Sin tarjeta de crédito · Setup en 10 minutos</p>
           </motion.div>
+        </div>
+        {/* Wave into white */}
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: 90 }}>
+          <svg className="absolute bottom-0 w-full" viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,45 C180,90 360,0 540,45 C720,90 900,0 1080,45 C1260,90 1380,20 1440,45 L1440,90 L0,90 Z" fill="white" />
+          </svg>
         </div>
       </section>
 
@@ -1193,14 +1249,16 @@ export default function LandingPage() {
                 className="text-gray-500 leading-relaxed mb-6">Visualiza conversaciones, leads calificados, tasa de respuesta y performance de cada agente en un solo dashboard actualizado en tiempo real.</motion.p>
               <div className="space-y-3">
                 {[
-                  { label: "Gráficas de tendencia por mes y canal", icon: "📈" },
-                  { label: "Score de cada agente IA en tiempo real", icon: "🤖" },
-                  { label: "Exporta reportes PDF con un clic", icon: "📄" },
+                  { label: "Gráficas de tendencia por mes y canal", icon: TrendingUp, color: "text-violet-600", bg: "bg-violet-50" },
+                  { label: "Score de cada agente IA en tiempo real", icon: Bot, color: "text-emerald-600", bg: "bg-emerald-50" },
+                  { label: "Exporta reportes PDF con un clic", icon: FileText, color: "text-amber-600", bg: "bg-amber-50" },
                 ].map((item, i) => (
                   <motion.div key={item.label} initial={{ opacity: 0, x: 16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
                     transition={{ delay: 0.14 + i * 0.08 }}
                     className="flex items-center gap-3 text-sm text-gray-600">
-                    <span className="text-lg">{item.icon}</span>
+                    <span className={`w-8 h-8 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
+                      <item.icon size={15} className={item.color} />
+                    </span>
                     {item.label}
                   </motion.div>
                 ))}
@@ -1223,27 +1281,61 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-24 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
+      <section id="testimonials" className="relative py-28 px-6 bg-slate-950 overflow-hidden">
+        {/* Glow orbs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-30"
+            style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.4) 0%, transparent 70%)" }} />
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full opacity-20"
+            style={{ background: "radial-gradient(ellipse, rgba(14,165,233,0.3) 0%, transparent 70%)" }} />
+          {/* Grid */}
+          <div className="absolute inset-0 opacity-[0.03]"
+            style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        </div>
+        {/* Wave top (white) */}
+        <div className="absolute top-0 left-0 right-0 pointer-events-none" style={{ height: 80 }}>
+          <svg className="absolute top-0 w-full" viewBox="0 0 1440 80" preserveAspectRatio="none">
+            <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 L1440,0 L0,0 Z" fill="white" />
+          </svg>
+        </div>
+        {/* Wave bottom (gray-50 for pricing) */}
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: 80 }}>
+          <svg className="absolute bottom-0 w-full" viewBox="0 0 1440 80" preserveAspectRatio="none">
+            <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 L1440,80 L0,80 Z" fill="#f9fafb" />
+          </svg>
+        </div>
+
+        <div className="relative max-w-5xl mx-auto pt-8 pb-8">
           <div className="text-center mb-14">
-            <div className="flex items-center justify-center gap-1 mb-5">
-              {[...Array(5)].map((_, i) => <Star key={i} size={20} className="fill-amber-400 text-amber-400" />)}
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900">Empresas LATAM que ya venden más</h2>
+            <motion.div initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
+              className="flex items-center justify-center gap-1 mb-5">
+              {[...Array(5)].map((_, i) => <Star key={i} size={22} className="fill-amber-400 text-amber-400" />)}
+            </motion.div>
+            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-5xl font-bold text-white mb-3">Empresas LATAM que ya <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">venden más</span></motion.h2>
+            <motion.p initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
+              className="text-white/50 text-lg">Resultados reales de equipos que automatizaron sus ventas con Petunia.</motion.p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {TESTIMONIALS.map((t, i) => (
-              <motion.div key={t.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ delay: i * 0.09 }} className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                <div className="flex gap-1 mb-4">
+              <motion.div key={t.name}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, type: "spring", stiffness: 160, damping: 22 }}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                className="relative p-7 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-default overflow-hidden">
+                {/* Decorative large quote */}
+                <div className="absolute top-3 right-5 text-8xl font-black text-white/[0.04] leading-none select-none pointer-events-none">&rdquo;</div>
+                <div className="flex gap-1 mb-5">
                   {[...Array(5)].map((_, j) => <Star key={j} size={13} className="fill-amber-400 text-amber-400" />)}
                 </div>
-                <p className="text-gray-600 text-sm leading-relaxed italic mb-5">&ldquo;{t.quote}&rdquo;</p>
+                <p className="text-white/75 text-sm leading-relaxed mb-7">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>{t.avatar}</div>
+                  <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-lg`}>{t.avatar}</div>
                   <div>
-                    <p className="text-gray-900 text-sm font-semibold">{t.name}</p>
-                    <p className="text-gray-400 text-xs">{t.role}</p>
+                    <p className="text-white text-sm font-semibold">{t.name}</p>
+                    <p className="text-white/40 text-xs">{t.role}</p>
                   </div>
                 </div>
               </motion.div>
@@ -1300,10 +1392,16 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-24 px-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-700 relative overflow-hidden">
+      <section className="pt-36 pb-28 px-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-700 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -top-20 left-1/4 w-[500px] h-[500px] rounded-full bg-white/5" />
           <div className="absolute -bottom-20 right-1/4 w-[400px] h-[400px] rounded-full bg-white/5" />
+        </div>
+        {/* Wave top from pricing */}
+        <div className="absolute top-0 left-0 right-0 pointer-events-none" style={{ height: 90 }}>
+          <svg className="absolute top-0 w-full" viewBox="0 0 1440 90" preserveAspectRatio="none">
+            <path d="M0,45 C180,90 360,0 540,45 C720,90 900,0 1080,45 C1260,90 1380,20 1440,45 L1440,0 L0,0 Z" fill="#f9fafb" />
+          </svg>
         </div>
         <div className="relative max-w-2xl mx-auto text-center">
           <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-4xl font-bold text-white mb-4">
@@ -1326,7 +1424,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Petunia AI" className="h-8 w-auto brightness-0 invert opacity-70" />
-          <p className="text-gray-500 text-sm">© 2025 Petunia AI · Construido para LATAM 🌎</p>
+          <p className="text-gray-500 text-sm">© 2026 Petunia AI · Construido para LATAM 🌎</p>
           <div className="flex items-center gap-6 text-sm text-gray-500">
             <Link href="/login" className="hover:text-gray-300 transition-colors">Acceso</Link>
             <a href="mailto:api@aipetunia.com" className="hover:text-gray-300 transition-colors">Contacto</a>
