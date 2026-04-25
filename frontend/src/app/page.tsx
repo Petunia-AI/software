@@ -613,7 +613,7 @@ function SocialCalendarDemo() {
   }, [currentIdx]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full">
       {/* Calendar grid */}
       <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
         {/* Header */}
@@ -632,16 +632,16 @@ function SocialCalendarDemo() {
 
         {/* Day headers */}
         <div className="grid grid-cols-8 border-b border-gray-100 bg-gray-50">
-          <div className="px-3 py-2 text-xs text-gray-400 font-medium border-r border-gray-100"></div>
+          <div className="px-4 py-3 text-xs text-gray-400 font-medium border-r border-gray-100"></div>
           {DAYS.map((d) => (
-            <div key={d} className="px-1 py-2 text-center text-xs font-semibold text-gray-500">{d}</div>
+            <div key={d} className="px-1 py-3 text-center text-sm font-bold text-gray-500 tracking-wide">{d}</div>
           ))}
         </div>
 
         {/* Slots */}
         {SLOT_LABELS.map((slotLabel, slotIdx) => (
           <div key={slotIdx} className="grid grid-cols-8 border-b border-gray-100 last:border-b-0">
-            <div className="px-3 py-2 flex items-center justify-center text-xs text-gray-400 border-r border-gray-100 font-mono">
+            <div className="px-4 py-3 flex items-center justify-center text-xs text-gray-400 border-r border-gray-100 font-mono font-semibold">
               {slotLabel}
             </div>
             {DAYS.map((_, dayIdx) => {
@@ -649,7 +649,7 @@ function SocialCalendarDemo() {
               const published = post ? publishedIds.has(post.id) : false;
               const isActive = activePost?.id === post?.id;
               return (
-                <div key={dayIdx} className="min-h-[56px] p-1 border-r border-gray-50 last:border-r-0 flex items-center justify-center">
+                <div key={dayIdx} className="min-h-[88px] p-1.5 border-r border-gray-50 last:border-r-0 flex items-center justify-center">
                   <AnimatePresence>
                     {post && published && (
                       <motion.button
@@ -659,10 +659,10 @@ function SocialCalendarDemo() {
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 400, damping: 22 }}
                         onClick={() => setActivePost(post === activePost ? null : post)}
-                        className={`w-full rounded-xl p-1.5 bg-gradient-to-br ${NET_STYLES[post.network].bg} shadow-md cursor-pointer`}
+                        className={`w-full rounded-xl p-2 bg-gradient-to-br ${NET_STYLES[post.network].bg} shadow-md cursor-pointer`}
                       >
-                        <p className="text-white text-[10px] font-bold leading-none mb-0.5">{post.emoji} {NET_STYLES[post.network].label}</p>
-                        <p className="text-white/80 text-[9px] leading-tight line-clamp-2">{post.text}</p>
+                        <p className="text-white text-xs font-bold leading-none mb-1">{post.emoji} {NET_STYLES[post.network].label}</p>
+                        <p className="text-white/80 text-[10px] leading-tight line-clamp-2">{post.text}</p>
                       </motion.button>
                     )}
                   </AnimatePresence>
@@ -682,16 +682,16 @@ function SocialCalendarDemo() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="mt-4 bg-white rounded-2xl border border-gray-100 shadow-lg p-4 flex items-start gap-4"
+            className="mt-5 bg-white rounded-2xl border border-gray-100 shadow-lg p-5 flex items-start gap-5"
           >
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${NET_STYLES[activePost.network].bg} flex items-center justify-center flex-shrink-0 shadow-md`}>
-              <span className="text-lg">{activePost.emoji}</span>
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${NET_STYLES[activePost.network].bg} flex items-center justify-center flex-shrink-0 shadow-md`}>
+              <span className="text-xl">{activePost.emoji}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-bold text-gray-700">{NET_STYLES[activePost.network].label}</span>
-                <span className="text-xs text-gray-400">· {DAYS[activePost.day]} {SLOT_LABELS[activePost.slot]}</span>
-                <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+              <div className="flex items-center gap-3 mb-1.5">
+                <span className="text-sm font-bold text-gray-700">{NET_STYLES[activePost.network].label}</span>
+                <span className="text-sm text-gray-400">· {DAYS[activePost.day]} {SLOT_LABELS[activePost.slot]}</span>
+                <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                   <Check size={10} strokeWidth={3} /> Publicado
                 </span>
               </div>
@@ -702,12 +702,12 @@ function SocialCalendarDemo() {
       </AnimatePresence>
 
       {/* Counters */}
-      <div className="mt-4 flex items-center justify-center gap-6">
+      <div className="mt-5 flex items-center justify-center gap-8">
         {Object.entries(NET_STYLES).map(([net, style]) => {
           const count = [...publishedIds].filter((id) => CALENDAR_POSTS.find((p) => p.id === id && p.network === net)).length;
           return (
-            <div key={net} className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className={`w-2 h-2 rounded-full ${style.dot}`} />
+            <div key={net} className="flex items-center gap-2 text-sm text-gray-500">
+              <span className={`w-2.5 h-2.5 rounded-full ${style.dot}`} />
               <span className="font-medium">{style.label}</span>
               <motion.span
                 key={count}
@@ -1269,12 +1269,15 @@ export default function LandingPage() {
       </section>
 
       {/* Social Calendar */}
-      <section className="py-24 px-6 bg-white overflow-hidden">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Contenido automático</p>
-            <h2 className="text-4xl font-bold text-gray-900">Publica en todas tus redes, sin esfuerzo</h2>
-            <p className="text-gray-500 mt-4 max-w-xl mx-auto">Petunia crea, programa y publica contenido en Instagram, Facebook, TikTok y LinkedIn de forma completamente automática.</p>
+      <section className="py-28 px-6 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <motion.p initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Contenido automático</motion.p>
+            <motion.h2 initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
+              className="text-5xl font-bold text-gray-900 mb-4">Publica en todas tus redes, <span className="bg-gradient-to-r from-violet-600 to-pink-500 bg-clip-text text-transparent">sin esfuerzo</span></motion.h2>
+            <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              className="text-gray-400 text-lg max-w-2xl mx-auto">Petunia crea, programa y publica contenido en Instagram, Facebook, TikTok y LinkedIn de forma completamente automática.</motion.p>
           </div>
           <SocialCalendarDemo />
         </div>
@@ -1424,7 +1427,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Petunia AI" className="h-8 w-auto brightness-0 invert opacity-70" />
-          <p className="text-gray-500 text-sm">© 2026 Petunia AI · Construido para LATAM 🌎</p>
+          <p className="text-gray-500 text-sm flex items-center gap-1.5">© 2026 Petunia AI · Construido para LATAM <Globe size={13} className="text-gray-400" /></p>
           <div className="flex items-center gap-6 text-sm text-gray-500">
             <Link href="/login" className="hover:text-gray-300 transition-colors">Acceso</Link>
             <a href="mailto:api@aipetunia.com" className="hover:text-gray-300 transition-colors">Contacto</a>
