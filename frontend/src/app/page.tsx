@@ -269,6 +269,257 @@ function SupportWidget() {
   );
 }
 
+// ── Lead Pipeline Demo ────────────────────────────────────────────────────
+
+const PIPELINE_STAGES = [
+  { id: "new",       label: "Nuevo",       color: "bg-blue-50 border-blue-200",     badge: "bg-blue-500",     text: "text-blue-700"    },
+  { id: "qualified", label: "Calificado",  color: "bg-violet-50 border-violet-200", badge: "bg-violet-500",   text: "text-violet-700"  },
+  { id: "closing",   label: "Cerrando",    color: "bg-amber-50 border-amber-200",   badge: "bg-amber-500",    text: "text-amber-700"   },
+  { id: "won",       label: "Ganado ✅",   color: "bg-emerald-50 border-emerald-200", badge: "bg-emerald-500", text: "text-emerald-700" },
+];
+
+interface PipelineLead {
+  id: number;
+  name: string;
+  company: string;
+  score: number;
+  avatar: string;
+  channel: string;
+  stageIdx: number;
+}
+
+const INITIAL_LEADS: PipelineLead[] = [
+  { id: 1, name: "María González",  company: "Fintech MX",    score: 87, avatar: "MG", channel: "WhatsApp",  stageIdx: 0 },
+  { id: 2, name: "Carlos Mendoza",  company: "SaaS Chile",    score: 72, avatar: "CM", channel: "Instagram", stageIdx: 1 },
+  { id: 3, name: "Ana Torres",      company: "E-comm CO",     score: 94, avatar: "AT", channel: "Webchat",   stageIdx: 2 },
+  { id: 4, name: "Luis Romero",     company: "Inmobiliaria",  score: 68, avatar: "LR", channel: "WhatsApp",  stageIdx: 0 },
+  { id: 5, name: "Sofía Castro",    company: "AgriTech PE",   score: 91, avatar: "SC", channel: "Webchat",   stageIdx: 1 },
+  { id: 6, name: "Diego Paredes",   company: "RetailPro AR",  score: 78, avatar: "DP", channel: "Instagram", stageIdx: 2 },
+];
+
+const CHANNEL_COLORS: Record<string, string> = {
+  "WhatsApp":  "bg-emerald-100 text-emerald-700",
+  "Instagram": "bg-pink-100 text-pink-700",
+  "Webchat":   "bg-blue-100 text-blue-700",
+};
+
+function LeadPipelineDemo() {
+  const [leads, setLeads] = useState<PipelineLead[]>(INITIAL_LEADS);
+  const [movingId, setMovingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLeads((prev) => {
+        // Find a lead that can advance (not in last stage)
+        const eligible = prev.filter((l) => l.stageIdx < 3);
+        if (eligible.length === 0) {
+          // Reset all to stage 0
+          return INITIAL_LEADS.map((l) => ({ ...l }));
+        }
+        // Pick a random eligible lead
+        const target = eligible[Math.floor(Math.random() * eligible.length)];
+        setMovingId(target.id);
+        setTimeout(() => setMovingId(null), 700);
+        return prev.map((l) => l.id === target.id ? { ...l, stageIdx: l.stageIdx + 1 } : l);
+      });
+    }, 1800);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="w-full overflow-x-auto pb-2">
+      <div className="min-w-[600px] grid grid-cols-4 gap-3">
+        {PIPELINE_STAGES.map((stage, sIdx) => {
+          const stageLeads = leads.filter((l) => l.stageIdx === sIdx);
+          return (
+            <div key={stage.id} className={`rounded-2xl border ${stage.color} p-3`}>
+              <div className="flex items-center justify-between mb-3">
+                <span className={`text-xs font-bold ${stage.text}`}>{stage.label}</span>
+                <span className={`w-5 h-5 rounded-full ${stage.badge} flex items-center justify-center text-white text-[10px] font-bold`}>
+                  {stageLeads.length}
+                </span>
+              </div>
+              <div className="space-y-2 min-h-[160px]">
+                <AnimatePresence>
+                  {stageLeads.map((lead) => (
+                    <motion.div
+                      key={lead.id}
+                      layout
+                      initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                      animate={{
+                        opacity: 1, x: 0, scale: movingId === lead.id ? [1, 1.04, 1] : 1,
+                        boxShadow: movingId === lead.id ? "0 8px 25px rgba(124,58,237,0.25)" : "0 1px 4px rgba(0,0,0,0.06)"
+                      }}
+                      exit={{ opacity: 0, x: 20, scale: 0.9 }}
+                      transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                      className="bg-white rounded-xl p-2.5 border border-white/80 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className={`w-7 h-7 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0`}>
+                          {lead.avatar}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 truncate">{lead.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{lead.company}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${CHANNEL_COLORS[lead.channel]}`}>{lead.channel}</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-10 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
+                              animate={{ width: `${lead.score}%` }}
+                              transition={{ duration: 0.8, ease: "easeOut" }}
+                            />
+                          </div>
+                          <span className="text-[9px] font-bold text-violet-600">{lead.score}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Analytics Dashboard Demo ──────────────────────────────────────────────
+
+const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul"];
+const CONV_DATA  = [120, 195, 170, 260, 310, 420, 510];
+const LEADS_DATA = [45,  80,  65,  110, 140, 195, 248];
+
+function useCountUp(target: number, duration = 1800) {
+  const [value, setValue] = useState(0);
+  const ref = useRef(false);
+  useEffect(() => {
+    if (ref.current) return;
+    ref.current = true;
+    const steps = 50;
+    const increment = target / steps;
+    let current = 0;
+    const interval = setInterval(() => {
+      current += increment;
+      if (current >= target) { setValue(target); clearInterval(interval); }
+      else { setValue(Math.floor(current)); }
+    }, duration / steps);
+    return () => clearInterval(interval);
+  }, [target, duration]);
+  return value;
+}
+
+function AnalyticsDashboardDemo() {
+  const [visible, setVisible] = useState(false);
+  const maxConv = Math.max(...CONV_DATA);
+
+  const conversations = useCountUp(visible ? 510 : 0);
+  const leads = useCountUp(visible ? 248 : 0);
+  const conversion = useCountUp(visible ? 87 : 0, 1400);
+
+  return (
+    <motion.div
+      onViewportEnter={() => setVisible(true)}
+      viewport={{ once: true }}
+      className="w-full max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden"
+    >
+      {/* Topbar */}
+      <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-5 py-3 flex items-center gap-3">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-400" />
+          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+          <div className="w-3 h-3 rounded-full bg-green-400" />
+        </div>
+        <p className="text-white/80 text-xs font-medium flex-1 text-center">Analytics · Petunia AI Dashboard</p>
+      </div>
+
+      <div className="p-5 space-y-5">
+        {/* KPI row */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Conversaciones", value: conversations, suffix: "", color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-100" },
+            { label: "Leads calificados", value: leads, suffix: "", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+            { label: "Tasa de respuesta", value: conversion, suffix: "%", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+          ].map((kpi) => (
+            <div key={kpi.label} className={`${kpi.bg} border ${kpi.border} rounded-2xl p-3 text-center`}>
+              <motion.p
+                className={`text-2xl font-bold ${kpi.color}`}
+                animate={{ scale: visible ? [1, 1.05, 1] : 1 }}
+                transition={{ duration: 0.4, delay: 0.8 }}
+              >
+                {kpi.value}{kpi.suffix}
+              </motion.p>
+              <p className="text-[10px] text-gray-500 mt-0.5 font-medium">{kpi.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Bar chart */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-gray-700">Conversaciones vs Leads — últimos 7 meses</p>
+            <div className="flex items-center gap-3 text-[10px] text-gray-500">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-violet-500 inline-block" /> Conversaciones</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" /> Leads</span>
+            </div>
+          </div>
+          <div className="flex items-end gap-2" style={{ height: 120 }}>
+            {MONTHS.map((month, i) => (
+              <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full flex items-end gap-0.5" style={{ height: 96 }}>
+                  <motion.div
+                    className="flex-1 bg-gradient-to-t from-violet-600 to-violet-400 rounded-t-md"
+                    initial={{ height: 0 }}
+                    animate={{ height: visible ? `${(CONV_DATA[i] / maxConv) * 96}px` : 0 }}
+                    transition={{ duration: 0.8, delay: 0.1 + i * 0.1, ease: "easeOut" }}
+                  />
+                  <motion.div
+                    className="flex-1 bg-gradient-to-t from-emerald-500 to-emerald-300 rounded-t-md"
+                    initial={{ height: 0 }}
+                    animate={{ height: visible ? `${(LEADS_DATA[i] / maxConv) * 96}px` : 0 }}
+                    transition={{ duration: 0.8, delay: 0.15 + i * 0.1, ease: "easeOut" }}
+                  />
+                </div>
+                <p className="text-[9px] text-gray-400 font-medium">{month}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Agent performance row */}
+        <div>
+          <p className="text-xs font-semibold text-gray-700 mb-2">Performance por agente</p>
+          <div className="space-y-2">
+            {[
+              { name: "Calificador BANT", pct: 92, color: "from-violet-500 to-purple-500" },
+              { name: "Cerrador",         pct: 78, color: "from-rose-500 to-pink-500"     },
+              { name: "Nutridor",         pct: 85, color: "from-blue-500 to-cyan-500"     },
+              { name: "Soporte",          pct: 96, color: "from-emerald-500 to-teal-500"  },
+            ].map((agent) => (
+              <div key={agent.name} className="flex items-center gap-3">
+                <p className="text-[11px] text-gray-600 w-32 flex-shrink-0">{agent.name}</p>
+                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className={`h-full bg-gradient-to-r ${agent.color} rounded-full`}
+                    initial={{ width: 0 }}
+                    animate={{ width: visible ? `${agent.pct}%` : 0 }}
+                    transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+                <p className="text-[11px] font-bold text-gray-700 w-8 text-right">{agent.pct}%</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Social Calendar Demo ──────────────────────────────────────────────────
 
 const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -718,8 +969,75 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Calendar */}
+      {/* Lead Pipeline */}
+      <section className="py-24 px-6 bg-white overflow-hidden">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <motion.p initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Pipeline de ventas</motion.p>
+              <motion.h2 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
+                className="text-4xl font-bold text-gray-900 mb-4">Tus leads avanzan solos en el funnel</motion.h2>
+              <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+                className="text-gray-500 leading-relaxed mb-6">Cada prospecto es calificado con BANT y empujado automáticamente por el pipeline — de &ldquo;Nuevo&rdquo; a &ldquo;Ganado&rdquo; sin intervención manual.</motion.p>
+              <div className="space-y-3">
+                {[
+                  { label: "Calificación BANT automática en segundos", icon: "⚡" },
+                  { label: "Avance de etapa según respuestas del lead", icon: "🔄" },
+                  { label: "Alerta a tu equipo cuando el lead está listo", icon: "🔔" },
+                ].map((item, i) => (
+                  <motion.div key={item.label} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
+                    transition={{ delay: 0.14 + i * 0.08 }}
+                    className="flex items-center gap-3 text-sm text-gray-600">
+                    <span className="text-lg">{item.icon}</span>
+                    {item.label}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.15, type: "spring", stiffness: 120, damping: 22 }}>
+              <LeadPipelineDemo />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Analytics Dashboard */}
       <section className="py-24 px-6 bg-gray-50 overflow-hidden">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1, type: "spring", stiffness: 120, damping: 22 }}
+              className="order-last lg:order-first">
+              <AnalyticsDashboardDemo />
+            </motion.div>
+            <div className="order-first lg:order-last">
+              <motion.p initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Analytics en tiempo real</motion.p>
+              <motion.h2 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.06 }}
+                className="text-4xl font-bold text-gray-900 mb-4">Métricas que te dicen exactamente qué funciona</motion.h2>
+              <motion.p initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+                className="text-gray-500 leading-relaxed mb-6">Visualiza conversaciones, leads calificados, tasa de respuesta y performance de cada agente en un solo dashboard actualizado en tiempo real.</motion.p>
+              <div className="space-y-3">
+                {[
+                  { label: "Gráficas de tendencia por mes y canal", icon: "📈" },
+                  { label: "Score de cada agente IA en tiempo real", icon: "🤖" },
+                  { label: "Exporta reportes PDF con un clic", icon: "📄" },
+                ].map((item, i) => (
+                  <motion.div key={item.label} initial={{ opacity: 0, x: 16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
+                    transition={{ delay: 0.14 + i * 0.08 }}
+                    className="flex items-center gap-3 text-sm text-gray-600">
+                    <span className="text-lg">{item.icon}</span>
+                    {item.label}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Calendar */}
+      <section className="py-24 px-6 bg-white overflow-hidden">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-violet-600 text-sm font-semibold uppercase tracking-wider mb-3">Contenido automático</p>
