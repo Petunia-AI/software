@@ -919,18 +919,27 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
   return (
     <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }} className="card flex flex-col gap-3 p-4 group overflow-hidden">
       
-      {post.image_url && (
-        <div className="relative rounded-xl overflow-hidden bg-slate-100" style={{ aspectRatio: post.format_type === "post" ? "1/1" : "9/16", maxHeight: post.format_type === "post" ? 220 : 300 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.image_url} alt="Imagen generada por IA" className="w-full h-full object-cover" />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            <span className="text-[10px] font-bold bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">AI · {fmt.ratio}</span>
+      {post.image_url && (() => {
+        const isVideo = /\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i.test(post.image_url ?? "");
+        return (
+          <div className="relative rounded-xl overflow-hidden bg-slate-100" style={{ aspectRatio: post.format_type === "post" ? "1/1" : "9/16", maxHeight: post.format_type === "post" ? 220 : 300 }}>
+            {isVideo ? (
+              <video src={post.image_url} controls className="w-full h-full object-cover" />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={post.image_url} alt="Imagen generada por IA" className="w-full h-full object-cover" />
+            )}
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              <span className="text-[10px] font-bold bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">{isVideo ? "📹" : "AI"} · {fmt.ratio}</span>
+            </div>
+            {!isVideo && (
+              <button onClick={onGenerateImage} className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold bg-black/60 hover:bg-violet-600 text-white px-2 py-1 rounded-full backdrop-blur-sm transition-colors" title="Regenerar imagen">
+                <RefreshCw size={9} />Regenerar
+              </button>
+            )}
           </div>
-          <button onClick={onGenerateImage} className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold bg-black/60 hover:bg-violet-600 text-white px-2 py-1 rounded-full backdrop-blur-sm transition-colors" title="Regenerar imagen">
-            <RefreshCw size={9} />Regenerar
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       {post.video_job_id && !post.video_url && (
         <div className="flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2.5">

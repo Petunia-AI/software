@@ -207,7 +207,7 @@ function MediaThumb({
             : "border-transparent hover:border-violet-200"
         }`}
         style={{ aspectRatio: "1/1" }}
-        onClick={() => selectMode ? onSelect?.() : setShowPreview(true)}
+        onClick={() => setShowPreview(true)}
       >
         {asset.file_type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -217,9 +217,20 @@ function MediaThumb({
             className="w-full h-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gray-900">
-            <Film size={24} className="text-white/60" />
-            <p className="text-[10px] text-white/50 px-2 text-center truncate w-full">{asset.original_filename}</p>
+          <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
+            <video
+              src={`${asset.public_url}#t=0.001`}
+              muted
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+            />
+            {/* Play icon overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4 ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
           </div>
         )}
 
@@ -277,7 +288,7 @@ function MediaThumb({
 
       {/* Full preview modal */}
       <AnimatePresence>
-        {showPreview && !selectMode && (
+        {showPreview && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -297,16 +308,26 @@ function MediaThumb({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={asset.public_url} alt={asset.original_filename} className="w-full rounded-2xl shadow-2xl max-h-[80vh] object-contain" />
               ) : (
-                <video src={asset.public_url} controls className="w-full rounded-2xl shadow-2xl max-h-[80vh]" />
+                <video src={asset.public_url} controls autoPlay className="w-full rounded-2xl shadow-2xl max-h-[80vh]" />
               )}
               <div className="mt-3 flex items-center justify-between px-1">
                 <div>
                   <p className="text-sm font-medium text-white">{asset.original_filename}</p>
                   <p className="text-xs text-white/50">{formatBytes(asset.file_size_bytes)} · {new Date(asset.created_at).toLocaleDateString("es-MX")}</p>
                 </div>
-                <button onClick={() => setShowPreview(false)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
-                  <X size={16} className="text-white" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {selectMode && (
+                    <button
+                      onClick={() => { onSelect?.(); setShowPreview(false); }}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-500 hover:bg-violet-600 text-white text-sm font-semibold transition-colors"
+                    >
+                      <Check size={14} /> Seleccionar
+                    </button>
+                  )}
+                  <button onClick={() => setShowPreview(false)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+                    <X size={16} className="text-white" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
