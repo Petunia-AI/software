@@ -16,35 +16,40 @@ import {
   AlertCircle, Loader2, LayoutGrid, List, Filter, X, DollarSign,
   ArrowUpRight, Award, Trash2, CircleDot,
 } from "lucide-react";
+import {
+  UsersThree, Star as PhStar, Confetti, CurrencyDollar,
+} from "@phosphor-icons/react";
 
 function KpiCard({
-  title, value, subtitle, icon: Icon, gradient, delay = 0,
+  title, value, subtitle, gradient, bar, glow, PhIcon, delay = 0,
 }: {
   title: string; value: string | number; subtitle?: string;
-  icon: React.ElementType; gradient: string; delay?: number;
+  gradient: string; bar: string; glow: string;
+  PhIcon: React.ElementType; delay?: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
-      transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="stat-card"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, type: "spring", stiffness: 160, damping: 22 }}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className={`relative group overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-2xl ${glow} transition-all duration-300 p-6`}
     >
-      {/* Decorative blur */}
-      <div className="absolute top-0 right-0 w-20 h-20 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none opacity-60"
-        style={{ background: `radial-gradient(circle, ${gradient.includes("violet") ? "rgba(99,91,255,0.15)" : gradient.includes("blue") ? "rgba(59,130,246,0.15)" : gradient.includes("emerald") ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"} 0%, transparent 70%)` }}
-      />
-      <div className="relative flex items-start justify-between mb-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
-          style={{ background: gradient.includes("violet") ? "linear-gradient(135deg,#635BFF,#8B5CF6)" : gradient.includes("blue") ? "linear-gradient(135deg,#3B82F6,#6366F1)" : gradient.includes("emerald") ? "linear-gradient(135deg,#10B981,#059669)" : "linear-gradient(135deg,#F59E0B,#D97706)" }}
-        >
-          <Icon size={18} className="text-white" />
-        </div>
+      {/* Top accent bar */}
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${bar} rounded-t-2xl`} />
+      {/* Hover bg shimmer */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-[0.05] transition-opacity duration-300`} />
+      {/* Icon top-right */}
+      <div className={`absolute top-4 right-4 w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md`}>
+        <PhIcon size={17} weight="duotone" className="text-white" />
       </div>
-      <p className={cn("text-2xl font-black tabular-nums", gradient.includes("violet") ? "gradient-text-violet" : gradient.includes("blue") ? "gradient-text-blue" : gradient.includes("emerald") ? "gradient-text-green" : "gradient-text-amber")}>{value}</p>
-      <p className="text-sm font-semibold text-foreground mt-0.5">{title}</p>
-      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      {/* Value */}
+      <p className={`text-4xl font-black tracking-tight bg-gradient-to-r ${gradient} bg-clip-text text-transparent leading-none mb-2 mt-1`}>
+        {value}
+      </p>
+      {/* Title */}
+      <p className="text-sm font-semibold text-gray-700">{title}</p>
+      {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
     </motion.div>
   );
 }
@@ -230,10 +235,10 @@ export default function LeadsPage() {
 
           {/* KPIs */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-            <KpiCard title="Total leads"  value={total}     icon={Users}       gradient="bg-gradient-to-br from-violet-600 to-purple-700" delay={0}    />
-            <KpiCard title="Calificados" value={qualified}  subtitle="Score ≥ 7" icon={Star} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" delay={0.05} />
-            <KpiCard title="Ganados"     value={won}        icon={Award}       gradient="bg-gradient-to-br from-blue-500 to-indigo-600"   delay={0.1}  />
-            <KpiCard title="Pipeline"    value={pipeline > 0 ? `$${pipeline.toLocaleString()}` : "—"} icon={DollarSign} gradient="bg-gradient-to-br from-amber-500 to-orange-600" delay={0.15} />
+            <KpiCard title="Total leads"  value={total}     PhIcon={UsersThree}   gradient="from-violet-500 to-purple-600"  bar="from-violet-400 to-purple-500"  glow="shadow-violet-500/20"  delay={0}    />
+            <KpiCard title="Calificados" value={qualified}  PhIcon={PhStar}       gradient="from-emerald-500 to-teal-600"   bar="from-emerald-400 to-teal-400"   glow="shadow-emerald-500/20" delay={0.06} subtitle="Score ≥ 7" />
+            <KpiCard title="Ganados"     value={won}        PhIcon={Confetti}     gradient="from-blue-500 to-indigo-600"    bar="from-blue-400 to-indigo-400"    glow="shadow-blue-500/20"    delay={0.12} />
+            <KpiCard title="Pipeline"    value={pipeline > 0 ? `$${pipeline.toLocaleString()}` : "—"} PhIcon={CurrencyDollar} gradient="from-amber-400 to-orange-500" bar="from-amber-400 to-orange-400" glow="shadow-amber-500/20" delay={0.18} />
           </div>
 
           {/* Import result */}
