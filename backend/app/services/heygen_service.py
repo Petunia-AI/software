@@ -20,8 +20,9 @@ HEYGEN_API_BASE = "https://api.heygen.com"
 
 # Avatar y voz por defecto (en español)
 # Puedes listar tus avatares en: GET /v2/avatars
+# Puedes listar tus voces en:    GET /v2/voices
 DEFAULT_AVATAR_ID = "Abigail_expressive_2024112501"
-DEFAULT_VOICE_ID  = "a7884196726a47b5b622de2b00b6e309"  # voz en español latam
+DEFAULT_VOICE_ID  = "0e5e270741404038804a4f27747f59b9"  # "leonardo soto" — voz en español latam (masculina)
 
 # Dimensiones según formato
 DIMENSIONS: dict[str, dict] = {
