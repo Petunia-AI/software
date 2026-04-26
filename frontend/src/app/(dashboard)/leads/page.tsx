@@ -164,8 +164,8 @@ export default function LeadsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className={cn("flex-1", view === "kanban" ? "p-6" : "p-8")}>
-        <div className={cn("mx-auto", view === "kanban" ? "max-w-full" : "max-w-[1280px]")}>
+      <div className="flex-1 p-6">
+        <div className="mx-auto max-w-full">
 
           {/* ── Hero banner ── */}
           <motion.div
