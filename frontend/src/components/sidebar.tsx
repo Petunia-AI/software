@@ -60,7 +60,7 @@ export function Sidebar() {
       <button
         onClick={() => setWorkspaceOpen(!workspaceOpen)}
         className="relative z-10 flex items-center gap-3 px-4 py-4 w-full text-left group"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderBottom: "1px solid rgba(107,139,255,0.12)" }}
       >
         {/* Logo icon */}
         <div
@@ -78,10 +78,10 @@ export function Sidebar() {
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-white leading-tight tracking-tight">
+          <p className="text-[13px] font-bold leading-tight tracking-tight" style={{ color: "#1A1F3C" }}>
             Petunia AI
           </p>
-          <p className="text-[10px] leading-tight font-medium" style={{ color: "rgba(167,139,250,0.7)" }}>
+          <p className="text-[10px] leading-tight font-medium" style={{ color: "rgba(107,139,255,0.75)" }}>
             Agente de ventas
           </p>
         </div>
@@ -89,25 +89,25 @@ export function Sidebar() {
         <CaretDown
           size={13}
           className={cn("transition-transform flex-shrink-0", workspaceOpen && "rotate-180")}
-          style={{ color: "rgba(255,255,255,0.2)" }}
+          style={{ color: "rgba(107,139,255,0.45)" }}
         />
       </button>
 
       {/* ── Search ── */}
       <div className="relative z-10 px-3 py-2.5"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        style={{ borderBottom: "1px solid rgba(107,139,255,0.12)" }}>
         <button
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-all duration-150 hover:bg-white/[0.06]"
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-all duration-150 hover:bg-indigo-50/70"
           style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            color: "rgba(255,255,255,0.3)"
+            background: "rgba(107,139,255,0.06)",
+            border: "1px solid rgba(107,139,255,0.15)",
+            color: "rgba(60,75,120,0.55)"
           }}
         >
           <MagnifyingGlass size={12} />
           <span className="flex-1 text-left">Buscar...</span>
           <kbd className="text-[9px] px-1.5 py-0.5 rounded font-mono"
-            style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            style={{ background: "rgba(107,139,255,0.08)", color: "rgba(60,75,120,0.55)", border: "1px solid rgba(107,139,255,0.15)" }}>
             ⌘K
           </kbd>
         </button>
@@ -116,7 +116,7 @@ export function Sidebar() {
       {/* ── Navigation ── */}
       <nav className="flex-1 relative z-10 px-2 py-3 space-y-0.5 overflow-y-auto">
         <p className="px-2.5 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest"
-          style={{ color: "rgba(255,255,255,0.18)" }}>
+          style={{ color: "rgba(60,75,140,0.45)" }}>
           Principal
         </p>
 
@@ -133,15 +133,14 @@ export function Sidebar() {
               className={cn(
                 "group relative flex items-center gap-2.5 px-2 py-[6px] rounded-xl text-[13px] font-semibold transition-all duration-150",
                 isActive
-                  ? "text-white"
-                  : "text-white/55 hover:text-white/90 hover:bg-white/[0.06]"
+                  ? "text-indigo-700"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-indigo-50/60"
               )}
               style={isActive ? {
-                background: "linear-gradient(135deg, rgba(123,154,255,0.18) 0%, rgba(196,170,255,0.14) 50%, rgba(255,186,154,0.12) 100%)",
-                border: "1px solid rgba(123,154,255,0.25)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                background: "linear-gradient(135deg, rgba(107,139,255,0.13) 0%, rgba(196,170,255,0.10) 50%, rgba(255,186,154,0.08) 100%)",
+                border: "1px solid rgba(107,139,255,0.25)",
+                boxShadow: "0 1px 4px rgba(107,139,255,0.12)",
               } : { border: "1px solid transparent" }}
-            >
               {/* Icon container */}
               <div
                 className={cn(
@@ -154,9 +153,7 @@ export function Sidebar() {
               >
                 <Icon
                   size={15}
-                  weight={isActive ? iconWeight : "regular"}
-                  className="flex-shrink-0"
-                  style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.60)" }}
+                  style={{ color: isActive ? "#fff" : "rgba(70,90,155,0.65)" }}
                 />
               </div>
 
@@ -183,8 +180,9 @@ export function Sidebar() {
 
         {/* ── Canales ── */}
         <p className="px-2.5 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest"
-          style={{ color: "rgba(255,255,255,0.18)" }}>
+          style={{ color: "rgba(60,75,140,0.45)" }}>
           Canales
+        </p>
         </p>
 
         {(() => {
@@ -219,13 +217,13 @@ export function Sidebar() {
                 className={cn(
                   "group flex items-center gap-2.5 px-2 py-[6px] rounded-xl text-[13px] font-medium transition-all duration-150",
                   isActive
-                    ? "text-white"
-                    : "text-white/55 hover:text-white/90 hover:bg-white/[0.06]"
+                    ? "text-indigo-700"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-indigo-50/60"
                 )}
                 style={isActive ? {
-                  background: "linear-gradient(135deg, rgba(123,154,255,0.18) 0%, rgba(196,170,255,0.14) 50%, rgba(255,186,154,0.12) 100%)",
-                  border: "1px solid rgba(123,154,255,0.25)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                  background: "linear-gradient(135deg, rgba(107,139,255,0.13) 0%, rgba(196,170,255,0.10) 50%, rgba(255,186,154,0.08) 100%)",
+                  border: "1px solid rgba(107,139,255,0.25)",
+                  boxShadow: "0 1px 4px rgba(107,139,255,0.12)",
                 } : { border: "1px solid transparent" }}
               >
                 <div
@@ -235,7 +233,7 @@ export function Sidebar() {
                       ? `bg-gradient-to-br ${color}`
                       : "bg-white/[0.07] group-hover:bg-white/[0.1]"
                   )}
-                  style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(255,255,255,0.65)" }}
+                  style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(70,90,155,0.65)" }}
                 >
                   {customIcon ? customIcon : <Icon size={15} weight={isActive ? "duotone" : "regular"} />}
                 </div>
@@ -254,8 +252,8 @@ export function Sidebar() {
 
       {/* ── User footer ── */}
       <div className="relative z-10 p-3"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-default group transition-colors hover:bg-white/[0.05]">
+        style={{ borderTop: "1px solid rgba(107,139,255,0.12)" }}>
+        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-default group transition-colors hover:bg-indigo-50/60">
           {/* Avatar */}
           <div className="relative flex-shrink-0">
             <div
@@ -269,16 +267,16 @@ export function Sidebar() {
             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border-[1.5px]"
               style={{
                 background: "#10B981",
-                borderColor: "hsl(222, 35%, 9%)",
+                borderColor: "hsl(225, 40%, 97%)",
                 boxShadow: "0 0 5px rgba(16,185,129,0.7)"
               }} />
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold truncate leading-tight" style={{ color: "rgba(255,255,255,0.85)" }}>
+            <p className="text-[12px] font-semibold truncate leading-tight" style={{ color: "#1A1F3C" }}>
               {user?.full_name ?? "Usuario"}
             </p>
-            <p className="text-[10px] truncate leading-tight" style={{ color: "rgba(196,170,255,0.60)" }}>
+            <p className="text-[10px] truncate leading-tight" style={{ color: "rgba(107,139,255,0.7)" }}>
               {user?.email}
             </p>
           </div>
@@ -287,7 +285,7 @@ export function Sidebar() {
             size={14}
             weight="duotone"
             className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            style={{ color: "rgba(255,255,255,0.3)" }}
+            style={{ color: "rgba(107,139,255,0.5)" }}
           />
         </div>
       </div>

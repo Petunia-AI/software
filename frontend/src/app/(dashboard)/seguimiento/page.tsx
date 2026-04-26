@@ -322,7 +322,7 @@ const TABS: { key: TabType; label: string }[] = [
 
 export default function SeguimientoPage() {
   const qc = useQueryClient();
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const [view, setView] = useState<"list" | "calendar">("calendar");
   const [tab, setTab] = useState<TabType>("all");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingFU, setEditingFU] = useState<FollowUp | null>(null);

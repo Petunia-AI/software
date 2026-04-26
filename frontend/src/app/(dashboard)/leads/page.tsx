@@ -76,7 +76,7 @@ export default function LeadsPage() {
   const [filterSource, setFilterSource] = useState("");
   const [filterScore, setFilterScore] = useState("");
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"table" | "kanban">("table");
+  const [view, setView] = useState<"table" | "kanban">("kanban");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
