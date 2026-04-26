@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   SquaresFour, ChatCircleText, UsersThree, BellRinging,
   TrendUp, Robot, PenNib, Buildings, SlidersHorizontal,
-  Wallet, CaretDown, MagnifyingGlass, SignOut,
+  Wallet, CaretDown, MagnifyingGlass,
   GlobeHemisphereWest, Camera, EnvelopeSimple, CalendarDots,
   ChatCircle, LinkedinLogo, FacebookLogo,
 } from "@phosphor-icons/react";
@@ -252,45 +252,6 @@ export function Sidebar() {
         })()}
       </nav>
 
-      {/* ── User footer ── */}
-      <div className="relative z-10 p-3"
-        style={{ borderTop: "1px solid rgba(107,139,255,0.12)" }}>
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-default group transition-colors hover:bg-indigo-50/60">
-          {/* Avatar */}
-          <div className="relative flex-shrink-0">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center shadow"
-              style={{ background: "linear-gradient(135deg, #7B9AFF, #C4AAFF)", boxShadow: "0 2px 8px rgba(123,154,255,0.45)" }}
-            >
-              <span className="text-white text-[11px] font-bold">
-                {user?.full_name?.[0]?.toUpperCase() ?? "U"}
-              </span>
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border-[1.5px]"
-              style={{
-                background: "#10B981",
-                borderColor: "hsl(225, 40%, 97%)",
-                boxShadow: "0 0 5px rgba(16,185,129,0.7)"
-              }} />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold truncate leading-tight" style={{ color: "#1A1F3C" }}>
-              {user?.full_name ?? "Usuario"}
-            </p>
-            <p className="text-[10px] truncate leading-tight" style={{ color: "rgba(107,139,255,0.7)" }}>
-              {user?.email}
-            </p>
-          </div>
-
-          <SignOut
-            size={14}
-            weight="duotone"
-            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            style={{ color: "rgba(107,139,255,0.5)" }}
-          />
-        </div>
-      </div>
     </aside>
   );
 }
