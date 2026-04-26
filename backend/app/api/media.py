@@ -157,12 +157,11 @@ async def upload_media(
     file_size = len(file_bytes)
 
     # ── Validar tamaño por archivo ──
-    max_per_file = (25 if file_type == "image" else 500) * 1024 * 1024
+    max_per_file = 500 * 1024 * 1024  # 500 MB para todos los tipos
     if file_size > max_per_file:
-        limit_label = "25 MB" if file_type == "image" else "500 MB"
         raise HTTPException(
             status_code=413,
-            detail=f"El archivo supera el límite de {limit_label} por archivo.",
+            detail=f"El archivo supera el límite de 500 MB por archivo.",
         )
 
     # ── Validar cuota de almacenamiento ──

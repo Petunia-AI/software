@@ -167,7 +167,7 @@ function UploadZone({
               {dragging ? "Suelta aquí" : "Arrastra archivos o haz clic"}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              Imágenes (JPEG, PNG, GIF, WebP · máx 25 MB) · Videos (MP4, MOV, WebM · máx 500 MB)
+              Imágenes (JPEG, PNG, GIF, WebP) · Videos (MP4, MOV, WebM) · máx 500 MB por archivo
             </p>
             {storageInfo && (
               <p className="text-xs text-gray-400 mt-1">
