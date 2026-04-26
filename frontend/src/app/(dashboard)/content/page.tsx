@@ -988,7 +988,7 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
             <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
               <span className="text-[10px] font-bold bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">{isVideo ? "📹" : "AI"} · {fmt.ratio}</span>
             </div>
-            {!isVideo && (
+            {!isVideo && post.channel !== "tiktok" && (
               <button onClick={onGenerateImage} className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold bg-black/60 hover:bg-violet-600 text-white px-2 py-1 rounded-full backdrop-blur-sm transition-colors" title="Regenerar imagen">
                 <RefreshCw size={9} />Regenerar
               </button>
@@ -1040,7 +1040,7 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
         </div>
       )}
 
-      {!post.image_url && post.image_prompt && (
+      {!post.image_url && post.image_prompt && post.channel !== "tiktok" && (
         <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/40 p-3 flex flex-col gap-2">
           <p className="text-[10px] font-semibold text-violet-700 flex items-center gap-1"><ImagePlus size={11} />Imagen pendiente de generar</p>
           <p className="text-[9px] text-violet-500 leading-relaxed line-clamp-2 italic">{post.image_prompt.slice(0, 120)}...</p>
