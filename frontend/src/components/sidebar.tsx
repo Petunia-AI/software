@@ -186,7 +186,6 @@ export function Sidebar() {
           style={{ color: "rgba(60,75,140,0.45)" }}>
           Canales
         </p>
-        </p>
 
         {(() => {
           const ALL_CHANNELS: { label: string; channel: string; color: string; glow: string; Icon: React.ElementType; customIcon?: React.ReactNode }[] = [
