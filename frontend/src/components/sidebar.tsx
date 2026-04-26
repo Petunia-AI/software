@@ -141,6 +141,7 @@ export function Sidebar() {
                 border: "1px solid rgba(107,139,255,0.25)",
                 boxShadow: "0 1px 4px rgba(107,139,255,0.12)",
               } : { border: "1px solid transparent" }}
+            >
               {/* Icon container */}
               <div
                 className={cn(
@@ -153,6 +154,8 @@ export function Sidebar() {
               >
                 <Icon
                   size={15}
+                  weight={isActive ? iconWeight : "regular"}
+                  className="flex-shrink-0"
                   style={{ color: isActive ? "#fff" : "rgba(70,90,155,0.65)" }}
                 />
               </div>
