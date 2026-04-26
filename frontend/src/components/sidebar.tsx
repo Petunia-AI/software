@@ -16,7 +16,21 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { followupsApi, analyticsApi } from "@/lib/api";
 
-
+const navItems = [
+  { href: "/dashboard",              icon: SquaresFour,       label: "Dashboard",         badge: null,      color: "from-violet-500 to-purple-600",  glow: "rgba(139,92,246,0.35)",  iconWeight: "duotone" as const },
+  { href: "/conversations",          icon: ChatCircleText,    label: "Conversaciones",    badge: null,      color: "from-blue-500 to-indigo-600",    glow: "rgba(99,102,241,0.35)",  iconWeight: "duotone" as const },
+  { href: "/leads",                  icon: UsersThree,        label: "Leads",             badge: null,      color: "from-emerald-500 to-teal-600",   glow: "rgba(16,185,129,0.35)",  iconWeight: "duotone" as const },
+  { href: "/seguimiento",            icon: BellRinging,       label: "Seguimiento",       badge: "dynamic", color: "from-amber-500 to-orange-500",   glow: "rgba(245,158,11,0.35)",  iconWeight: "duotone" as const },
+  { href: "/analytics",              icon: TrendUp,           label: "Analíticas",        badge: null,      color: "from-cyan-500 to-sky-600",       glow: "rgba(6,182,212,0.35)",   iconWeight: "duotone" as const },
+  { href: "/agents",                 icon: Robot,             label: "Agentes IA",        badge: null,      color: "from-fuchsia-500 to-purple-600", glow: "rgba(217,70,239,0.35)",  iconWeight: "duotone" as const },
+  { href: "/content",                icon: PenNib,            label: "Contenido",         badge: null,      color: "from-pink-500 to-rose-500",      glow: "rgba(236,72,153,0.35)",  iconWeight: "duotone" as const },
+  { href: "/email",                  icon: EnvelopeSimple,    label: "Email CRM",         badge: null,      color: "from-sky-500 to-blue-600",       glow: "rgba(14,165,233,0.35)",  iconWeight: "duotone" as const },
+  { href: "/meetings",               icon: CalendarDots,      label: "Reuniones",         badge: null,      color: "from-violet-500 to-purple-600",  glow: "rgba(139,92,246,0.35)",  iconWeight: "duotone" as const },
+  { href: "/integrations/whatsapp",  icon: ChatCircle,        label: "WhatsApp Business", badge: null,      color: "from-green-500 to-emerald-600",  glow: "rgba(16,185,129,0.35)",  iconWeight: "duotone" as const },
+  { href: "/properties",             icon: Buildings,         label: "Propiedades",       badge: null,      color: "from-teal-500 to-green-600",     glow: "rgba(20,184,166,0.35)",  iconWeight: "duotone" as const },
+  { href: "/settings",               icon: SlidersHorizontal, label: "Configuración",     badge: null,      color: "from-slate-500 to-gray-600",     glow: "rgba(100,116,139,0.35)", iconWeight: "duotone" as const },
+  { href: "/billing",                icon: Wallet,            label: "Plan & Billing",    badge: null,      color: "from-violet-600 to-indigo-600",  glow: "rgba(99,91,255,0.35)",   iconWeight: "duotone" as const },
+];
 
 export function Sidebar() {
   const pathname = usePathname();

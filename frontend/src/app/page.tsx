@@ -139,7 +139,7 @@ function AnimatedChatDemo() {
             </div>
           </div>
         </div>
-        <div className="bg-gray-50 px-3 py-4 space-y-3 h-[300px] overflow-hidden">
+        <div className="bg-gray-50 px-3 py-4 space-y-3 h-[400px] overflow-hidden">
           <AnimatePresence>
             {DEMO_MESSAGES.slice(0, visibleCount).map((msg) => (
               <motion.div key={msg.id} initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
