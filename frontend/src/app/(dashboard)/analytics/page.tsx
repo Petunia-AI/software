@@ -121,7 +121,7 @@ export default function AnalyticsPage() {
       <PageHeader
         title="Analíticas"
         subtitle="Rendimiento completo de tu plataforma"
-        icon={<BarChart3 size={22} />}
+        icon={<BarChart3 size={28} />}
         gradient="linear-gradient(135deg, #7B9AFF 0%, #C4AAFF 50%, #FFBA9A 100%)"
       >
         {/* Period selector */}

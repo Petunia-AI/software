@@ -34,14 +34,14 @@ export function PageHeader({ title, subtitle, children, className, gradient, ico
         {/* Left: icon + text */}
         <div className="flex items-center gap-4">
           {icon && (
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 text-white shadow-lg">
+            <div className="w-14 h-14 rounded-2xl bg-white/25 backdrop-blur-sm flex items-center justify-center flex-shrink-0 text-white shadow-lg" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
               {icon}
             </div>
           )}
           <div>
             {badge && <div className="mb-1">{badge}</div>}
-            <h1 className="text-2xl font-black text-white">{title}</h1>
-            {subtitle && <p className="text-white/60 text-sm mt-0.5">{subtitle}</p>}
+            <h1 className="text-3xl font-black text-white" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.18)" }}>{title}</h1>
+            {subtitle && <p className="text-white/75 text-sm mt-1 font-medium">{subtitle}</p>}
           </div>
         </div>
 

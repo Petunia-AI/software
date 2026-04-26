@@ -77,7 +77,7 @@ function ConversationsInner() {
       <PageHeader
         title="Conversaciones"
         subtitle={`${convs.length} totales · ${activeCount} activas`}
-        icon={<MessageSquare size={22} />}
+        icon={<MessageSquare size={28} />}
         badge={
           <div className="flex items-center gap-1.5">
             <CircleDot size={10} className="text-emerald-300 animate-pulse" />

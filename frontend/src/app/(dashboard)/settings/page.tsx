@@ -256,7 +256,7 @@ function SettingsContent() {
       <PageHeader
         title="Configuración"
         subtitle="Define el contexto que usarán tus agentes de IA"
-        icon={<Settings2 size={22} />}
+        icon={<Settings2 size={28} />}
         gradient="linear-gradient(135deg, #7B9AFF 0%, #C4AAFF 60%, #FFBA9A 100%)"
       />
 

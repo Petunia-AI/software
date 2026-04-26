@@ -131,14 +131,15 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "group relative flex items-center gap-2.5 px-2 py-[6px] rounded-xl text-[13px] font-medium transition-all duration-150",
+                "group relative flex items-center gap-2.5 px-2 py-[6px] rounded-xl text-[13px] font-semibold transition-all duration-150",
                 isActive
                   ? "text-white"
-                  : "text-white/40 hover:text-white/75 hover:bg-white/[0.05]"
+                  : "text-white/55 hover:text-white/90 hover:bg-white/[0.06]"
               )}
               style={isActive ? {
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                background: "linear-gradient(135deg, rgba(123,154,255,0.18) 0%, rgba(196,170,255,0.14) 50%, rgba(255,186,154,0.12) 100%)",
+                border: "1px solid rgba(123,154,255,0.25)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
               } : { border: "1px solid transparent" }}
             >
               {/* Icon container */}
@@ -155,7 +156,7 @@ export function Sidebar() {
                   size={15}
                   weight={isActive ? iconWeight : "regular"}
                   className="flex-shrink-0"
-                  style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.45)" }}
+                  style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.60)" }}
                 />
               </div>
 
@@ -167,10 +168,10 @@ export function Sidebar() {
                   style={{
                     background: badge === "dynamic"
                       ? "linear-gradient(135deg, #EF4444, #DC2626)"
-                      : "linear-gradient(135deg, #635BFF, #8B5CF6)",
+                      : "linear-gradient(135deg, #7B9AFF, #C4AAFF)",
                     boxShadow: badge === "dynamic"
                       ? "0 0 8px rgba(239,68,68,0.5)"
-                      : "0 0 8px rgba(99,91,255,0.5)",
+                      : "0 0 8px rgba(123,154,255,0.55)",
                   }}
                 >
                   {resolvedBadge}
@@ -219,11 +220,12 @@ export function Sidebar() {
                   "group flex items-center gap-2.5 px-2 py-[6px] rounded-xl text-[13px] font-medium transition-all duration-150",
                   isActive
                     ? "text-white"
-                    : "text-white/40 hover:text-white/75 hover:bg-white/[0.05]"
+                    : "text-white/55 hover:text-white/90 hover:bg-white/[0.06]"
                 )}
                 style={isActive ? {
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "linear-gradient(135deg, rgba(123,154,255,0.18) 0%, rgba(196,170,255,0.14) 50%, rgba(255,186,154,0.12) 100%)",
+                  border: "1px solid rgba(123,154,255,0.25)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
                 } : { border: "1px solid transparent" }}
               >
                 <div
@@ -233,7 +235,7 @@ export function Sidebar() {
                       ? `bg-gradient-to-br ${color}`
                       : "bg-white/[0.07] group-hover:bg-white/[0.1]"
                   )}
-                  style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(255,255,255,0.45)" }}
+                  style={isActive ? { boxShadow: `0 2px 10px ${glow}`, color: "#fff" } : { color: "rgba(255,255,255,0.65)" }}
                 >
                   {customIcon ? customIcon : <Icon size={15} weight={isActive ? "duotone" : "regular"} />}
                 </div>
@@ -258,7 +260,7 @@ export function Sidebar() {
           <div className="relative flex-shrink-0">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center shadow"
-              style={{ background: "linear-gradient(135deg, #7C3AED, #4F46E5)", boxShadow: "0 2px 8px rgba(124,58,237,0.4)" }}
+              style={{ background: "linear-gradient(135deg, #7B9AFF, #C4AAFF)", boxShadow: "0 2px 8px rgba(123,154,255,0.45)" }}
             >
               <span className="text-white text-[11px] font-bold">
                 {user?.full_name?.[0]?.toUpperCase() ?? "U"}
@@ -267,7 +269,7 @@ export function Sidebar() {
             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border-[1.5px]"
               style={{
                 background: "#10B981",
-                borderColor: "hsl(243, 50%, 12%)",
+                borderColor: "hsl(222, 35%, 9%)",
                 boxShadow: "0 0 5px rgba(16,185,129,0.7)"
               }} />
           </div>
@@ -276,7 +278,7 @@ export function Sidebar() {
             <p className="text-[12px] font-semibold truncate leading-tight" style={{ color: "rgba(255,255,255,0.85)" }}>
               {user?.full_name ?? "Usuario"}
             </p>
-            <p className="text-[10px] truncate leading-tight" style={{ color: "rgba(167,139,250,0.55)" }}>
+            <p className="text-[10px] truncate leading-tight" style={{ color: "rgba(196,170,255,0.60)" }}>
               {user?.email}
             </p>
           </div>

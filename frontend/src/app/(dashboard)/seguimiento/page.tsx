@@ -388,15 +388,15 @@ export default function SeguimientoPage() {
         <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />
         <div className="relative flex items-center justify-between px-8 py-6 gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-              <Bell size={22} className="text-white" />
+            <div className="w-14 h-14 rounded-2xl bg-white/25 backdrop-blur-sm flex items-center justify-center flex-shrink-0" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
+              <Bell size={28} className="text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <CircleDot size={10} className="text-emerald-300 animate-pulse" />
                 <span className="text-white/60 text-xs font-medium">Seguimientos activos</span>
               </div>
-              <h1 className="text-2xl font-black text-white">Seguimiento</h1>
+              <h1 className="text-3xl font-black text-white" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.18)" }}>Seguimiento</h1>
               <p className="text-white/60 text-sm mt-0.5">Gestión con IA · Notificaciones automáticas</p>
             </div>
           </div>
