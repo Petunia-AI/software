@@ -257,7 +257,7 @@ function SettingsContent() {
         title="Configuración"
         subtitle="Define el contexto que usarán tus agentes de IA"
         icon={<Settings2 size={22} />}
-        gradient="linear-gradient(135deg, hsl(220,70%,50%) 0%, hsl(243,75%,58%) 60%, hsl(263,70%,50%) 100%)"
+        gradient="linear-gradient(135deg, #7B9AFF 0%, #C4AAFF 60%, #FFBA9A 100%)"
       />
 
       <div className="space-y-5">

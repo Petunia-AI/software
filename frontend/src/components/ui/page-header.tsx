@@ -15,7 +15,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, children, className, gradient, icon, badge }: PageHeaderProps) {
   const bg = gradient
-    ?? "linear-gradient(135deg, hsl(243,75%,58%) 0%, hsl(263,70%,50%) 50%, hsl(280,65%,54%) 100%)";
+    ?? "linear-gradient(135deg, #6B8BFF 0%, #B8A0FF 50%, #FFBA9A 100%)";
 
   return (
     <motion.div
@@ -23,7 +23,7 @@ export function PageHeader({ title, subtitle, children, className, gradient, ico
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className={cn("relative rounded-2xl overflow-hidden mb-8", className)}
-      style={{ background: bg, boxShadow: "0 8px 40px rgba(99,91,255,0.28)" }}
+      style={{ background: bg, boxShadow: "0 8px 40px rgba(107,139,255,0.22)" }}
     >
       {/* Decorative circles */}
       <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/4 pointer-events-none" />

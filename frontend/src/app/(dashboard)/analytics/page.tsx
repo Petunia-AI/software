@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
         title="Analíticas"
         subtitle="Rendimiento completo de tu plataforma"
         icon={<BarChart3 size={22} />}
-        gradient="linear-gradient(135deg, hsl(221,83%,53%) 0%, hsl(243,75%,58%) 50%, hsl(263,70%,50%) 100%)"
+        gradient="linear-gradient(135deg, #7B9AFF 0%, #C4AAFF 50%, #FFBA9A 100%)"
       >
         {/* Period selector */}
         <div className="flex items-center gap-1 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl p-1">

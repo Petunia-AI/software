@@ -96,7 +96,7 @@ export default function AgentsPage() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative rounded-2xl overflow-hidden mb-8"
-        style={{ background: "linear-gradient(135deg, hsl(243,75%,58%) 0%, hsl(263,70%,50%) 50%, hsl(280,65%,54%) 100%)", boxShadow: "0 8px 40px rgba(99,91,255,0.30)" }}
+        style={{ background: "linear-gradient(135deg, #6B8BFF 0%, #B8A0FF 50%, #FFBA9A 100%)", boxShadow: "0 8px 40px rgba(107,139,255,0.22)" }}
       >
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/4 pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />

@@ -5,33 +5,33 @@
 @layer base {
   :root {
     /* ================================================================
-       FINTECH 2026 — Blanco + Gradientes Morados (Stripe DNA)
+       2026 — Azul-Lavanda + Coral cálido (ChatGPT Business palette)
        ================================================================ */
 
-    /* Backgrounds — muy claros, Stripe-style */
-    --background: 220 30% 97%;          /* #F4F6FB — off-white con tinte azul/violeta */
-    --foreground: 222 47% 11%;          /* #0D1117 — casi negro */
+    /* Backgrounds — blanco cálido neutro */
+    --background: 30 20% 97%;           /* #F5F3F0 — off-white cálido */
+    --foreground: 220 30% 10%;          /* #121520 — casi negro azulado */
 
     /* Cards — blanco puro */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 30% 10%;
 
-    /* Brand — Stripe Purple #635BFF */
-    --primary: 243 100% 68%;            /* #635BFF */
+    /* Brand — Blue-Indigo suavizado */
+    --primary: 230 80% 62%;             /* #5B78F5 — azul índigo */
     --primary-foreground: 0 0% 100%;
 
     /* Superficies secundarias */
     --secondary: 220 20% 95%;           /* #EFF2F7 */
-    --secondary-foreground: 222 47% 11%;
+    --secondary-foreground: 220 30% 10%;
 
     --muted: 220 14% 94%;
     --muted-foreground: 220 9% 46%;     /* #6B7685 */
 
-    --accent: 243 100% 97%;             /* tinte violeta muy suave */
-    --accent-foreground: 243 75% 45%;
+    --accent: 230 80% 97%;              /* tinte azul muy suave */
+    --accent-foreground: 230 70% 45%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -39,34 +39,37 @@
     /* Borders — muy sutiles */
     --border: 220 13% 89%;              /* #E2E5EE */
     --input: 220 13% 89%;
-    --ring: 243 100% 68%;
+    --ring: 230 80% 62%;
 
     --radius: 0.75rem;
 
-    /* ── Sidebar tokens ── */
-    --sidebar-bg: 243 50% 12%;          /* #0D0B2E — violeta muy oscuro */
-    --sidebar-border: 243 40% 18%;
+    /* ── Sidebar tokens — dark navy charcoal ── */
+    --sidebar-bg: 222 35% 9%;           /* #0C1120 — navy oscuro */
+    --sidebar-border: 222 25% 15%;
 
     /* ── Gradient tokens ── */
-    --grad-primary: linear-gradient(135deg, #635BFF 0%, #8B5CF6 50%, #A78BFA 100%);
-    --grad-hero:    linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-    --grad-success: linear-gradient(135deg, #10B981, #059669);
-    --grad-amber:   linear-gradient(135deg, #F59E0B, #D97706);
-    --grad-blue:    linear-gradient(135deg, #3B82F6, #6366F1);
+    /* Firma: azul frío → lavanda → melocotón cálido */
+    --grad-primary:   linear-gradient(135deg, #7B9AFF 0%, #C4AAFF 50%, #FFBA9A 100%);
+    --grad-hero:      linear-gradient(135deg, #6B8BFF 0%, #B8A0FF 50%, #FFBA9A 100%);
+    --grad-cool:      linear-gradient(135deg, #7B9AFF 0%, #C4AAFF 100%);
+    --grad-warm:      linear-gradient(135deg, #FF9A7A 0%, #FF7BAA 100%);
+    --grad-success:   linear-gradient(135deg, #10B981, #059669);
+    --grad-amber:     linear-gradient(135deg, #FFB39A, #FF7BAA);
+    --grad-blue:      linear-gradient(135deg, #7B9AFF, #A8C4FF);
 
     /* ── Glow (sutil, sobre blanco) ── */
-    --glow-violet: 0 0 0 3px rgba(99,91,255,0.1), 0 4px 20px rgba(99,91,255,0.12);
-    --glow-green:  0 0 0 3px rgba(16,185,129,0.1), 0 4px 20px rgba(16,185,129,0.12);
-    --glow-blue:   0 0 0 3px rgba(59,130,246,0.1), 0 4px 20px rgba(59,130,246,0.12);
+    --glow-violet: 0 0 0 3px rgba(107,139,255,0.1), 0 4px 20px rgba(107,139,255,0.14);
+    --glow-green:  0 0 0 3px rgba(16,185,129,0.1),  0 4px 20px rgba(16,185,129,0.12);
+    --glow-blue:   0 0 0 3px rgba(107,139,255,0.1), 0 4px 20px rgba(107,139,255,0.12);
 
-    /* ── Shadows Stripe-style ── */
+    /* ── Shadows ── */
     --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
     --shadow-lg: 0 12px 28px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.05);
     --shadow-xl: 0 24px 48px rgba(0,0,0,0.1),  0 8px 16px rgba(0,0,0,0.06);
     --shadow-card: 0 0 0 1px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
-    --shadow-violet: 0 4px 20px rgba(99,91,255,0.2), 0 1px 4px rgba(99,91,255,0.15);
+    --shadow-violet: 0 4px 20px rgba(107,139,255,0.22), 0 1px 4px rgba(107,139,255,0.15);
   }
 }
 
@@ -86,8 +89,8 @@
   h1, h2, h3, h4 { @apply tracking-tight font-semibold; }
 
   ::selection {
-    background: rgba(99,91,255,0.15);
-    color: #4338CA;
+    background: rgba(107,139,255,0.15);
+    color: #3B5BDB;
   }
 }
 
@@ -116,8 +119,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 100%, rgba(99,91,255,0.08) 0%, transparent 50%);
+    radial-gradient(ellipse at 50% 0%, rgba(107,139,255,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(196,170,255,0.08) 0%, transparent 50%);
   pointer-events: none;
 }
 

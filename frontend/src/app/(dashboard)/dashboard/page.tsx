@@ -77,7 +77,7 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         className="relative rounded-2xl overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, hsl(243,75%,58%) 0%, hsl(263,70%,50%) 50%, hsl(280,65%,54%) 100%)",
+          background: "linear-gradient(135deg, #6B8BFF 0%, #B8A0FF 50%, #FFBA9A 100%)",
           boxShadow: "0 8px 40px rgba(99,91,255,0.30)",
         }}
       >

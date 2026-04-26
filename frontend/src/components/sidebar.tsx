@@ -66,8 +66,8 @@ export function Sidebar() {
         <div
           className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
           style={{
-            background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
-            boxShadow: "0 0 16px rgba(124,58,237,0.5), inset 0 1px 0 rgba(255,255,255,0.15)",
+            background: "linear-gradient(135deg, #6B8BFF 0%, #C4AAFF 60%, #FFBA9A 100%)",
+            boxShadow: "0 0 16px rgba(107,139,255,0.55), inset 0 1px 0 rgba(255,255,255,0.15)",
           }}
         >
           {/* P letter mark */}
