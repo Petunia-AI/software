@@ -1401,16 +1401,16 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 border-t border-gray-800 py-10 px-6">
+      <footer className="bg-white border-t border-gray-100 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Petunia AI" className="h-8 w-auto brightness-0 invert opacity-70" />
-          <p className="text-gray-500 text-sm flex items-center gap-1.5">© 2026 Petunia AI · Construido para LATAM <Globe size={13} className="text-gray-400" /></p>
-          <div className="flex items-center gap-6 text-sm text-gray-500">
-            <Link href="/login" className="hover:text-gray-300 transition-colors">Acceso</Link>
-            <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacidad</Link>
-            <Link href="/terms" className="hover:text-gray-300 transition-colors">Términos</Link>
-            <a href="mailto:api@aipetunia.com" className="hover:text-gray-300 transition-colors">Contacto</a>
+          <img src="/logo.png" alt="Petunia AI" className="h-8 w-auto opacity-80" />
+          <p className="text-gray-400 text-sm flex items-center gap-1.5">© 2026 Petunia AI · Construido para LATAM <Globe size={13} className="text-gray-300" /></p>
+          <div className="flex items-center gap-6 text-sm text-gray-400">
+            <Link href="/login" className="hover:text-gray-700 transition-colors">Acceso</Link>
+            <Link href="/privacy" className="hover:text-gray-700 transition-colors">Privacidad</Link>
+            <Link href="/terms" className="hover:text-gray-700 transition-colors">Términos</Link>
+            <a href="mailto:api@aipetunia.com" className="hover:text-gray-700 transition-colors">Contacto</a>
           </div>
         </div>
       </footer>
