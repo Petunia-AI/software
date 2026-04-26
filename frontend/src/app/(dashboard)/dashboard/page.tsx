@@ -14,6 +14,10 @@ import {
   Bot, CircleDot, Sparkles,
 } from "lucide-react";
 import {
+  ChatCircle, Camera, GlobeHemisphereWest, EnvelopeSimple,
+  FacebookLogo, LinkedinLogo, MusicNote,
+} from "@phosphor-icons/react";
+import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar,
 } from "recharts";
@@ -269,8 +273,27 @@ export default function DashboardPage() {
                   href={`/conversations/${conv.id}`}
                   className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-secondary/60 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-100 to-purple-100 border border-violet-200/50 flex items-center justify-center text-sm flex-shrink-0">
-                    {{ whatsapp: "💬", instagram: "📸", webchat: "🌐" }[conv.channel as string] ?? "💬"}
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
+                    style={{
+                      background: ({
+                        whatsapp: "linear-gradient(135deg,#10B981,#059669)",
+                        instagram: "linear-gradient(135deg,#EC4899,#BE185D)",
+                        webchat:   "linear-gradient(135deg,#6366F1,#4F46E5)",
+                        email:     "linear-gradient(135deg,#0EA5E9,#0284C7)",
+                        messenger: "linear-gradient(135deg,#3B82F6,#2563EB)",
+                        linkedin:  "linear-gradient(135deg,#0A66C2,#004182)",
+                        tiktok:    "linear-gradient(135deg,#111827,#374151)",
+                      } as Record<string,string>)[conv.channel as string] ?? "linear-gradient(135deg,#7C3AED,#6D28D9)"
+                    }}>
+                    {({
+                      whatsapp:  <ChatCircle size={15} weight="duotone" />,
+                      instagram: <Camera size={15} weight="duotone" />,
+                      webchat:   <GlobeHemisphereWest size={15} weight="duotone" />,
+                      email:     <EnvelopeSimple size={15} weight="duotone" />,
+                      messenger: <FacebookLogo size={15} weight="duotone" />,
+                      linkedin:  <LinkedinLogo size={15} weight="duotone" />,
+                      tiktok:    <MusicNote size={15} weight="duotone" />,
+                    } as Record<string, React.ReactNode>)[conv.channel as string] ?? <ChatCircle size={15} weight="duotone" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">

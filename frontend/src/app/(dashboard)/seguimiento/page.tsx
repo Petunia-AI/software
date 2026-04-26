@@ -11,6 +11,10 @@ import {
   ChevronRight, Bot, Zap, Trash2, Edit3, Check, X, Filter,
   TrendingUp, Bell, CircleDot,
 } from "lucide-react";
+import {
+  PhoneCall, EnvelopeSimple, ChatCircle, UsersFour,
+  CheckSquare as PhCheckSquare,
+} from "@phosphor-icons/react";
 import FollowUpDrawer from "@/components/followups/followup-drawer";
 import type { FollowUp, FollowUpStats } from "@/types/followup";
 import { FOLLOWUP_TYPES, PRIORITY_CONFIG, STATUS_CONFIG } from "@/types/followup";
@@ -18,15 +22,11 @@ import { FOLLOWUP_TYPES, PRIORITY_CONFIG, STATUS_CONFIG } from "@/types/followup
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
-  call:     <Phone size={13} />,
-  email:    <Mail size={13} />,
-  whatsapp: <MessageSquare size={13} />,
-  meeting:  <Users size={13} />,
-  task:     <CheckSquare size={13} />,
-};
-
-const TYPE_EMOJI: Record<string, string> = {
-  call: "📞", email: "📧", whatsapp: "💬", meeting: "🤝", task: "✅",
+  call:     <PhoneCall size={13} weight="duotone" />,
+  email:    <EnvelopeSimple size={13} weight="duotone" />,
+  whatsapp: <ChatCircle size={13} weight="duotone" />,
+  meeting:  <UsersFour size={13} weight="duotone" />,
+  task:     <PhCheckSquare size={13} weight="duotone" />,
 };
 
 function formatDate(iso: string) {
@@ -292,7 +292,7 @@ function CalendarView({ year, month, onChangeMonth }: {
                     )}
                     title={`${fu.title} — ${fu.lead_name || fu.lead_email}`}
                   >
-                    <span>{TYPE_EMOJI[fu.followup_type]}</span>
+                    <span className="flex-shrink-0">{TYPE_ICON[fu.followup_type]}</span>
                     <span className="truncate">{fu.lead_name || "Lead"}</span>
                   </div>
                 ))}

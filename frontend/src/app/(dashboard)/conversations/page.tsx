@@ -9,6 +9,10 @@ import { AgentBadge, ChannelBadge } from "@/components/ui/badge";
 import { ConversationItemSkeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { MessageSquare, Plus, Search, Filter, CircleDot } from "lucide-react";
+import {
+  ChatCircle, Camera, GlobeHemisphereWest, EnvelopeSimple,
+  FacebookLogo, LinkedinLogo, MusicNote,
+} from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -109,12 +113,12 @@ function ConversationsInner() {
           className="input-stripe w-auto pr-8"
         >
           <option value="">Todos los canales</option>
-          <option value="whatsapp">💬 WhatsApp</option>
-          <option value="webchat">🌐 Webchat</option>
-          <option value="instagram">📸 Instagram</option>
-          <option value="messenger">💜 Messenger</option>
-          <option value="linkedin">🔵 LinkedIn</option>
-          <option value="tiktok">🎵 TikTok</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="webchat">Webchat</option>
+          <option value="instagram">Instagram</option>
+          <option value="messenger">Messenger</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="tiktok">TikTok</option>
         </select>
 
         <select
@@ -169,8 +173,27 @@ function ConversationsInner() {
                 style={{ boxShadow: "var(--shadow-xs)" }}
               >
                 {/* Channel icon */}
-                <div className="w-11 h-11 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-lg flex-shrink-0">
-                  {{ whatsapp: "💬", instagram: "📸", webchat: "🌐", email: "📧", messenger: "💜", linkedin: "🔵", tiktok: "🎵" }[conv.channel as string] ?? "💬"}
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
+                  style={{
+                    background: ({
+                      whatsapp: "linear-gradient(135deg,#10B981,#059669)",
+                      instagram: "linear-gradient(135deg,#EC4899,#BE185D)",
+                      webchat:   "linear-gradient(135deg,#6366F1,#4F46E5)",
+                      email:     "linear-gradient(135deg,#0EA5E9,#0284C7)",
+                      messenger: "linear-gradient(135deg,#3B82F6,#2563EB)",
+                      linkedin:  "linear-gradient(135deg,#0A66C2,#004182)",
+                      tiktok:    "linear-gradient(135deg,#111827,#374151)",
+                    } as Record<string,string>)[conv.channel as string] ?? "linear-gradient(135deg,#7C3AED,#6D28D9)"
+                  }}>
+                  {({
+                    whatsapp: <ChatCircle size={20} weight="duotone" />,
+                    instagram: <Camera size={20} weight="duotone" />,
+                    webchat:   <GlobeHemisphereWest size={20} weight="duotone" />,
+                    email:     <EnvelopeSimple size={20} weight="duotone" />,
+                    messenger: <FacebookLogo size={20} weight="duotone" />,
+                    linkedin:  <LinkedinLogo size={20} weight="duotone" />,
+                    tiktok:    <MusicNote size={20} weight="duotone" />,
+                  } as Record<string, React.ReactNode>)[conv.channel as string] ?? <ChatCircle size={20} weight="duotone" />}
                 </div>
 
                 {/* Info */}

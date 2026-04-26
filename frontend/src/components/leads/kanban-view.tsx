@@ -11,17 +11,21 @@ import {
   DollarSign, Mail, Phone, Star, MoreHorizontal, ChevronDown, ChevronUp,
   Settings2, X, Eye, EyeOff, GripVertical,
 } from "lucide-react";
+import {
+  UserCirclePlus, MagnifyingGlass, Star as PhStar, TreePalm,
+  CalendarCheck, FileText, Handshake, Confetti, XCircle,
+} from "@phosphor-icons/react";
 
-const ALL_COLUMNS = [
-  { value: "new",            label: "Nuevo",             color: "border-t-slate-400",    icon: "🆕", textColor: "text-slate-600",   count_bg: "bg-slate-100"   },
-  { value: "qualifying",     label: "Calificando",       color: "border-t-blue-500",     icon: "🔍", textColor: "text-blue-600",    count_bg: "bg-blue-50"     },
-  { value: "qualified",      label: "Calificado",        color: "border-t-violet-500",   icon: "✅", textColor: "text-violet-600",  count_bg: "bg-violet-50"   },
-  { value: "nurturing",      label: "Nurturing",         color: "border-t-amber-500",    icon: "🌱", textColor: "text-amber-600",   count_bg: "bg-amber-50"    },
-  { value: "demo_scheduled", label: "Demo agendada",     color: "border-t-purple-500",   icon: "📅", textColor: "text-purple-600",  count_bg: "bg-purple-50"   },
-  { value: "proposal_sent",  label: "Propuesta enviada", color: "border-t-indigo-500",   icon: "📄", textColor: "text-indigo-600",  count_bg: "bg-indigo-50"   },
-  { value: "negotiating",    label: "Negociando",        color: "border-t-orange-500",   icon: "🤝", textColor: "text-orange-600",  count_bg: "bg-orange-50"   },
-  { value: "closed_won",     label: "Ganado",            color: "border-t-emerald-500",  icon: "🏆", textColor: "text-emerald-600", count_bg: "bg-emerald-50"  },
-  { value: "closed_lost",    label: "Perdido",           color: "border-t-red-400",      icon: "❌", textColor: "text-red-600",    count_bg: "bg-red-50"      },
+const ALL_COLUMNS: { value: string; label: string; color: string; icon: React.ReactNode; textColor: string; count_bg: string }[] = [
+  { value: "new",            label: "Nuevo",             color: "border-t-slate-400",   icon: <UserCirclePlus size={13} weight="duotone" />,  textColor: "text-slate-600",   count_bg: "bg-slate-100"  },
+  { value: "qualifying",     label: "Calificando",       color: "border-t-blue-500",    icon: <MagnifyingGlass size={13} weight="duotone" />, textColor: "text-blue-600",    count_bg: "bg-blue-50"    },
+  { value: "qualified",      label: "Calificado",        color: "border-t-violet-500",  icon: <PhStar size={13} weight="duotone" />,          textColor: "text-violet-600",  count_bg: "bg-violet-50"  },
+  { value: "nurturing",      label: "Nurturing",         color: "border-t-amber-500",   icon: <TreePalm size={13} weight="duotone" />,        textColor: "text-amber-600",   count_bg: "bg-amber-50"   },
+  { value: "demo_scheduled", label: "Demo agendada",     color: "border-t-purple-500",  icon: <CalendarCheck size={13} weight="duotone" />,   textColor: "text-purple-600",  count_bg: "bg-purple-50"  },
+  { value: "proposal_sent",  label: "Propuesta enviada", color: "border-t-indigo-500",  icon: <FileText size={13} weight="duotone" />,        textColor: "text-indigo-600",  count_bg: "bg-indigo-50"  },
+  { value: "negotiating",    label: "Negociando",        color: "border-t-orange-500",  icon: <Handshake size={13} weight="duotone" />,       textColor: "text-orange-600",  count_bg: "bg-orange-50"  },
+  { value: "closed_won",     label: "Ganado",            color: "border-t-emerald-500", icon: <Confetti size={13} weight="duotone" />,        textColor: "text-emerald-600", count_bg: "bg-emerald-50" },
+  { value: "closed_lost",    label: "Perdido",           color: "border-t-red-400",     icon: <XCircle size={13} weight="duotone" />,         textColor: "text-red-600",     count_bg: "bg-red-50"     },
 ];
 
 const STORAGE_KEY = "kanban_visible_cols";
