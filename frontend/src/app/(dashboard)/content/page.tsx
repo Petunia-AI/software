@@ -147,7 +147,7 @@ function StatStrip({ total, byStatus }: { total: number; byStatus: Record<string
     { label: "Publicados", value: byStatus.published ?? 0, icon: TrendingUp,  color: "text-violet-600", bg: "bg-violet-50"  },
   ];
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
       {stats.map(({ label, value, icon: Icon, color, bg }, i) => (
         <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, duration: 0.4 }} className="card-stripe p-4">
           <div className="flex items-center gap-2.5">
