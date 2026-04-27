@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import {
-  Bell, ChevronRight, Sparkles, LogOut,
+  Bell, ChevronRight, LogOut,
   LayoutDashboard, MessageCircle, UsersRound, CalendarCheck,
   TrendingUp, BrainCircuit, PenLine, SlidersHorizontal,
   CreditCard, Building2, ChevronDown,
@@ -53,13 +53,14 @@ export function TopHeader() {
   return (
     <header className="top-header">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="hidden sm:inline text-muted-foreground hover:text-foreground transition-colors font-medium">
-          <Sparkles size={13} className="inline mr-1 text-violet-400" />
-          Petunia AI
+      <div className="flex items-center gap-2">
+        {/* Logo — siempre visible */}
+        <Link href="/dashboard" className="flex-shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Petunia AI" className="h-7 w-auto object-contain" />
         </Link>
-        <ChevronRight size={13} className="hidden sm:block text-muted-foreground/40" />
-        <span className="text-foreground font-semibold flex items-center gap-1.5">
+        <ChevronRight size={13} className="text-muted-foreground/40" />
+        <span className="text-foreground font-semibold flex items-center gap-1.5 text-sm">
           <span
             className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
             style={{ background: `${meta.color}18` }}
