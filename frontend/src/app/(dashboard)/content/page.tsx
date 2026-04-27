@@ -147,7 +147,7 @@ function StatStrip({ total, byStatus }: { total: number; byStatus: Record<string
     { label: "Publicados", value: byStatus.published ?? 0, icon: TrendingUp,  color: "text-violet-600", bg: "bg-violet-50"  },
   ];
   return (
-    <div className="grid grid-cols-5 gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-3">
       {stats.map(({ label, value, icon: Icon, color, bg }, i) => (
         <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, duration: 0.4 }} className="card-stripe p-4">
           <div className="flex items-center gap-2.5">
@@ -1635,14 +1635,14 @@ export default function ContentPage() {
     <div className="p-4 md:p-8 max-w-[1280px] mx-auto space-y-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight gradient-text-violet flex items-center gap-2"><Sparkles size={20} />Contenido con IA</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Genera posts y stories para Instagram, Facebook{features?.content_channels.includes("tiktok") ? ", TikTok" : ""}{features?.content_channels.includes("linkedin") ? " y LinkedIn" : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <PlanBadge features={features} />
           <button onClick={() => setPanel(panel === "monthly" ? "none" : "monthly")} className={`btn-secondary text-xs ${panel === "monthly" ? "border-orange-300 text-orange-700 bg-orange-50" : ""}`}><Rocket size={14} />Campaña mensual</button>
           <button onClick={() => setPanel(panel === "calendar" ? "none" : "calendar")} className={`btn-secondary ${panel === "calendar" ? "border-blue-300 text-blue-700 bg-blue-50" : ""}`}><Calendar size={14} />Calendario IA</button>
@@ -1689,7 +1689,7 @@ export default function ContentPage() {
       {/* Filter + view toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <Filter size={14} className="text-muted-foreground flex-shrink-0" />
-        <select value={filterChannel} onChange={(e) => setFilterChannel(e.target.value)} className="px-3 py-1.5 rounded-lg text-sm bg-white border border-border text-foreground outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all">
+        <select value={filterChannel} onChange={(e) => setFilterChannel(e.target.value)} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-sm bg-white border border-border text-foreground outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all">
           <option value="">Todos los canales</option>
           <option value="instagram">📸 Instagram</option>
           <option value="facebook">👥 Facebook</option>
@@ -1697,7 +1697,7 @@ export default function ContentPage() {
           <option value="tiktok">🎵 TikTok</option>
           <option value="twitter">𝕏 Twitter</option>
         </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-3 py-1.5 rounded-lg text-sm bg-white border border-border text-foreground outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-sm bg-white border border-border text-foreground outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all">
           <option value="">Todos los estados</option>
           <option value="draft">Borradores</option>
           <option value="approved">Aprobados</option>
