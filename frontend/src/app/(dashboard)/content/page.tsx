@@ -169,7 +169,7 @@ function StatStrip({ total, byStatus }: { total: number; byStatus: Record<string
 
 function ChannelSelector({ value, onChange, features }: { value: Channel; onChange: (c: Channel) => void; features: PlanFeatures | null }) {
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {ALL_CHANNELS.map((ch) => {
         const cfg = CHANNEL_CONFIG[ch];
         const allowed = features?.content_channels.includes(ch) ?? false;
@@ -405,7 +405,7 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Tipo de contenido <span className="text-red-500 normal-case font-normal">*</span></label>
                 <select value={type} onChange={(e) => setType(e.target.value as ContentType)} className="w-full px-3 py-2 rounded-xl text-sm bg-white border border-border outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all text-foreground">
@@ -723,7 +723,7 @@ function ContentThemeWizard({ onClose, onGenerate, generating, features, token }
         {/* Tema */}
         <div>
           <label className="block text-xs font-semibold text-muted-foreground mb-2.5 uppercase tracking-wide">Tema del calendario</label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {CONTENT_THEMES.map((t) => (
               <button key={t.id} onClick={() => handleThemeSelect(t.id)}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${theme === t.id ? "border-indigo-400 bg-indigo-50" : "border-border bg-white hover:border-indigo-200 hover:bg-indigo-50/30"}`}>
@@ -774,7 +774,7 @@ function ContentThemeWizard({ onClose, onGenerate, generating, features, token }
         )}
 
         {/* Días + Canales */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Días a generar</label>
             <div className="flex gap-2 flex-wrap">
