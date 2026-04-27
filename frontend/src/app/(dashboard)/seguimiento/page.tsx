@@ -307,7 +307,7 @@ function CalendarView({ year, month, onChangeMonth }: {
                     )}
                     title={`${fu.title} — ${fu.lead_name || fu.lead_email}`}
                   >
-                    <span className="flex-shrink-0">{TYPE_ICON[fu.followup_type]}</span>
+                    <span className="flex-shrink-0">{TYPE_STYLE[fu.followup_type]?.icon ?? TYPE_STYLE.task.icon}</span>
                     <span className="truncate">{fu.lead_name || "Lead"}</span>
                   </div>
                 ))}
