@@ -63,19 +63,8 @@ export function Sidebar() {
         style={{ borderBottom: "1px solid rgba(107,139,255,0.12)" }}
       >
         {/* Logo icon */}
-        <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
-          style={{
-            background: "linear-gradient(135deg, #6B8BFF 0%, #C4AAFF 60%, #FFBA9A 100%)",
-            boxShadow: "0 0 16px rgba(107,139,255,0.55), inset 0 1px 0 rgba(255,255,255,0.15)",
-          }}
-        >
-          {/* P letter mark */}
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M4 3h5a3 3 0 0 1 0 6H6v4H4V3z" fill="white" fillOpacity="0.95"/>
-            <circle cx="7.5" cy="6" r="1.5" fill="white" fillOpacity="0.4"/>
-          </svg>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Petunia AI" className="w-8 h-8 object-contain flex-shrink-0" />
 
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-bold leading-tight tracking-tight" style={{ color: "#1A1F3C" }}>
