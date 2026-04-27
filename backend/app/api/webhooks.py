@@ -686,7 +686,8 @@ async def messenger_verify(request: Request):
     mode         = params.get("hub.mode")
     verify_token = params.get("hub.verify_token")
     challenge    = params.get("hub.challenge", "")
-    if mode == "subscribe" and verify_token == settings.instagram_verify_token:
+    valid_tokens = {settings.instagram_verify_token, settings.meta_wa_verify_token}
+    if mode == "subscribe" and verify_token in valid_tokens:
         return Response(content=challenge, media_type="text/plain")
     raise HTTPException(status_code=403, detail="Verify token mismatch")
 
