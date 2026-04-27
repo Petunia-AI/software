@@ -1751,7 +1751,7 @@ export default function ContentPage() {
 
       {/* Grid / List view */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="card p-4 space-y-3">
               <div className="shimmer h-5 w-40 rounded-lg" /><div className="shimmer h-4 w-full rounded-lg" /><div className="shimmer h-4 w-3/4 rounded-lg" /><div className="shimmer h-16 w-full rounded-lg" /><div className="shimmer h-8 w-48 rounded-lg" />
@@ -1772,7 +1772,7 @@ export default function ContentPage() {
         </div>
       ) : (
         <AnimatePresence>
-          <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" : "space-y-3"}>
+          <div className={viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : "space-y-3"}>
             {posts.map((post) => (
               <PostCard key={post.id} post={post} onApprove={() => approvePost(post.id)} onPublish={() => publishPost(post.id)} onSchedule={() => setSchedulingPost(post.id)} onDelete={() => deletePost(post.id)} onCheckVideo={() => checkVideoStatus(post.id)} onEdit={() => setEditingPost(post)} onGenerateImage={() => generatePostImage(post.id)} />
             ))}
