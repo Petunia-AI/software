@@ -64,15 +64,6 @@ export function Sidebar() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="Petunia AI" className="w-8 h-8 object-contain flex-shrink-0" />
 
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold leading-tight tracking-tight" style={{ color: "#1A1F3C" }}>
-            Petunia AI
-          </p>
-          <p className="text-[10px] leading-tight font-medium" style={{ color: "rgba(107,139,255,0.75)" }}>
-            Agente de ventas
-          </p>
-        </div>
-
         <CaretDown
           size={13}
           className={cn("transition-transform flex-shrink-0", workspaceOpen && "rotate-180")}
