@@ -350,7 +350,7 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}>
                   {tab.label}
-                  {"badge" in tab && tab.badge > 0 && (
+                  {"badge" in tab && (tab.badge ?? 0) > 0 && (
                     <span className={cn("text-[9px] font-black px-1 py-0.5 rounded-full min-w-[16px] text-center",
                       activeTab === tab.key ? "bg-white/25 text-white" : "bg-violet-100 text-violet-700")}>
                       {tab.badge}

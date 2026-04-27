@@ -50,9 +50,11 @@ interface Attendee {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const t = localStorage.getItem("token");
-  return t ? { Authorization: `Bearer ${t}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (t) h["Authorization"] = `Bearer ${t}`;
+  return h;
 }
 
 function parseAttendees(json?: string): Attendee[] {
