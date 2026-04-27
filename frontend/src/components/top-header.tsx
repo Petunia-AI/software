@@ -54,12 +54,12 @@ export function TopHeader() {
     <header className="top-header">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
-        {/* Logo — siempre visible */}
-        <Link href="/dashboard" className="flex-shrink-0">
+        {/* Logo — solo en móvil (en desktop ya aparece en el sidebar) */}
+        <Link href="/dashboard" className="flex-shrink-0 lg:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Petunia AI" className="h-7 w-auto object-contain" />
         </Link>
-        <ChevronRight size={13} className="text-muted-foreground/40" />
+        <ChevronRight size={13} className="text-muted-foreground/40 lg:hidden" />
         <span className="text-foreground font-semibold flex items-center gap-1.5 text-sm">
           <span
             className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
