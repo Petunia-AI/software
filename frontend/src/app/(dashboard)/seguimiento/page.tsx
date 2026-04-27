@@ -21,12 +21,12 @@ import { FOLLOWUP_TYPES, PRIORITY_CONFIG, STATUS_CONFIG } from "@/types/followup
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const TYPE_ICON: Record<string, React.ReactNode> = {
-  call:     <PhoneCall size={13} weight="duotone" />,
-  email:    <EnvelopeSimple size={13} weight="duotone" />,
-  whatsapp: <ChatCircle size={13} weight="duotone" />,
-  meeting:  <UsersFour size={13} weight="duotone" />,
-  task:     <PhCheckSquare size={13} weight="duotone" />,
+const TYPE_STYLE: Record<string, { icon: React.ReactNode; bg: string; iconColor: string; glow: string }> = {
+  call:     { icon: <PhoneCall size={15} weight="duotone" />,     bg: "rgba(59,130,246,0.1)",   iconColor: "#3B82F6", glow: "rgba(59,130,246,0.35)" },
+  email:    { icon: <EnvelopeSimple size={15} weight="duotone" />, bg: "rgba(139,92,246,0.1)",  iconColor: "#8B5CF6", glow: "rgba(139,92,246,0.35)" },
+  whatsapp: { icon: <ChatCircle size={15} weight="duotone" />,    bg: "rgba(16,185,129,0.1)",  iconColor: "#10B981", glow: "rgba(16,185,129,0.35)" },
+  meeting:  { icon: <UsersFour size={15} weight="duotone" />,     bg: "rgba(249,115,22,0.1)",  iconColor: "#F97316", glow: "rgba(249,115,22,0.35)" },
+  task:     { icon: <PhCheckSquare size={15} weight="duotone" />, bg: "rgba(100,116,139,0.1)", iconColor: "#64748B", glow: "rgba(100,116,139,0.3)" },
 };
 
 function formatDate(iso: string) {
@@ -133,12 +133,27 @@ function FollowUpRow({ fu, onComplete, onEdit, onCancel }: {
       )}
 
       {/* Type icon */}
-      <div
-        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-sm"
-        style={{ background: FOLLOWUP_TYPES.find(t => t.value === fu.followup_type)?.gradient ?? "linear-gradient(135deg,#635BFF,#8B5CF6)" }}
-      >
-        {TYPE_ICON[fu.followup_type]}
-      </div>
+      {(() => {
+        const ts = TYPE_STYLE[fu.followup_type] ?? TYPE_STYLE.task;
+        return (
+          <div className="relative flex-shrink-0">
+            <motion.div
+              whileHover={{ scale: 1.12 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ background: ts.bg, color: ts.iconColor, boxShadow: `0 0 0 1px ${ts.bg}` }}
+            >
+              {ts.icon}
+            </motion.div>
+            {overdue && fu.status !== "completed" && fu.status !== "cancelled" && (
+              <span
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{ background: "rgba(239,68,68,0.2)", animationDuration: "1.8s" }}
+              />
+            )}
+          </div>
+        );
+      })()}
 
       {/* Content */}
       <div className="flex-1 min-w-0">
