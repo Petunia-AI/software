@@ -1,4 +1,4 @@
-const CACHE_NAME = "petunia-ai-v1";
+const CACHE_NAME = "petunia-ai-v2";
 const STATIC_ASSETS = [
   "/",
   "/dashboard",
