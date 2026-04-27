@@ -7,8 +7,8 @@ import { useAuthStore } from "@/store/auth";
 import { cn } from "@/lib/utils";
 import {
   SquaresFour, ChatCircleText, UsersThree, BellRinging,
-  TrendUp, Robot, PenNib, Buildings, SlidersHorizontal,
-  Wallet, CaretDown, MagnifyingGlass,
+  TrendUp, Robot, PenNib, Buildings,
+  CaretDown, MagnifyingGlass,
   GlobeHemisphereWest, Camera, EnvelopeSimple, CalendarDots,
   ChatCircle, LinkedinLogo, FacebookLogo,
 } from "@phosphor-icons/react";
@@ -28,8 +28,6 @@ const navItems = [
   { href: "/meetings",               icon: CalendarDots,      label: "Reuniones",         badge: null,      color: "from-violet-500 to-purple-600",  glow: "rgba(139,92,246,0.35)",  iconWeight: "duotone" as const },
   { href: "/integrations/whatsapp",  icon: ChatCircle,        label: "WhatsApp Business", badge: null,      color: "from-green-500 to-emerald-600",  glow: "rgba(16,185,129,0.35)",  iconWeight: "duotone" as const },
   { href: "/properties",             icon: Buildings,         label: "Propiedades",       badge: null,      color: "from-teal-500 to-green-600",     glow: "rgba(20,184,166,0.35)",  iconWeight: "duotone" as const },
-  { href: "/settings",               icon: SlidersHorizontal, label: "Configuración",     badge: null,      color: "from-slate-500 to-gray-600",     glow: "rgba(100,116,139,0.35)", iconWeight: "duotone" as const },
-  { href: "/billing",                icon: Wallet,            label: "Plan & Billing",    badge: null,      color: "from-violet-600 to-indigo-600",  glow: "rgba(99,91,255,0.35)",   iconWeight: "duotone" as const },
 ];
 
 export function Sidebar() {
