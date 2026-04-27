@@ -390,7 +390,7 @@ export default function SeguimientoPage() {
   const todayCnt   = stats?.today ?? 0;
 
   return (
-    <div className="p-8 max-w-[1280px] mx-auto">
+    <div className="p-4 md:p-8 max-w-[1280px] mx-auto">
 
       {/* ── Hero banner ── */}
       <motion.div

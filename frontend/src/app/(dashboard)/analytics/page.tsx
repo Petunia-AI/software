@@ -117,7 +117,7 @@ export default function AnalyticsPage() {
   });
 
   return (
-    <div className="p-8 max-w-[1280px] mx-auto">
+    <div className="p-4 md:p-8 max-w-[1280px] mx-auto">
       <PageHeader
         title="Analíticas"
         subtitle="Rendimiento completo de tu plataforma"

@@ -363,6 +363,8 @@
     radial-gradient(at 20% 20%, rgba(99,91,255,0.06) 0, transparent 50%),
     radial-gradient(at 80% 0%,   rgba(139,92,246,0.05) 0, transparent 50%),
     radial-gradient(at 100% 80%, rgba(99,102,241,0.04) 0, transparent 50%);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* ================================================================
@@ -407,7 +409,7 @@
    TOP HEADER — Sticky top bar for dashboard layout
    ================================================================ */
 .top-header {
-  @apply flex items-center justify-between px-6 flex-shrink-0 bg-white;
+  @apply flex items-center justify-between px-4 md:px-6 flex-shrink-0 bg-white;
   height: 52px;
   border-bottom: 1px solid hsl(var(--border));
   box-shadow: 0 1px 0 rgba(0,0,0,0.03);

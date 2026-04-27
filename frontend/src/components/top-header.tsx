@@ -54,11 +54,11 @@ export function TopHeader() {
     <header className="top-header">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+        <Link href="/dashboard" className="hidden sm:inline text-muted-foreground hover:text-foreground transition-colors font-medium">
           <Sparkles size={13} className="inline mr-1 text-violet-400" />
           Petunia AI
         </Link>
-        <ChevronRight size={13} className="text-muted-foreground/40" />
+        <ChevronRight size={13} className="hidden sm:block text-muted-foreground/40" />
         <span className="text-foreground font-semibold flex items-center gap-1.5">
           <span
             className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"

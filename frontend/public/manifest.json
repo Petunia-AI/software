@@ -1,0 +1,39 @@
+{
+  "name": "Petunia AI — Agente de Ventas",
+  "short_name": "Petunia AI",
+  "description": "Plataforma de IA conversacional para automatizar ventas en LATAM",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F3F5FC",
+  "theme_color": "#6B8BFF",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Conversaciones",
+      "url": "/conversations",
+      "description": "Ver conversaciones activas"
+    },
+    {
+      "name": "Leads",
+      "url": "/leads",
+      "description": "Gestionar leads"
+    }
+  ]
+}

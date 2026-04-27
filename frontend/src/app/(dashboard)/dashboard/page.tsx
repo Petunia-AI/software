@@ -69,7 +69,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="p-8 max-w-[1280px] mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-[1280px] mx-auto space-y-4 md:space-y-6">
 
       {/* ── Hero banner ── */}
       <motion.div
@@ -85,15 +85,15 @@ export default function DashboardPage() {
         <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/4 pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-48 h-48 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />
 
-        <div className="relative flex items-center justify-between px-8 py-7 gap-6">
+        <div className="relative flex items-center justify-between px-5 md:px-8 py-5 md:py-7 gap-4">
           {/* Left: greeting */}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Sparkles size={13} className="text-white/60" />
               <span className="text-white/60 text-sm font-medium">{greeting},</span>
             </div>
-            <h1 className="text-3xl font-black text-white">{firstName} 👋</h1>
-            <p className="text-white/55 text-sm mt-1.5">
+            <h1 className="text-2xl md:text-3xl font-black text-white">{firstName} 👋</h1>
+            <p className="text-white/55 text-xs md:text-sm mt-1">
               Aquí está el resumen de tu agente IA hoy
             </p>
           </div>
@@ -128,7 +128,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
         ) : (

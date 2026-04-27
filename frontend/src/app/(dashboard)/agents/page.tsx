@@ -89,7 +89,7 @@ export default function AgentsPage() {
   const getConfig = (type: string) => configs.find((c: Record<string, unknown>) => c.agent_type === type);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto">
 
       {/* ── Hero banner ── */}
       <motion.div
