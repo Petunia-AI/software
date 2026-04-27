@@ -128,7 +128,7 @@ export default function ConversationDetailPage() {
     <div className="flex flex-col h-screen bg-[hsl(0,0%,98%)]">
 
       {/* ── Top bar ── */}
-      <div className="flex items-center gap-4 px-6 py-4 bg-white border-b border-border"
+      <div className="flex items-center gap-2 md:gap-4 px-3 md:px-6 py-3 md:py-4 bg-white border-b border-border"
         style={{ boxShadow: "var(--shadow-xs)" }}
       >
         <Link
@@ -239,7 +239,7 @@ export default function ConversationDetailPage() {
                     {isUser ? <User size={13} /> : <Bot size={13} />}
                   </div>
 
-                  <div className={`max-w-[72%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
+                  <div className={`max-w-[80%] sm:max-w-[72%] ${isUser ? "items-end" : "items-start"} flex flex-col min-w-0`}>
                     {!isUser && !!msg.agent_type && (
                       <p className="text-[10px] text-muted-foreground mb-1 ml-1 font-medium">
                         Agente · <span className="capitalize">{msg.agent_type as string}</span>
@@ -263,7 +263,7 @@ export default function ConversationDetailPage() {
       </div>
 
       {/* ── Input bar ── */}
-      <div className="bg-white border-t border-border px-6 py-4"
+      <div className="bg-white border-t border-border px-3 md:px-6 py-3 md:py-4"
         style={{ boxShadow: "0 -1px 3px 0 rgb(0 0 0 / 0.04)" }}
       >
         {conv?.is_human_takeover && (
@@ -273,7 +273,7 @@ export default function ConversationDetailPage() {
           </div>
         )}
 
-        <div className="max-w-2xl mx-auto flex items-end gap-3">
+        <div className="max-w-2xl mx-auto flex items-end gap-2">
           <textarea
             ref={textareaRef}
             value={input}
@@ -282,16 +282,16 @@ export default function ConversationDetailPage() {
             placeholder={
               conv?.is_human_takeover
                 ? "Escribe tu respuesta..."
-                : "Simula un mensaje del cliente... (Enter para enviar)"
+                : "Escribe un mensaje... (Enter para enviar)"
             }
             rows={1}
-            className="input-stripe flex-1 resize-none overflow-hidden"
+            className="input-stripe flex-1 min-w-0 resize-none overflow-hidden text-sm"
             style={{ minHeight: "44px", maxHeight: "120px" }}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sendMutation.isPending}
-            className="btn-primary flex-shrink-0 w-11 h-11 p-0 rounded-xl disabled:opacity-40"
+            className="btn-primary flex-shrink-0 w-10 h-10 md:w-11 md:h-11 p-0 rounded-xl disabled:opacity-40"
           >
             {sendMutation.isPending
               ? <Loader2 size={16} className="animate-spin" />
