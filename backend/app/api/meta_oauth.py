@@ -497,6 +497,130 @@ async def meta_refresh_token(
     }
 
 
+@router.post("/embedded-signup")
+async def meta_embedded_signup(
+    code: str,
+    waba_id: str,
+    phone_number_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Completa el flujo de Embedded Signup de WhatsApp Business Platform.
+
+    El frontend llama a este endpoint después de que el usuario termina
+    el popup de Meta Embedded Signup. Recibe:
+      - code: código de intercambio devuelto por FB.login() (authResponse.code)
+      - waba_id: ID de la WhatsApp Business Account del cliente (del message event)
+      - phone_number_id: ID del número de teléfono registrado (del message event)
+
+    Este endpoint:
+      1. Intercambia el code por un token de acceso del sistema (server-to-server)
+      2. Obtiene los datos del número de teléfono
+      3. Registra el número para usar Cloud API
+      4. Suscribe la WABA a los webhooks de Petunia
+      5. Guarda todo en el negocio del usuario
+    """
+    _require_meta_config()
+
+    result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+    business = result.scalar_one_or_none()
+    if not business:
+        raise HTTPException(404, "Negocio no encontrado")
+
+    async with httpx.AsyncClient(timeout=20) as client:
+
+        # Paso 1: Intercambiar code por access token (business integration system user token)
+        token_resp = await client.get(
+            f"{META_GRAPH_URL}/oauth/access_token",
+            params={
+                "client_id": settings.meta_app_id,
+                "client_secret": settings.meta_app_secret,
+                "code": code,
+            },
+        )
+        if token_resp.status_code != 200:
+            err = token_resp.json().get("error", {}).get("message", "Error intercambiando código")
+            logger.error("embedded_signup_token_exchange_failed", error=err, business_id=business.id)
+            raise HTTPException(400, f"No se pudo intercambiar el código de Meta: {err}")
+
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token", "")
+        if not access_token:
+            raise HTTPException(400, "Meta no devolvió un access token válido")
+
+        # Paso 2: Obtener datos del número de teléfono
+        phone_resp = await client.get(
+            f"{META_GRAPH_URL}/{phone_number_id}",
+            params={
+                "fields": "id,display_phone_number,verified_name,quality_rating",
+                "access_token": access_token,
+            },
+        )
+        phone_data = phone_resp.json() if phone_resp.status_code == 200 else {}
+        display_phone = phone_data.get("display_phone_number", "")
+        verified_name = phone_data.get("verified_name", "")
+
+        # Paso 3: Registrar número para Cloud API (si no está ya registrado)
+        reg_resp = await client.post(
+            f"{META_GRAPH_URL}/{phone_number_id}/register",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={"messaging_product": "whatsapp"},
+        )
+        if reg_resp.status_code not in (200, 201):
+            # El registro puede fallar si ya está registrado — no es error crítico
+            logger.warning(
+                "embedded_signup_register_phone_warn",
+                phone_number_id=phone_number_id,
+                body=reg_resp.text,
+            )
+
+    # Paso 4: Suscribir webhooks en la WABA del cliente
+    await _subscribe_waba_webhooks(waba_id, access_token)
+
+    # Paso 5: Guardar en el negocio
+    business.meta_phone_number_id    = phone_number_id
+    business.meta_wa_token           = access_token
+    business.meta_wa_business_id     = waba_id
+    business.whatsapp_phone          = display_phone
+    business.whatsapp_enabled        = True
+    business.meta_connected          = True
+
+    await db.commit()
+
+    logger.info(
+        "embedded_signup_complete",
+        business_id=business.id,
+        waba_id=waba_id,
+        phone_number_id=phone_number_id,
+        display_phone=display_phone,
+    )
+
+    return {
+        "ok": True,
+        "waba_id": waba_id,
+        "phone_number_id": phone_number_id,
+        "display_phone": display_phone,
+        "verified_name": verified_name,
+        "whatsapp_enabled": True,
+    }
+
+
+@router.get("/embedded-signup/config")
+async def embedded_signup_config(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Devuelve la configuración pública necesaria para inicializar el
+    SDK de Meta en el frontend: app_id y config_id.
+    """
+    _require_meta_config()
+    return {
+        "app_id": settings.meta_app_id,
+        "config_id": settings.meta_config_id,
+    }
+
+
 @router.post("/test/{channel}")
 async def test_channel(
     channel: str,
@@ -567,6 +691,12 @@ async def test_channel(
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
+
+def _require_meta_config() -> None:
+    """Lanza 503 si falta la configuración mínima de Meta."""
+    if not settings.meta_app_id or not settings.meta_app_secret:
+        raise HTTPException(503, "Meta App ID/Secret no configurados en el servidor")
 
 
 async def _subscribe_page_webhooks(page_id: str, page_access_token: str) -> bool:

@@ -7,6 +7,7 @@ import {
   Smartphone, Zap, Shield, ArrowRight, ChevronDown,
   ChevronRight as ChevronRightIcon, Phone, Check, X, ToggleLeft, ToggleRight,
 } from "lucide-react";
+import WhatsAppEmbeddedSignup from "@/components/whatsapp-embedded-signup";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 const BACKEND_BASE = API.replace("/api", "");
@@ -236,6 +237,61 @@ export default function WhatsAppIntegrationPage() {
         ))}
       </div>
 
+      {/* ── Embedded Signup — conexión rápida ── */}
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-green-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </span>
+                Conexión rápida — Recomendada
+              </h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Conecta tu WhatsApp Business en 2 minutos sin copiar tokens
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 bg-green-100 text-green-700 rounded-full">Nuevo</span>
+          </div>
+        </div>
+        <div className="px-6 py-5">
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            {[
+              { step: "1", label: "Haz clic en el botón" },
+              { step: "2", label: "Sigue el popup de Meta" },
+              { step: "3", label: "¡Listo! Petunia se conecta" },
+            ].map(({ step, label }) => (
+              <div key={step} className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                  {step}
+                </span>
+                <span className="text-xs text-slate-600">{label}</span>
+              </div>
+            ))}
+          </div>
+          <WhatsAppEmbeddedSignup
+            onSuccess={() => {
+              showToast("¡WhatsApp Business conectado correctamente!");
+              load();
+            }}
+            onError={(msg) => showToast(msg, false)}
+          />
+        </div>
+      </div>
+
+      {/* ── Paso a paso de configuración (manual / avanzado) ── */}
+      <details className="group">
+        <summary className="cursor-pointer list-none">
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm px-6 py-4 flex items-center justify-between hover:border-slate-200 transition">
+            <div>
+              <h2 className="font-semibold text-slate-800">Configuración manual (avanzado)</h2>
+              <p className="text-sm text-slate-500 mt-0.5">Si prefieres pegar el token directamente o usar un System User token</p>
+            </div>
+            <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
+          </div>
+        </summary>
+        <div className="mt-2">
       {/* ── Paso a paso de configuración ── */}
       <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100">
@@ -402,6 +458,8 @@ export default function WhatsAppIntegrationPage() {
           )}
         </div>
       </div>
+      </div>{/* end details > summary > div */}
+      </details>
 
       {/* ── FAQ ── */}
       <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">

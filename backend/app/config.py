@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     meta_app_id:     str = ""   # App ID de la Meta App
     meta_app_secret: str = ""   # App Secret de la Meta App (para OAuth)
     meta_oauth_redirect_uri: str = ""  # e.g. https://tu-dominio.com/meta/callback
+    meta_config_id:  str = ""   # Facebook Login Configuration ID (para Embedded Signup)
 
     # Stripe
     stripe_secret_key:      str = ""
