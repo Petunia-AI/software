@@ -773,6 +773,11 @@ async def _process_messenger_message(
     )
     conv = conv_result.scalar_one_or_none()
 
+    # Track prior messages before potentially creating a new conv.
+    # For existing convs, messages are already loaded via selectinload.
+    # For new convs we avoid touching the relationship after flush (MissingGreenlet).
+    prior_messages: list = []
+
     if not conv:
         lead = Lead(
             id=str(uuid.uuid4()),
@@ -791,8 +796,11 @@ async def _process_messenger_message(
         )
         db.add(conv)
         await db.flush()
-        conv.messages = []
-        conv.lead = lead
+        _lead_obj = lead  # keep reference to avoid lazy load after flush
+        # prior_messages stays [] — new conversation has no history
+    else:
+        prior_messages = list(conv.messages)
+        _lead_obj = conv.lead  # loaded via selectinload
 
     user_msg = Message(
         id=str(uuid.uuid4()),
@@ -815,7 +823,7 @@ async def _process_messenger_message(
     agent_configs = {c.agent_type: {"persona_name": c.persona_name, "persona_tone": c.persona_tone} for c in raw_configs}
 
     business_dict = _build_business_dict(business)
-    lead_obj = conv.lead
+    lead_obj = _lead_obj  # local ref — avoids lazy load on expired conv
     lead_dict = {
         "id":                   lead_obj.id if lead_obj else "",
         "name":                 lead_obj.name if lead_obj else "",
@@ -828,7 +836,7 @@ async def _process_messenger_message(
         "timeline":             lead_obj.timeline if lead_obj else None,
     }
 
-    all_messages = list(conv.messages) + [user_msg]
+    all_messages = prior_messages + [user_msg]
 
     ai_response, agent_used, qualification = await orchestrator.process_message(
         user_message=text,
@@ -851,8 +859,8 @@ async def _process_messenger_message(
     conv.last_message_at = datetime.now(timezone.utc)
     conv.current_agent = agent_used
 
-    if qualification and conv.lead:
-        lead_obj = conv.lead
+    if qualification and _lead_obj:
+        lead_obj = _lead_obj
         lead_obj.qualification_score = qualification.score
         lead_obj.budget    = qualification.budget
         lead_obj.authority = qualification.authority
