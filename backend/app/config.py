@@ -109,10 +109,8 @@ class Settings(BaseSettings):
     r2_public_url:       str = ""    # URL pública del bucket (CDN o custom domain)
     tiktok_open_id:      str = ""
 
-    # Ayrshare — Social Media Auto Global OAuth
-    ayrshare_api_key:     str = ""   # API Key del plan Business de Ayrshare
-    ayrshare_domain:      str = ""   # Domain / ID único de la cuenta (ej: id-f9Dl5)
-    ayrshare_jwt_secret:  str = ""   # Private key RSA PEM (de Ayrshare dashboard → JWT settings)
+    # Zernio — Social Media Multi-Platform OAuth
+    zernio_api_key: str = ""   # API Key de Zernio (sk_...)
 
     # Google OAuth2 (Gmail CRM + Google Calendar / Meet integration)
     google_client_id:     str = ""   # Google Cloud Console → OAuth 2.0 Client ID

@@ -3,12 +3,12 @@
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { businessApi, metaApi, tiktokApi, ayrshareApi } from "@/lib/api";
+import { businessApi, metaApi, tiktokApi, zernioApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetaConnect } from "@/components/meta-connect";
 import { TikTokConnect } from "@/components/tiktok-connect";
-import { AyrshareConnect } from "@/components/ayrshare-connect";
+import { ZernioConnect } from "@/components/zernio-connect";
 import toast from "react-hot-toast";
 import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Music2, Share2, Settings2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -151,9 +151,9 @@ function SettingsContent() {
     staleTime: 30_000,
   });
 
-  const { data: ayrshareStatus, refetch: refetchAyrshare } = useQuery({
-    queryKey: ["ayrshare-status"],
-    queryFn: () => ayrshareApi.getStatus().then((r) => r.data),
+  const { data: zernioStatus, refetch: refetchZernio } = useQuery({
+    queryKey: ["zernio-status"],
+    queryFn: () => zernioApi.getStatus().then((r) => r.data),
     staleTime: 30_000,
   });
 
@@ -455,12 +455,12 @@ function SettingsContent() {
           />
         </Section>
 
-        {/* Ayrshare — Auto Global OAuth */}
-        <Section icon={Share2} title="Redes Sociales (Ayrshare)"
-          subtitle="Vincula X/Twitter, Instagram, Facebook, LinkedIn, TikTok, YouTube y más en un click" delay={0.27}>
-          <AyrshareConnect
-            status={ayrshareStatus}
-            onUpdate={() => refetchAyrshare()}
+        {/* Zernio — Social Media OAuth */}
+        <Section icon={Share2} title="Redes Sociales (Zernio)"
+          subtitle="Vincula X/Twitter, Instagram, Facebook, LinkedIn, TikTok, YouTube y más con OAuth seguro" delay={0.27}>
+          <ZernioConnect
+            status={zernioStatus}
+            onUpdate={() => refetchZernio()}
           />
         </Section>
 

@@ -167,18 +167,20 @@ async def job_publish_scheduled_posts():
                 tags = " ".join(f"#{h.lstrip('#')}" for h in post.hashtags)
                 caption_with_hashtags = f"{post.caption}\n\n{tags}"
 
-            # Buscar el negocio para obtener el profileKey de Ayrshare
+            # Buscar el negocio para obtener los datos de Zernio
             biz_res = await db.execute(
                 select(Business).where(Business.id == post.business_id)
             )
             biz = biz_res.scalar_one_or_none()
-            ayrshare_key = biz.ayrshare_profile_key if biz and biz.ayrshare_enabled else None
+            zernio_profile_id = biz.zernio_profile_id if biz and biz.zernio_enabled else None
+            zernio_platforms = biz.zernio_connected_platforms if biz else None
 
             pub_result = await publish_post(
                 channel=post.channel.value,
                 caption=caption_with_hashtags,
                 image_url=post.image_url,
-                ayrshare_profile_key=ayrshare_key,
+                zernio_profile_id=zernio_profile_id,
+                zernio_connected_platforms=zernio_platforms,
             )
 
             post.status = ContentStatus.published if pub_result["success"] else ContentStatus.failed
@@ -277,23 +279,23 @@ async def job_followup_notifications():
             await db.commit()
 
 
-# ── Ayrshare comment polling (fallback when webhook misses events) ────────
-async def job_ayrshare_poll_comments():
+# ── Zernio comment polling (fallback when webhook misses events) ─────────
+async def job_zernio_poll_comments():
     """
-    Cada 5 min: por cada negocio con Ayrshare + autoresponder habilitado,
+    Cada 5 min: por cada negocio con Zernio + autoresponder habilitado,
     consulta los comentarios recientes y procesa los que no han sido respondidos.
-    Es un fallback para cuando el webhook de Ayrshare no llega.
+    Es un fallback para cuando el webhook de Zernio no llega.
     """
-    from app.api.webhooks import _process_ayrshare_event, _PLATFORM_TO_CHANNEL
-    from app.services.ayrshare_service import ayrshare_service
+    from app.api.webhooks import _process_zernio_event, _PLATFORM_TO_CHANNEL
+    from app.services.zernio_service import zernio_service
     from app.models.conversation import Channel
     from app.models.message import Message
 
     async with AsyncSessionLocal() as db:
         biz_result = await db.execute(
             select(Business).where(
-                Business.ayrshare_profile_key.isnot(None),
-                Business.ayrshare_autoresponder_enabled == True,
+                Business.zernio_profile_id.isnot(None),
+                Business.zernio_autoresponder_enabled == True,
                 Business.is_active == True,
             )
         )
@@ -301,53 +303,66 @@ async def job_ayrshare_poll_comments():
 
         for business in businesses:
             try:
-                platforms = business.ayrshare_connected_platforms or []
-                if not platforms:
+                connected: list[dict] = business.zernio_connected_platforms or []
+                enabled_channels: list[str] = business.zernio_autoresponder_channels or []
+                # Solo plataformas con comentarios y habilitadas en auto-respondedor
+                from app.services.zernio_service import COMMENT_SUPPORTED
+                target_platforms = [
+                    a["platform"] for a in connected
+                    if a["platform"] in COMMENT_SUPPORTED
+                    and (not enabled_channels or a["platform"] in enabled_channels)
+                ]
+                if not target_platforms:
                     continue
 
-                comments = await ayrshare_service.get_recent_comments(
-                    profile_key=business.ayrshare_profile_key,
-                    platforms=platforms,
-                    last_n=20,
-                )
+                for platform in target_platforms:
+                    try:
+                        comments = await zernio_service.list_comments(
+                            profile_id=business.zernio_profile_id,
+                            platform=platform,
+                        )
+                        for comment in comments:
+                            comment_id   = comment.get("_id") or comment.get("id", "")
+                            text         = comment.get("text", "").strip()
+                            commenter_id = (
+                                comment.get("authorId") or comment.get("userId") or ""
+                            )
+                            post_id = comment.get("postId", "")
 
-                for comment in comments:
-                    comment_id   = comment.get("id", "")
-                    platform     = comment.get("platform", "").lower()
-                    text         = comment.get("text", "").strip()
-                    commenter_id = (
-                        comment.get("userId") or comment.get("username") or ""
-                    )
-                    post_id = comment.get("postId", "")
+                            if not text or not commenter_id or not comment_id:
+                                continue
 
-                    if not text or not commenter_id or not comment_id:
-                        continue
+                            # Deduplicar por channel_message_id
+                            dup = await db.execute(
+                                select(Message).where(
+                                    Message.channel_message_id == comment_id
+                                ).limit(1)
+                            )
+                            if dup.scalar_one_or_none():
+                                continue
 
-                    # Deduplicar por channel_message_id
-                    dup = await db.execute(
-                        select(Message).where(
-                            Message.channel_message_id == comment_id
-                        ).limit(1)
-                    )
-                    if dup.scalar_one_or_none():
-                        continue  # ya procesado
-
-                    channel = _PLATFORM_TO_CHANNEL.get(platform, Channel.WEBCHAT)
-
-                    await _process_ayrshare_event(
-                        db=db,
-                        business=business,
-                        channel=channel,
-                        platform=platform,
-                        commenter_id=commenter_id,
-                        text=text,
-                        comment_id=comment_id,
-                        post_id=post_id,
-                    )
+                            channel = _PLATFORM_TO_CHANNEL.get(platform, Channel.WEBCHAT)
+                            await _process_zernio_event(
+                                db=db,
+                                business=business,
+                                channel=channel,
+                                platform=platform,
+                                commenter_id=commenter_id,
+                                text=text,
+                                comment_id=comment_id,
+                                post_id=post_id,
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            "scheduler.zernio_poll.platform_failed",
+                            platform=platform,
+                            business_id=business.id,
+                            error=str(e),
+                        )
 
             except Exception as e:
                 logger.warning(
-                    "scheduler.ayrshare_poll.failed",
+                    "scheduler.zernio_poll.failed",
                     business_id=business.id,
                     error=str(e),
                 )
@@ -380,13 +395,13 @@ def start_scheduler():
         replace_existing=True,
     )
     scheduler.add_job(
-        job_ayrshare_poll_comments,
+        job_zernio_poll_comments,
         CronTrigger(minute="*/5"),  # every 5 minutes
-        id="ayrshare_poll_comments",
+        id="zernio_poll_comments",
         replace_existing=True,
     )
     scheduler.start()
-    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts", "followup_notifications", "ayrshare_poll_comments"])
+    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts", "followup_notifications", "zernio_poll_comments"])
 
 
 def stop_scheduler():

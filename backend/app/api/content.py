@@ -123,10 +123,11 @@ async def _do_publish(post_id: str, _unused_db: AsyncSession | None = None):
         if not post:
             return
 
-        # Obtener el profileKey de Ayrshare del negocio
+        # Obtener datos de Zernio del negocio
         biz_result = await db.execute(select(Business).where(Business.id == post.business_id))
         business = biz_result.scalar_one_or_none()
-        ayrshare_profile_key = business.ayrshare_profile_key if business else None
+        zernio_profile_id = business.zernio_profile_id if business else None
+        zernio_connected_platforms = business.zernio_connected_platforms if business else None
 
         caption_with_hashtags = post.caption
         if post.hashtags:
@@ -141,7 +142,8 @@ async def _do_publish(post_id: str, _unused_db: AsyncSession | None = None):
             channel=post.channel.value,
             caption=caption_with_hashtags,
             image_url=post.image_url,
-            ayrshare_profile_key=ayrshare_profile_key,
+            zernio_profile_id=zernio_profile_id,
+            zernio_connected_platforms=zernio_connected_platforms,
         )
 
         post.status = ContentStatus.published if pub_result["success"] else ContentStatus.failed

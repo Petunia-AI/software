@@ -1346,24 +1346,11 @@ async def _process_tiktok_comment(event: dict, db: AsyncSession):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AYRSHARE WEBHOOK — comentarios y mensajes unificados de todas las redes
+# ZERNIO WEBHOOK — comentarios y mensajes unificados de todas las redes
 #
-# Ayrshare envía un POST cuando hay un nuevo comentario/mensaje en cualquier
+# Zernio envía un POST cuando hay un nuevo comentario/mensaje en cualquier
 # plataforma vinculada (Instagram, Facebook, Twitter/X, LinkedIn, TikTok,
-# YouTube, Pinterest, Telegram, etc.)
-#
-# Payload ejemplo:
-# {
-#   "action": "comment",
-#   "platform": "instagram",
-#   "profileKey": "xxx",
-#   "data": {
-#     "id": "comment_id",
-#     "text": "Cuanto cuesta?",
-#     "username": "@juan_doe",
-#     "postId": "post_id"
-#   }
-# }
+# YouTube, Telegram, WhatsApp, etc.)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _PLATFORM_TO_CHANNEL = {
@@ -1377,10 +1364,10 @@ _PLATFORM_TO_CHANNEL = {
 }
 
 
-@router.post("/ayrshare")
-async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+@router.post("/zernio")
+async def zernio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Webhook unificado de Ayrshare. Recibe comentarios y mensajes de
+    Webhook unificado de Zernio. Recibe comentarios y mensajes de
     cualquier red social vinculada y los procesa con el agente de ventas.
     """
     try:
@@ -1388,78 +1375,60 @@ async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db))
     except Exception:
         return Response(status_code=200)
 
-    # Log ALL incoming payloads for debugging
     log = structlog.get_logger()
-    log.info("ayrshare_webhook_received",
-        action=payload.get("action"),
-        type=payload.get("type"),
-        subAction=payload.get("subAction"),
+    log.info("zernio_webhook_received",
+        event=payload.get("event"),
         platform=payload.get("platform"),
-        refId=payload.get("refId"),
+        profileId=payload.get("profileId"),
         keys=list(payload.keys()),
     )
 
-    action = payload.get("action", "").lower()
+    event    = payload.get("event", "").lower()
+    platform = payload.get("platform", "").lower()
+    data     = payload.get("data", {})
 
-    # Detectar formato de mensajería de Ayrshare (DMs via messaging API)
-    # Formato: {"action":"messages","type":"received","subAction":"messageCreated","refId":"..."}
-    if action == "messages" or (payload.get("type") == "received" and payload.get("refId")):
+    # Mensajes directos
+    if event in ("message.received", "dm.received", "message_received"):
         try:
-            await _process_ayrshare_dm(payload, db, log)
+            await _process_zernio_dm(payload, db, log)
         except Exception as e:
-            log.error("ayrshare_webhook_dm_error", error=str(e), exc_info=True)
+            log.error("zernio_webhook_dm_error", error=str(e), exc_info=True)
         return {"ok": True}
 
-    platform    = payload.get("platform", "").lower()
-    profile_key = payload.get("profileKey", "")
-    data        = payload.get("data", {})
-
-    text         = (data.get("text") or data.get("message") or "").strip()
+    # Comentarios
+    text         = (data.get("text") or data.get("content") or data.get("message") or "").strip()
     commenter_id = (
-        data.get("username") or data.get("userId") or
-        data.get("open_id") or data.get("senderId") or ""
+        data.get("authorId") or data.get("userId") or
+        data.get("username") or data.get("senderId") or ""
     )
-    comment_id = data.get("id", "")
+    comment_id = data.get("_id") or data.get("id", "")
     post_id    = data.get("postId") or data.get("videoId") or ""
 
     if not text or not commenter_id:
         return {"ok": True}
 
-    # Solo procesamos comentarios y mensajes directos
-    if action not in ("comment", "dm", "mention", "reply", "message", ""):
+    if event not in ("comment.created", "comment.received", "mention.received", "comment", ""):
         return {"ok": True}
 
-    # Buscar negocio por profileKey o refId (Ayrshare puede enviar cualquiera)
-    ref_id = payload.get("refId", "")
+    # Buscar negocio por profileId de Zernio
+    profile_id = payload.get("profileId", "")
     biz_result = await db.execute(
         select(Business).where(
-            (Business.ayrshare_profile_key == profile_key) if profile_key else (Business.ayrshare_ref_id == ref_id),
-            Business.ayrshare_autoresponder_enabled == True,
+            Business.zernio_profile_id == profile_id,
+            Business.zernio_autoresponder_enabled == True,
             Business.is_active == True,
         )
     )
     business = biz_result.scalar_one_or_none()
-    # Si no se encontró por profileKey, intentar por refId
-    if not business and profile_key and ref_id:
-        biz_result2 = await db.execute(
-            select(Business).where(
-                Business.ayrshare_ref_id == ref_id,
-                Business.ayrshare_autoresponder_enabled == True,
-                Business.is_active == True,
-            )
-        )
-        business = biz_result2.scalar_one_or_none()
     if not business:
         return {"ok": True}
 
-    # Verificar que el canal esté habilitado para auto-respuesta
-    enabled_channels: list = business.ayrshare_autoresponder_channels or []
-    if enabled_channels and platform.lower() not in [c.lower() for c in enabled_channels]:
+    enabled_channels: list = business.zernio_autoresponder_channels or []
+    if enabled_channels and platform not in [c.lower() for c in enabled_channels]:
         return {"ok": True}
 
     channel = _PLATFORM_TO_CHANNEL.get(platform, Channel.WEBCHAT)
-
-    await _process_ayrshare_event(
+    await _process_zernio_event(
         db=db,
         business=business,
         channel=channel,
@@ -1472,7 +1441,7 @@ async def ayrshare_webhook(request: Request, db: AsyncSession = Depends(get_db))
     return {"ok": True}
 
 
-async def _process_ayrshare_event(
+async def _process_zernio_event(
     db: AsyncSession,
     business: Business,
     channel: Channel,
@@ -1483,14 +1452,14 @@ async def _process_ayrshare_event(
     post_id: str,
 ) -> None:
     """
-    Procesa un comentario/mensaje de Ayrshare:
+    Procesa un comentario/mención de Zernio:
     1. Busca o crea Lead
     2. Busca o crea Conversation
     3. Guarda mensaje entrante
     4. Genera respuesta con el orquestador
-    5. Publica respuesta via Ayrshare
+    5. Publica respuesta via Zernio
     """
-    from app.services.ayrshare_service import ayrshare_service
+    from app.services.zernio_service import zernio_service
     import structlog as _sl
     log = _sl.get_logger()
 
@@ -1503,14 +1472,11 @@ async def _process_ayrshare_event(
             if dup.scalar_one_or_none():
                 return
 
-        # No responder a mensajes propios de Petunia
-        # (los identifica porque el commenter_id coincide con la cuenta del negocio)
-
         # Buscar o crear lead por (business_id, channel, commenter_id)
         lead_result = await db.execute(
             select(Lead).where(
                 Lead.business_id == business.id,
-                Lead.notes.contains(f"ayrshare:{platform}:{commenter_id}"),
+                Lead.notes.contains(f"zernio:{platform}:{commenter_id}"),
             ).limit(1)
         )
         lead = lead_result.scalar_one_or_none()
@@ -1520,7 +1486,7 @@ async def _process_ayrshare_event(
                 business_id=business.id,
                 name=commenter_id.lstrip("@"),
                 source=platform,
-                notes=f"ayrshare:{platform}:{commenter_id}",
+                notes=f"zernio:{platform}:{commenter_id}",
                 tags=[],
                 is_active=True,
             )
@@ -1599,7 +1565,6 @@ async def _process_ayrshare_event(
 
         all_messages = list(conv.messages) + [user_msg]
 
-        # Generar respuesta con el orquestador
         ai_response, agent_used, qualification = await orchestrator.process_message(
             user_message=text,
             conversation_history=all_messages,
@@ -1608,7 +1573,6 @@ async def _process_ayrshare_event(
             agent_configs=agent_configs,
         )
 
-        # Guardar respuesta
         ai_msg = Message(
             id=str(uuid.uuid4()),
             conversation_id=conv.id,
@@ -1635,19 +1599,16 @@ async def _process_ayrshare_event(
 
         await db.commit()
 
-        # Publicar respuesta via Ayrshare
-        if comment_id and business.ayrshare_profile_key:
-            # Twitter tiene límite de 280 chars; YouTube/TikTok 150
+        # Publicar respuesta via Zernio
+        if comment_id:
             max_len = 280 if platform == "twitter" else 1000
             reply_text = ai_response[:max_len]
-            await ayrshare_service.reply_to_comment(
-                profile_key=business.ayrshare_profile_key,
+            await zernio_service.reply_to_comment(
                 comment_id=comment_id,
                 platform=platform,
                 text=reply_text,
             )
 
-        # Notificar dashboard via WebSocket
         await ws_manager.send_to_conversation(conv.id, {
             "type": "new_message",
             "message": {
@@ -1659,7 +1620,7 @@ async def _process_ayrshare_event(
         })
 
         log.info(
-            "ayrshare_event_processed",
+            "zernio_event_processed",
             business_id=business.id,
             platform=platform,
             agent=agent_used,
@@ -1667,30 +1628,16 @@ async def _process_ayrshare_event(
 
     except Exception as e:
         import structlog as _sl2
-        _sl2.get_logger().error("ayrshare_webhook_error", error=str(e), platform=platform)
+        _sl2.get_logger().error("zernio_webhook_error", error=str(e), platform=platform)
 
 
-# ── Ayrshare Direct Messages Webhook ──────────────────────────────────────
+# ── Zernio Direct Messages Webhook ───────────────────────────────────────────
 
-@router.post("/ayrshare-messages")
-async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+@router.post("/zernio-messages")
+async def zernio_messages_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Recibe notificaciones de mensajes directos (DMs) de Ayrshare.
-    Soporta: Facebook Messenger, Instagram DM.
-
-    Payload relevante:
-      {
-        "action": "messages",
-        "type": "received",
-        "subAction": "messageCreated",
-        "platform": "facebook" | "instagram",
-        "message": "texto del mensaje",
-        "senderId": "id del remitente",
-        "recipientId": "id de la cuenta del negocio",
-        "conversationId": "id de la conversación",
-        "refId": "business_id de Petunia",
-        "senderDetails": { "username": "...", "name": "..." }
-      }
+    Recibe notificaciones de mensajes directos (DMs) de Zernio.
+    Soporta: Facebook Messenger, Instagram DM, Twitter, Telegram, WhatsApp, etc.
     """
     import structlog as _sl3
     log = _sl3.get_logger()
@@ -1701,76 +1648,68 @@ async def ayrshare_messages_webhook(request: Request, db: AsyncSession = Depends
         return {"ok": True}
 
     try:
-        await _process_ayrshare_dm(payload, db, log)
+        await _process_zernio_dm(payload, db, log)
     except Exception as e:
-        log.error("ayrshare_dm_webhook_unhandled", error=str(e), exc_info=True)
+        log.error("zernio_dm_webhook_unhandled", error=str(e), exc_info=True)
 
-    # Siempre devolver 200 para que Ayrshare no reintente
     return {"ok": True}
 
 
-async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
-    """Procesa un DM entrante de Ayrshare y genera respuesta con IA."""
-    action     = payload.get("action")
-    msg_type   = payload.get("type")
-    sub_action = payload.get("subAction", "")
-
-    if action != "messages" or msg_type != "received" or sub_action != "messageCreated":
-        return
-
-    platform        = payload.get("platform", "").lower()
-    message_text    = payload.get("message", "").strip()
-    sender_id       = payload.get("senderId", "")
-    ref_id          = payload.get("refId", "")
+async def _process_zernio_dm(payload: dict, db: AsyncSession, log) -> None:
+    """Procesa un DM entrante de Zernio y genera respuesta con IA."""
+    event      = payload.get("event", "").lower()
+    platform   = payload.get("platform", "").lower()
+    message_text    = (payload.get("message") or payload.get("text") or "").strip()
+    sender_id       = payload.get("senderId") or payload.get("authorId") or ""
+    profile_id      = payload.get("profileId", "")
     conversation_id = payload.get("conversationId", "")
-    sender_details  = payload.get("senderDetails", {})
+    sender_details  = payload.get("senderDetails", {}) or payload.get("author", {})
     _raw_name   = sender_details.get("name") or sender_details.get("username") or ""
     sender_name = _raw_name if (_raw_name and not _raw_name.isdigit()) else None
 
     if not message_text or not sender_id or not platform:
         return
 
-    # Buscar negocio por refId real de Ayrshare
+    # Buscar negocio por profileId de Zernio
     biz_result = await db.execute(
         select(Business).where(
-            Business.ayrshare_ref_id == ref_id,
+            Business.zernio_profile_id == profile_id,
             Business.is_active == True,
         ).limit(1)
     )
     business = biz_result.scalar_one_or_none()
 
     if not business:
-        log.warning("ayrshare_dm_business_not_found", ref_id=ref_id, platform=platform)
+        log.warning("zernio_dm_business_not_found", profile_id=profile_id, platform=platform)
         return
 
-    # Verificar que el autoresponder esté habilitado
-    if not business.ayrshare_autoresponder_enabled:
-        log.info("ayrshare_dm_autoresponder_disabled", business_id=business.id)
+    if not business.zernio_autoresponder_enabled:
+        log.info("zernio_dm_autoresponder_disabled", business_id=business.id)
         return
 
-    # Verificar que el canal esté habilitado para auto-respuesta
-    enabled_channels: list = business.ayrshare_autoresponder_channels or []
+    enabled_channels: list = business.zernio_autoresponder_channels or []
     if enabled_channels and platform.lower() not in [c.lower() for c in enabled_channels]:
-        log.info("ayrshare_dm_channel_disabled", business_id=business.id, platform=platform)
+        log.info("zernio_dm_channel_disabled", business_id=business.id, platform=platform)
         return
 
-    # Verificar que el negocio tenga profileKey para poder responder
-    if not business.ayrshare_profile_key:
-        log.warning("ayrshare_dm_no_profile_key", business_id=business.id)
+    if not business.zernio_profile_id:
+        log.warning("zernio_dm_no_profile_id", business_id=business.id)
         return
 
     # Mapear plataforma a Channel enum
     channel_map = {
         "facebook": Channel.MESSENGER,
         "instagram": Channel.INSTAGRAM,
+        "twitter": Channel.TWITTER,
+        "telegram": Channel.WEBCHAT,
+        "whatsapp": Channel.WHATSAPP,
     }
     channel = channel_map.get(platform)
     if not channel:
-        log.warning("ayrshare_dm_unsupported_platform", platform=platform)
+        log.warning("zernio_dm_unsupported_platform", platform=platform)
         return
 
-    # Buscar o crear lead por (business_id, platform, senderId)
-    lead_key = f"ayrshare_dm:{platform}:{sender_id}"
+    lead_key = f"zernio_dm:{platform}:{sender_id}"
     lead_result = await db.execute(
         select(Lead).where(
             Lead.business_id == business.id,
@@ -1815,7 +1754,7 @@ async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
             lead_id=lead.id,
             channel=channel,
             channel_contact_id=sender_id,
-            extra_data={"platform": platform, "ayrshare_conversation_id": conversation_id},
+            extra_data={"platform": platform, "zernio_conversation_id": conversation_id},
         )
         db.add(conv)
         await db.flush()
@@ -1906,19 +1845,22 @@ async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
 
     await db.commit()
 
-    # Enviar respuesta por DM via Ayrshare
-    from app.services.ayrshare_service import ayrshare_service as _ayr
+    # Enviar respuesta por DM via Zernio
+    from app.services.zernio_service import zernio_service as _zernio
     try:
-        await _ayr.send_message(
-            profile_key=business.ayrshare_profile_key,
-            platform=platform,
-            recipient_id=sender_id,
-            message=ai_response,
-        )
+        # Buscar el accountId de la plataforma en las cuentas conectadas
+        connected: list[dict] = business.zernio_connected_platforms or []
+        account = next((a for a in connected if a.get("platform") == platform), None)
+        if account:
+            await _zernio.send_message(
+                account_id=account["accountId"],
+                platform=platform,
+                recipient_id=sender_id,
+                message=ai_response,
+            )
     except Exception as send_err:
-        log.error("ayrshare_dm_send_failed", error=str(send_err), platform=platform)
+        log.error("zernio_dm_send_failed", error=str(send_err), platform=platform)
 
-    # Notificar dashboard via WebSocket
     await ws_manager.send_to_conversation(conv.id, {
         "type": "new_message",
         "message": {
@@ -1930,7 +1872,7 @@ async def _process_ayrshare_dm(payload: dict, db: AsyncSession, log) -> None:
     })
 
     log.info(
-        "ayrshare_dm_processed",
+        "zernio_dm_processed",
         business_id=business.id,
         platform=platform,
         sender_id=sender_id,

@@ -15,7 +15,7 @@ from app.api import meta_oauth
 from app.api import followups as followups_router
 from app.api import linkedin_oauth
 from app.api import tiktok_oauth
-from app.api import ayrshare_oauth
+from app.api import zernio_oauth
 from app.api import widget as widget_router
 from app.api import email_integration as email_router
 from app.api import meetings as meetings_router
@@ -97,7 +97,7 @@ app.include_router(meta_oauth.router, prefix="/api")
 app.include_router(followups_router.router, prefix="/api")
 app.include_router(linkedin_oauth.router, prefix="/api")
 app.include_router(tiktok_oauth.router, prefix="/api")
-app.include_router(ayrshare_oauth.router, prefix="/api")
+app.include_router(zernio_oauth.router, prefix="/api")
 app.include_router(widget_router.router, prefix="/api")
 app.include_router(email_router.router, prefix="/api")
 app.include_router(meetings_router.router, prefix="/api")

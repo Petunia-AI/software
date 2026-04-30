@@ -173,36 +173,39 @@ async def publish_twitter(caption: str) -> dict:
         return {"success": True, "platform_post_id": tweet_id, "platform_url": f"https://x.com/i/web/status/{tweet_id}"}
 
 
-# ── Ayrshare publisher (multi-plataforma unificado) ───────────────────────────
+# ── Zernio publisher (multi-plataforma unificado) ─────────────────────────────
 
-async def publish_via_ayrshare(
-    profile_key: str,
+async def publish_via_zernio(
+    profile_id: str,
     caption: str,
-    platforms: list[str],
+    platform_accounts: list[dict],
     image_url: str | None = None,
     scheduled_date: str | None = None,
 ) -> dict:
     """
-    Publica en una o varias redes usando Ayrshare (Auto Global).
-    Requiere que el negocio tenga ayrshare_profile_key configurado.
+    Publica en una o varias redes usando Zernio.
+    Requiere que el negocio tenga zernio_profile_id configurado.
+
+    platform_accounts: [{"platform": "instagram", "accountId": "acc_xxx"}, ...]
     """
-    from app.services.ayrshare_service import ayrshare_service
+    from app.services.zernio_service import zernio_service
 
     try:
-        result = await ayrshare_service.post(
-            profile_key=profile_key,
+        result = await zernio_service.post(
+            profile_id=profile_id,
             text=caption,
-            platforms=platforms,
+            platform_accounts=platform_accounts,
             media_urls=[image_url] if image_url else None,
             scheduled_date=scheduled_date,
+            publish_now=(scheduled_date is None),
         )
         if result.get("skipped"):
             return {"success": False, "error": result.get("reason", "Plataforma requiere imagen o video")}
-        post_id = result.get("id") or result.get("postIds", {}).get(platforms[0] if platforms else "", "")
-        logger.info("ayrshare_published", platforms=platforms, post_id=post_id)
-        return {"success": True, "platform_post_id": str(post_id), "platform_url": "", "ayrshare": result}
+        post_id = result.get("_id") or result.get("id", "")
+        logger.info("zernio_published", platforms=[a["platform"] for a in platform_accounts], post_id=post_id)
+        return {"success": True, "platform_post_id": str(post_id), "platform_url": "", "zernio": result}
     except Exception as e:
-        logger.error("ayrshare_publish_error", error=str(e))
+        logger.error("zernio_publish_error", error=str(e))
         return {"success": False, "error": str(e)}
 
 
@@ -212,24 +215,30 @@ async def publish_post(
     channel: str,
     caption: str,
     image_url: str | None = None,
-    ayrshare_profile_key: str | None = None,
+    zernio_profile_id: str | None = None,
+    zernio_connected_platforms: list[dict] | None = None,
 ) -> dict:
     """
     Dispatcher que enruta al publisher correcto.
-    Si el negocio tiene Ayrshare conectado, se usa como canal primario
-    para Instagram, Facebook, Twitter, LinkedIn y TikTok.
-    Los canales exclusivos de Meta (WhatsApp, Messenger) siguen usando API directa.
-    """
-    # Plataformas soportadas por Ayrshare
-    ayrshare_platforms = {"instagram", "facebook", "twitter", "linkedin", "tiktok", "youtube"}
+    Si el negocio tiene Zernio conectado y la plataforma está vinculada,
+    se publica a través de Zernio. Los canales exclusivos de Meta
+    (WhatsApp, Messenger) siguen usando API directa.
 
-    if ayrshare_profile_key and channel in ayrshare_platforms:
-        return await publish_via_ayrshare(
-            profile_key=ayrshare_profile_key,
-            caption=caption,
-            platforms=[channel],
-            image_url=image_url,
+    zernio_connected_platforms: [{"platform": "instagram", "accountId": "acc_xxx"}, ...]
+    """
+    # Buscar accountId para el canal en las cuentas conectadas de Zernio
+    if zernio_profile_id and zernio_connected_platforms:
+        match = next(
+            (a for a in zernio_connected_platforms if a.get("platform") == channel),
+            None,
         )
+        if match:
+            return await publish_via_zernio(
+                profile_id=zernio_profile_id,
+                caption=caption,
+                platform_accounts=[{"platform": match["platform"], "accountId": match["accountId"]}],
+                image_url=image_url,
+            )
 
     # Fallback a APIs directas
     handlers = {

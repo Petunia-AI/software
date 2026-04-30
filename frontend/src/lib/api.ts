@@ -191,24 +191,26 @@ export const tiktokApi = {
     api.post("/tiktok/reply", { video_id, comment_id, text }),
 };
 
-// ============ AYRSHARE — Auto Global OAuth ============
-export const ayrshareApi = {
-  /** Crea o reutiliza perfil Ayrshare y devuelve la JWT URL para vincular redes */
-  connect:     () => api.post<{ url: string; profile_key: string }>("/ayrshare/connect"),
-  /** Estado de conexión + redes vinculadas */
-  getStatus:   () => api.get("/ayrshare/status"),
-  /** Refresca la lista de redes conectadas desde Ayrshare */
-  refresh:     () => api.post("/ayrshare/refresh"),
-  /** Elimina el perfil de Ayrshare */
-  disconnect:  () => api.post("/ayrshare/disconnect"),
+// ============ ZERNIO — Social Media Multi-Platform OAuth ============
+export const zernioApi = {
+  /** Crea o reutiliza perfil Zernio y devuelve la URL OAuth para vincular una plataforma */
+  connect:     (platform: string) => api.post<{ url: string; platform: string; profile_id: string }>(`/zernio/connect/${platform}`),
+  /** Estado de conexión + cuentas vinculadas */
+  getStatus:   () => api.get("/zernio/status"),
+  /** Refresca la lista de cuentas vinculadas desde Zernio */
+  refresh:     () => api.post("/zernio/refresh"),
+  /** Desconecta una plataforma específica */
+  disconnectAccount: (accountId: string) => api.delete(`/zernio/account/${accountId}`),
+  /** Elimina todo el perfil de Zernio */
+  disconnect:  () => api.post("/zernio/disconnect"),
   /** Publica contenido en redes sociales del cliente */
-  post:        (text: string, platforms: string[], media_urls?: string[], scheduled_date?: string) =>
-    api.post("/ayrshare/post", { text, platforms, media_urls, scheduled_date }),
+  post:        (text: string, platforms: string[], media_urls?: string[], scheduled_date?: string, publish_now?: boolean) =>
+    api.post("/zernio/post", { text, platforms, media_urls, scheduled_date, publish_now }),
   /** Activa o desactiva el auto-respondedor y configura los canales habilitados */
   updateSettings: (autoresponder_enabled: boolean, autoresponder_channels?: string[]) =>
-    api.patch("/ayrshare/settings", { autoresponder_enabled, autoresponder_channels }),
-  /** Registra el webhook de Petunia en Ayrshare */
-  registerWebhook: () => api.post("/ayrshare/register-webhook"),
+    api.patch("/zernio/settings", { autoresponder_enabled, autoresponder_channels }),
+  /** Registra el webhook de Petunia en Zernio */
+  registerWebhook: () => api.post("/zernio/register-webhook"),
 };
 
 // ============ PROPERTIES ============
