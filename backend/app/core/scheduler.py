@@ -303,14 +303,19 @@ async def job_zernio_poll_comments():
 
         for business in businesses:
             try:
-                connected: list[dict] = business.zernio_connected_platforms or []
+                raw_connected = business.zernio_connected_platforms or []
+                # Normalizar: soporta tanto lista de dicts {"platform":...} como lista de strings (legacy)
+                connected: list[dict] = [
+                    a if isinstance(a, dict) else {"platform": a, "accountId": ""}
+                    for a in raw_connected
+                ]
                 enabled_channels: list[str] = business.zernio_autoresponder_channels or []
                 # Solo plataformas con comentarios y habilitadas en auto-respondedor
                 from app.services.zernio_service import COMMENT_SUPPORTED
                 target_platforms = [
                     a["platform"] for a in connected
-                    if a["platform"] in COMMENT_SUPPORTED
-                    and (not enabled_channels or a["platform"] in enabled_channels)
+                    if a.get("platform") in COMMENT_SUPPORTED
+                    and (not enabled_channels or a.get("platform") in enabled_channels)
                 ]
                 if not target_platforms:
                     continue
