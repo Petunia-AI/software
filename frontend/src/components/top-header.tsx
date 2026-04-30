@@ -32,7 +32,7 @@ export function TopHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = () => { logout(); router.push("/login"); };
+  const handleLogout = () => { logout(); window.location.href = "/login"; };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

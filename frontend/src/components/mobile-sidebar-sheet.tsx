@@ -37,8 +37,8 @@ export function MobileSidebarSheet({
 
   const handleLogout = () => {
     logout();
-    router.push("/login");
     onClose();
+    window.location.href = "/login";
   };
 
   return (
