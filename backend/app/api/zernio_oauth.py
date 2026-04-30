@@ -122,7 +122,12 @@ async def zernio_status(
         except Exception as e:
             logger.warning("zernio_status_auto_refresh_failed", error=str(e))
 
-    connected_platforms = business.zernio_connected_platforms or []
+    # Normalize legacy string-list format → list[dict] with platform+accountId
+    raw_platforms = business.zernio_connected_platforms or []
+    connected_platforms: list[dict] = [
+        a if isinstance(a, dict) else {"platform": a, "accountId": ""}
+        for a in raw_platforms
+    ]
     return {
         "connected": bool(business.zernio_profile_id),
         "enabled": business.zernio_enabled,
