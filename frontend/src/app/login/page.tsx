@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, Zap, ArrowRight, Check } from "lucide-react";
+
 
 const FEATURES = [
   "5 agentes IA especializados (Claude claude-sonnet-4-6)",
@@ -14,17 +15,35 @@ const FEATURES = [
 ];
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
-  const { login, register } = useAuthStore();
+  const searchParams = useSearchParams();
+  const { login, register, token } = useAuthStore();
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "" });
 
+  // Si ya tiene sesión activa, redirigir al destino o dashboard
+  useEffect(() => {
+    if (token) {
+      const next = searchParams.get("next");
+      router.replace(next || "/dashboard");
+    }
+  }, [token, router, searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
+      const next = searchParams.get("next");
       if (isRegister) {
         await register(form.email, form.password, form.full_name);
         toast.success("¡Cuenta creada! Bienvenido 🎉");
@@ -35,6 +54,8 @@ export default function LoginPage() {
         const { user } = useAuthStore.getState();
         if (user?.is_superuser) {
           router.push("/admin");
+        } else if (next) {
+          router.push(next);
         } else {
           const onboardingDone = localStorage.getItem("onboarding_done");
           router.push(onboardingDone ? "/dashboard" : "/onboarding");

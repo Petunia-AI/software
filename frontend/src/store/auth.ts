@@ -34,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
         const { access_token } = res.data;
         localStorage.setItem("access_token", access_token);
         // Cookie para que el middleware de Next.js pueda verificar la sesión en SSR
-        document.cookie = `auth_token=${access_token}; path=/; SameSite=Strict; max-age=604800`;
+        document.cookie = `auth_token=${access_token}; path=/; SameSite=Lax; max-age=2592000`;
         set({ token: access_token, isAuthenticated: true });
         await get().loadUser();
       },
