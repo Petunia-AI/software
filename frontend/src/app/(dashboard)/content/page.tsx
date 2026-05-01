@@ -1589,30 +1589,42 @@ export default function ContentPage() {
 
   async function publishPost(id: string) {
     const toastId = toast.loading("Publicando en redes sociales...");
-    const res = await fetch(`${API}/content/posts/${id}/publish`, { method: "POST", headers });
-    if (res.ok) {
-      setPosts((p) => p.map((x) => x.id === id ? { ...x, status: "scheduled" as PostStatus } : x));
-      toast.success("Publicando… el estado se actualizará en segundos", { id: toastId });
-      // Refresh after a few seconds to show published/failed status from background task
-      setTimeout(() => silentRefresh(), 5000);
-      setTimeout(() => silentRefresh(), 12000);
-    } else {
-      const err = await res.json().catch(() => ({}));
-      toast.error(err.detail || "Error al publicar", { id: toastId });
+    try {
+      const res = await fetch(`${API}/content/posts/${id}/publish`, { method: "POST", headers });
+      if (res.ok) {
+        setPosts((p) => p.map((x) => x.id === id ? { ...x, status: "scheduled" as PostStatus } : x));
+        toast.success("Publicando… el estado se actualizará en segundos", { id: toastId });
+        // Refresh after a few seconds to show published/failed status from background task
+        setTimeout(() => silentRefresh(), 5000);
+        setTimeout(() => silentRefresh(), 12000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.detail || "Error al publicar", { id: toastId });
+      }
+    } catch {
+      toast.error("Error de conexión al publicar. Intenta de nuevo.", { id: toastId });
     }
   }
 
   async function schedulePost() {
     if (!schedulingPost || !scheduleDate) return;
-    await fetch(`${API}/content/posts/${schedulingPost}/schedule`, { method: "POST", headers, body: JSON.stringify({ post_id: schedulingPost, scheduled_at: new Date(scheduleDate).toISOString() }) });
-    setPosts((p) => p.map((x) => x.id === schedulingPost ? { ...x, status: "scheduled" as PostStatus, scheduled_at: scheduleDate } : x));
-    setSchedulingPost(null); setScheduleDate("");
+    try {
+      await fetch(`${API}/content/posts/${schedulingPost}/schedule`, { method: "POST", headers, body: JSON.stringify({ post_id: schedulingPost, scheduled_at: new Date(scheduleDate).toISOString() }) });
+      setPosts((p) => p.map((x) => x.id === schedulingPost ? { ...x, status: "scheduled" as PostStatus, scheduled_at: scheduleDate } : x));
+      setSchedulingPost(null); setScheduleDate("");
+    } catch {
+      toast.error("Error al programar. Intenta de nuevo.");
+    }
   }
 
   async function deletePost(id: string) {
-    await fetch(`${API}/content/posts/${id}`, { method: "DELETE", headers });
-    setPosts((p) => p.filter((x) => x.id !== id));
-    setStats((s) => ({ ...s, total: Math.max(0, s.total - 1) }));
+    try {
+      await fetch(`${API}/content/posts/${id}`, { method: "DELETE", headers });
+      setPosts((p) => p.filter((x) => x.id !== id));
+      setStats((s) => ({ ...s, total: Math.max(0, s.total - 1) }));
+    } catch {
+      toast.error("Error al eliminar. Intenta de nuevo.");
+    }
   }
 
   async function checkVideoStatus(postId: string) {
@@ -1772,7 +1784,7 @@ export default function ContentPage() {
         </div>
       ) : (
         <AnimatePresence>
-          <div className={viewMode === "grid" ? "grid grid-cols-1 xl:grid-cols-2 gap-4" : "space-y-3"}>
+          <div className={viewMode === "grid" ? "grid grid-cols-2 xl:grid-cols-4 gap-4" : "space-y-3"}>
             {posts.map((post) => (
               <PostCard key={post.id} post={post} onApprove={() => approvePost(post.id)} onPublish={() => publishPost(post.id)} onSchedule={() => setSchedulingPost(post.id)} onDelete={() => deletePost(post.id)} onCheckVideo={() => checkVideoStatus(post.id)} onEdit={() => setEditingPost(post)} onGenerateImage={() => generatePostImage(post.id)} />
             ))}

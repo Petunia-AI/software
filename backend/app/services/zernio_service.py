@@ -298,6 +298,37 @@ class ZernioService:
             data = resp.json()
             return data.get("conversations", []) if isinstance(data, dict) else data
 
+    async def reply_to_conversation(
+        self,
+        conversation_id: str,
+        account_id: str,
+        message: str,
+    ) -> dict:
+        """
+        Envía un mensaje a una conversación existente de Zernio.
+        Usa POST /v1/inbox/conversations/{conversationId}/messages
+        conversation_id: _id de la conversación (del webhook payload.conversation._id)
+        account_id: _id de la cuenta (del webhook payload.account._id)
+        """
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{ZERNIO_BASE}/inbox/conversations/{conversation_id}/messages",
+                headers=_headers(),
+                json={
+                    "accountId": account_id,
+                    "message": message,
+                },
+            )
+            if resp.status_code >= 400:
+                logger.warning(
+                    "zernio_reply_to_conv_failed",
+                    conversation_id=conversation_id[:20],
+                    status=resp.status_code,
+                    body=resp.text[:300],
+                )
+                return {"ok": False, "error": resp.text}
+            return {"ok": True, **resp.json()}
+
     async def send_message(
         self,
         account_id: str,
@@ -306,12 +337,12 @@ class ZernioService:
         message: str,
     ) -> dict:
         """
-        Envía un mensaje directo a un usuario.
+        Envía un mensaje directo a un usuario por recipientId.
         account_id: _id de la cuenta conectada (no el profileId)
         """
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{ZERNIO_BASE}/messages",
+                f"{ZERNIO_BASE}/inbox/conversations",
                 headers=_headers(),
                 json={
                     "accountId": account_id,
@@ -339,7 +370,7 @@ class ZernioService:
             params["platform"] = platform
         async with httpx.AsyncClient(timeout=20) as client:
             resp = await client.get(
-                f"{ZERNIO_BASE}/comments",
+                f"{ZERNIO_BASE}/inbox/comments",
                 headers=_headers(),
                 params=params,
             )
@@ -347,7 +378,7 @@ class ZernioService:
                 logger.warning("zernio_list_comments_failed", status=resp.status_code)
                 return []
             data = resp.json()
-            return data.get("comments", []) if isinstance(data, dict) else data
+            return data.get("data", data.get("comments", [])) if isinstance(data, dict) else data
 
     async def reply_to_comment(
         self,
@@ -374,17 +405,40 @@ class ZernioService:
 
     # ── Webhooks ──────────────────────────────────────────────────────────────
 
+    ALL_EVENTS = [
+        "post.scheduled", "post.published", "post.failed", "post.partial",
+        "post.cancelled", "post.recycled",
+        "account.connected", "account.disconnected", "account.ads.initial_sync_completed",
+        "message.received", "message.sent", "message.edited", "message.deleted",
+        "message.delivered", "message.read", "message.failed",
+        "comment.received",
+        "review.new", "review.updated",
+    ]
+
+    async def list_webhooks(self) -> list[dict]:
+        """Lista los webhooks registrados en Zernio."""
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                f"{ZERNIO_BASE}/webhooks/settings",
+                headers=_headers(),
+            )
+            if not resp.is_success:
+                return []
+            data = resp.json()
+            return data.get("webhooks", []) if isinstance(data, dict) else data
+
     async def register_webhook(self, webhook_url: str, events: list[str] | None = None) -> dict:
         """
-        Registra o actualiza la URL de webhook en Zernio.
-        events: lista de eventos a suscribir (None = todos)
+        Registra la URL de webhook en Zernio con todos los eventos.
         """
-        body: dict = {"url": webhook_url}
-        if events:
-            body["events"] = events
+        body: dict = {
+            "name": "Petunia AI",
+            "url": webhook_url,
+            "events": events or self.ALL_EVENTS,
+        }
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{ZERNIO_BASE}/webhooks",
+                f"{ZERNIO_BASE}/webhooks/settings",
                 headers=_headers(),
                 json=body,
             )

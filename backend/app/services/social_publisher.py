@@ -226,6 +226,13 @@ async def publish_post(
 
     zernio_connected_platforms: [{"platform": "instagram", "accountId": "acc_xxx"}, ...]
     """
+    # Normalizar formato legacy (lista de strings → lista de dicts)
+    if zernio_connected_platforms:
+        zernio_connected_platforms = [
+            a if isinstance(a, dict) else {"platform": a, "accountId": ""}
+            for a in zernio_connected_platforms
+        ]
+
     # Buscar accountId para el canal en las cuentas conectadas de Zernio
     if zernio_profile_id and zernio_connected_platforms:
         match = next(

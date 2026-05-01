@@ -118,41 +118,53 @@ async def _do_publish(post_id: str, _unused_db: AsyncSession | None = None):
     """
     from app.database import AsyncSessionLocal
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(SocialPost).where(SocialPost.id == post_id))
-        post = result.scalar_one_or_none()
-        if not post:
-            return
+        try:
+            result = await db.execute(select(SocialPost).where(SocialPost.id == post_id))
+            post = result.scalar_one_or_none()
+            if not post:
+                return
 
-        # Obtener datos de Zernio del negocio
-        biz_result = await db.execute(select(Business).where(Business.id == post.business_id))
-        business = biz_result.scalar_one_or_none()
-        zernio_profile_id = business.zernio_profile_id if business else None
-        zernio_connected_platforms = business.zernio_connected_platforms if business else None
+            # Obtener datos de Zernio del negocio
+            biz_result = await db.execute(select(Business).where(Business.id == post.business_id))
+            business = biz_result.scalar_one_or_none()
+            zernio_profile_id = business.zernio_profile_id if business else None
+            zernio_connected_platforms = business.zernio_connected_platforms if business else None
 
-        caption_with_hashtags = post.caption
-        if post.hashtags:
-            # Instagram recomienda máx 5 hashtags; otros canales hasta 30
-            channel = post.channel.value
-            max_tags = 5 if channel == "instagram" else 30
-            tags_list = post.hashtags[:max_tags]
-            tags = " ".join(f"#{h.lstrip('#')}" for h in tags_list)
-            caption_with_hashtags = f"{post.caption}\n\n{tags}"
+            caption_with_hashtags = post.caption
+            if post.hashtags:
+                # Instagram recomienda máx 5 hashtags; otros canales hasta 30
+                channel = post.channel.value
+                max_tags = 5 if channel == "instagram" else 30
+                tags_list = post.hashtags[:max_tags]
+                tags = " ".join(f"#{h.lstrip('#')}" for h in tags_list)
+                caption_with_hashtags = f"{post.caption}\n\n{tags}"
 
-        pub_result = await publish_post(
-            channel=post.channel.value,
-            caption=caption_with_hashtags,
-            image_url=post.image_url,
-            zernio_profile_id=zernio_profile_id,
-            zernio_connected_platforms=zernio_connected_platforms,
-        )
+            pub_result = await publish_post(
+                channel=post.channel.value,
+                caption=caption_with_hashtags,
+                image_url=post.image_url,
+                zernio_profile_id=zernio_profile_id,
+                zernio_connected_platforms=zernio_connected_platforms,
+            )
 
-        post.status = ContentStatus.published if pub_result["success"] else ContentStatus.failed
-        post.published_at = datetime.now(timezone.utc) if pub_result["success"] else None
-        post.platform_post_id = pub_result.get("platform_post_id")
-        post.platform_url = pub_result.get("platform_url")
-        post.error_message = pub_result.get("error") if not pub_result["success"] else None
-        await db.commit()
-        logger.info("post_publish_done", post_id=post_id, success=pub_result["success"])
+            post.status = ContentStatus.published if pub_result["success"] else ContentStatus.failed
+            post.published_at = datetime.now(timezone.utc) if pub_result["success"] else None
+            post.platform_post_id = pub_result.get("platform_post_id")
+            post.platform_url = pub_result.get("platform_url")
+            post.error_message = pub_result.get("error") if not pub_result["success"] else None
+            await db.commit()
+            logger.info("post_publish_done", post_id=post_id, success=pub_result["success"])
+        except Exception as exc:
+            logger.error("post_publish_background_error", post_id=post_id, error=str(exc))
+            try:
+                result2 = await db.execute(select(SocialPost).where(SocialPost.id == post_id))
+                post2 = result2.scalar_one_or_none()
+                if post2:
+                    post2.status = ContentStatus.failed
+                    post2.error_message = f"Error interno: {str(exc)[:200]}"
+                    await db.commit()
+            except Exception:
+                pass
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ y adaptados al tono de cada red social.
 """
 from anthropic import AsyncAnthropic
 from app.config import settings
+from app.agents.base_agent import PETUNIA_MASTER_CONTEXT
 import structlog
 
 logger = structlog.get_logger()
@@ -168,7 +169,10 @@ IMPORTANTE: Crea el anuncio específicamente para ESTA propiedad. Usa sus datos 
     elif format_type == "reel":
         format_note = "\nFormato: REEL/VIDEO vertical. Incluye ideas concretas de guión de 30-60 segundos."
 
-    system_prompt = f"""Eres un experto en marketing digital y copywriting para el mercado inmobiliario LATAM.
+    system_prompt = f"""{PETUNIA_MASTER_CONTEXT}
+
+=== TU ROL EN ESTA TAREA: CONTENT CREATOR ===
+Eres un experto en marketing digital y copywriting para el mercado inmobiliario LATAM.
 Tu especialidad es crear contenido para redes sociales que genera engagement real y convierte seguidores en compradores.
 
 Negocio: {business_context.get('name', 'Empresa')}
@@ -262,6 +266,8 @@ async def generate_campaign_brief(business_context: dict, allowed_channels: list
     current_month = datetime.now().strftime("%B %Y")
 
     system_prompt = (
+        PETUNIA_MASTER_CONTEXT
+        + "\n\n=== TU ROL EN ESTA TAREA: CAMPAIGN STRATEGIST ===\n"
         "Eres un Director de Marketing Digital especialista en bienes raíces LATAM. "
         "Tu trabajo es analizar los datos de un negocio y diseñar campañas de marketing mensual "
         "que generen leads reales, awareness de marca y cierres de venta."

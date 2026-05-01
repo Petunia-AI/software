@@ -371,6 +371,13 @@ async def zernio_register_webhook(
 
     webhook_url = f"{base_url}/api/webhooks/zernio"
     try:
+        # Primero verificar si ya existe un webhook con esta URL
+        existing = await zernio_service.list_webhooks()
+        for wh in existing:
+            if wh.get("url") == webhook_url:
+                logger.info("zernio_webhook_already_exists", business_id=business.id, url=webhook_url)
+                return {"ok": True, "webhook_url": webhook_url, "already_registered": True}
+        # No existe, crear uno nuevo
         result = await zernio_service.register_webhook(webhook_url)
     except Exception as e:
         logger.error("zernio_register_webhook_failed", error=str(e))

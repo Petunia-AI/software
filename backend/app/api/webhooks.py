@@ -1376,18 +1376,22 @@ async def zernio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         return Response(status_code=200)
 
     log = structlog.get_logger()
+    # Formato de Zernio: event a nivel raíz, platform/profileId en account
+    _acct = payload.get("account", {}) or {}
+    _evt_platform  = _acct.get("platform") or payload.get("platform", "")
+    _evt_profileId = _acct.get("profileId") or payload.get("profileId", "")
+
     log.info("zernio_webhook_received",
-        event=payload.get("event"),
-        platform=payload.get("platform"),
-        profileId=payload.get("profileId"),
+        event_type=payload.get("event"),
+        platform=_evt_platform,
+        profileId=_evt_profileId,
         keys=list(payload.keys()),
     )
 
     event    = payload.get("event", "").lower()
-    platform = payload.get("platform", "").lower()
-    data     = payload.get("data", {})
+    platform = _evt_platform.lower()
 
-    # Mensajes directos
+    # ── Mensajes directos ─────────────────────────────────────────────────────
     if event in ("message.received", "dm.received", "message_received"):
         try:
             await _process_zernio_dm(payload, db, log)
@@ -1395,23 +1399,56 @@ async def zernio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             log.error("zernio_webhook_dm_error", error=str(e), exc_info=True)
         return {"ok": True}
 
-    # Comentarios
-    text         = (data.get("text") or data.get("content") or data.get("message") or "").strip()
+    # ── Mensajes ignorados (enviados por nosotros, read receipts, etc.) ───────
+    if event in ("message.sent", "message.delivered", "message.read",
+                 "message.edited", "message.deleted", "message.failed"):
+        log.info("zernio_message_event_ignored", event_type=event)
+        return {"ok": True}
+
+    # ── Cuenta conectada/desconectada → actualizar BD del negocio ────────────
+    if event in ("account.connected", "account.disconnected",
+                 "account.ads.initial_sync_completed"):
+        try:
+            await _process_zernio_account_event(payload, event, _evt_profileId, db, log)
+        except Exception as e:
+            log.error("zernio_account_event_error", error=str(e), exc_info=True)
+        return {"ok": True}
+
+    # ── Posts publicados / fallidos → notificar al negocio ───────────────────
+    if event in ("post.published", "post.failed", "post.partial",
+                 "post.scheduled", "post.cancelled", "post.recycled"):
+        log.info("zernio_post_event", event_type=event, profileId=_evt_profileId)
+        return {"ok": True}
+
+    # ── Reviews ───────────────────────────────────────────────────────────────
+    if event in ("review.new", "review.updated"):
+        try:
+            await _process_zernio_review(payload, db, log)
+        except Exception as e:
+            log.error("zernio_review_event_error", error=str(e), exc_info=True)
+        return {"ok": True}
+
+    # ── Comentarios ───────────────────────────────────────────────────────────
+    _comment_obj = payload.get("comment") or payload.get("data") or {}
+    _author_obj  = _comment_obj.get("author") or _comment_obj.get("sender") or {}
+    text         = (_comment_obj.get("text") or _comment_obj.get("content") or _comment_obj.get("message") or "").strip()
     commenter_id = (
-        data.get("authorId") or data.get("userId") or
-        data.get("username") or data.get("senderId") or ""
+        _author_obj.get("id") or _author_obj.get("_id") or
+        _comment_obj.get("authorId") or _comment_obj.get("userId") or
+        _comment_obj.get("username") or _comment_obj.get("senderId") or ""
     )
-    comment_id = data.get("_id") or data.get("id", "")
-    post_id    = data.get("postId") or data.get("videoId") or ""
+    comment_id = _comment_obj.get("_id") or _comment_obj.get("id", "")
+    post_id    = _comment_obj.get("postId") or _comment_obj.get("videoId") or ""
 
     if not text or not commenter_id:
         return {"ok": True}
 
-    if event not in ("comment.created", "comment.received", "mention.received", "comment", ""):
+    if event not in ("comment.created", "comment.received", "mention.received", "comment"):
+        log.info("zernio_unknown_event", event_type=event)
         return {"ok": True}
 
     # Buscar negocio por profileId de Zernio
-    profile_id = payload.get("profileId", "")
+    profile_id = _evt_profileId
     biz_result = await db.execute(
         select(Business).where(
             Business.zernio_profile_id == profile_id,
@@ -1439,6 +1476,97 @@ async def zernio_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         post_id=post_id,
     )
     return {"ok": True}
+
+
+async def _process_zernio_account_event(
+    payload: dict, event: str, profile_id: str, db: AsyncSession, log
+) -> None:
+    """Actualiza zernio_connected_platforms en el negocio cuando se conecta/desconecta una cuenta."""
+    acct = payload.get("account", {}) or {}
+    acct_id  = acct.get("_id") or acct.get("id", "")
+    platform = (acct.get("platform") or "").lower()
+    username = acct.get("username") or acct.get("displayName") or acct_id
+
+    if not profile_id or not platform:
+        return
+
+    biz_result = await db.execute(
+        select(Business).where(Business.zernio_profile_id == profile_id, Business.is_active == True)
+    )
+    business = biz_result.scalar_one_or_none()
+    if not business:
+        log.warning("zernio_account_event_no_business", profileId=profile_id, event_type=event)
+        return
+
+    connected: list = list(business.zernio_connected_platforms or [])
+
+    if event == "account.connected":
+        # Añadir si no existe
+        exists = any(
+            (a.get("accountId") == acct_id or a.get("platform") == platform)
+            for a in connected if isinstance(a, dict)
+        )
+        if not exists:
+            connected.append({"platform": platform, "accountId": acct_id, "username": username})
+            business.zernio_connected_platforms = connected
+            await db.commit()
+            log.info("zernio_account_connected_stored", platform=platform, business_id=business.id)
+
+    elif event == "account.disconnected":
+        # Eliminar la cuenta desconectada
+        updated = [
+            a for a in connected
+            if isinstance(a, dict) and a.get("accountId") != acct_id
+        ]
+        if len(updated) != len(connected):
+            business.zernio_connected_platforms = updated
+            await db.commit()
+            log.info("zernio_account_disconnected_stored", platform=platform, business_id=business.id)
+
+
+async def _process_zernio_review(payload: dict, db: AsyncSession, log) -> None:
+    """Procesa una review nueva/actualizada: crea lead y responde con IA si el autoresponder está activo."""
+    acct = payload.get("account", {}) or {}
+    review = payload.get("review") or payload.get("data") or {}
+    profile_id = acct.get("profileId") or payload.get("profileId", "")
+    platform   = (acct.get("platform") or "").lower()
+
+    reviewer_id   = review.get("authorId") or review.get("reviewerId") or review.get("id", "")
+    reviewer_name = review.get("authorName") or review.get("reviewerName") or reviewer_id
+    review_text   = (review.get("text") or review.get("comment") or review.get("content") or "").strip()
+    review_id     = review.get("_id") or review.get("id", "")
+    rating        = review.get("rating") or review.get("starRating")
+
+    if not reviewer_id or not profile_id:
+        return
+
+    biz_result = await db.execute(
+        select(Business).where(
+            Business.zernio_profile_id == profile_id,
+            Business.zernio_autoresponder_enabled == True,
+            Business.is_active == True,
+        )
+    )
+    business = biz_result.scalar_one_or_none()
+    if not business:
+        return
+
+    # Si no hay texto de review, no hay nada que responder
+    if not review_text:
+        log.info("zernio_review_no_text", review_id=review_id, rating=rating)
+        return
+
+    channel = _PLATFORM_TO_CHANNEL.get(platform, Channel.WEBCHAT)
+    await _process_zernio_event(
+        db=db,
+        business=business,
+        channel=channel,
+        platform=platform,
+        commenter_id=reviewer_id,
+        text=review_text,
+        comment_id=review_id,
+        post_id="",
+    )
 
 
 async def _process_zernio_event(
@@ -1518,7 +1646,6 @@ async def _process_zernio_event(
             )
             db.add(conv)
             await db.flush()
-            conv.messages = []
             conv.lead = lead
 
         # Guardar mensaje entrante
@@ -1657,17 +1784,47 @@ async def zernio_messages_webhook(request: Request, db: AsyncSession = Depends(g
 
 async def _process_zernio_dm(payload: dict, db: AsyncSession, log) -> None:
     """Procesa un DM entrante de Zernio y genera respuesta con IA."""
-    event      = payload.get("event", "").lower()
-    platform   = payload.get("platform", "").lower()
-    message_text    = (payload.get("message") or payload.get("text") or "").strip()
-    sender_id       = payload.get("senderId") or payload.get("authorId") or ""
-    profile_id      = payload.get("profileId", "")
-    conversation_id = payload.get("conversationId", "")
-    sender_details  = payload.get("senderDetails", {}) or payload.get("author", {})
-    _raw_name   = sender_details.get("name") or sender_details.get("username") or ""
+    # --- Parsear el formato de webhook de Zernio ---
+    # Formato: {event, message:{text, sender:{id,name,...}}, conversation:{_id}, account:{_id, platform, profileId}}
+    account_obj     = payload.get("account", {}) or {}
+    message_obj     = payload.get("message", {}) or {}
+    conversation_obj = payload.get("conversation", {}) or {}
+
+    event           = payload.get("event", "").lower()
+    platform        = account_obj.get("platform", "").lower()
+    zernio_account_id = account_obj.get("_id") or account_obj.get("id", "")
+    profile_id      = account_obj.get("profileId") or account_obj.get("profile_id", "")
+
+    # El texto del mensaje puede estar en message.text o message.content
+    message_text    = (message_obj.get("text") or message_obj.get("content") or "").strip()
+    # El ID del sender está en message.sender.id o message.sender._id
+    sender_obj      = message_obj.get("sender", {}) or {}
+    sender_id       = (
+        sender_obj.get("id") or sender_obj.get("_id") or
+        sender_obj.get("senderId") or sender_obj.get("platformId") or ""
+    )
+    _raw_name   = sender_obj.get("name") or sender_obj.get("username") or sender_obj.get("displayName") or ""
     sender_name = _raw_name if (_raw_name and not _raw_name.isdigit()) else None
 
+    # conversationId de Zernio (para responder por la API de inbox)
+    conversation_id = conversation_obj.get("_id") or conversation_obj.get("id", "")
+
+    # Fallbacks: algunos formatos legacy pueden tener estos a nivel raíz
+    if not platform:
+        platform = payload.get("platform", "").lower()
+    if not profile_id:
+        profile_id = payload.get("profileId", "")
+    if not message_text:
+        message_text = (payload.get("message") or payload.get("text") or "").strip()
+    if not sender_id:
+        sender_id = payload.get("senderId") or payload.get("authorId") or ""
+    if not conversation_id:
+        conversation_id = payload.get("conversationId", "")
+
     if not message_text or not sender_id or not platform:
+        log.warning("zernio_dm_missing_fields",
+            message_text=bool(message_text), sender_id=bool(sender_id), platform=bool(platform),
+            payload_keys=list(payload.keys()))
         return
 
     # Buscar negocio por profileId de Zernio
@@ -1703,6 +1860,9 @@ async def _process_zernio_dm(payload: dict, db: AsyncSession, log) -> None:
         "twitter": Channel.TWITTER,
         "telegram": Channel.WEBCHAT,
         "whatsapp": Channel.WHATSAPP,
+        "tiktok": Channel.TIKTOK,
+        "linkedin": Channel.LINKEDIN,
+        "youtube": Channel.YOUTUBE,
     }
     channel = channel_map.get(platform)
     if not channel:
@@ -1713,7 +1873,7 @@ async def _process_zernio_dm(payload: dict, db: AsyncSession, log) -> None:
     lead_result = await db.execute(
         select(Lead).where(
             Lead.business_id == business.id,
-            Lead.notes.like(f"%{lead_key}%"),
+            Lead.notes.contains(lead_key),
         ).limit(1)
     )
     lead = lead_result.scalar_one_or_none()
@@ -1758,7 +1918,6 @@ async def _process_zernio_dm(payload: dict, db: AsyncSession, log) -> None:
         )
         db.add(conv)
         await db.flush()
-        conv.messages = []
         conv.lead = lead
 
     # Guardar mensaje entrante
@@ -1767,7 +1926,7 @@ async def _process_zernio_dm(payload: dict, db: AsyncSession, log) -> None:
         conversation_id=conv.id,
         role=MessageRole.USER,
         content=message_text,
-        channel_message_id=payload.get("id") or None,
+        channel_message_id=message_obj.get("id") or message_obj.get("_id") or payload.get("id") or None,
     )
     db.add(user_msg)
     await db.flush()
@@ -1848,16 +2007,36 @@ async def _process_zernio_dm(payload: dict, db: AsyncSession, log) -> None:
     # Enviar respuesta por DM via Zernio
     from app.services.zernio_service import zernio_service as _zernio
     try:
-        # Buscar el accountId de la plataforma en las cuentas conectadas
-        connected: list[dict] = business.zernio_connected_platforms or []
-        account = next((a for a in connected if a.get("platform") == platform), None)
-        if account:
+        if conversation_id and zernio_account_id:
+            # Método preferido: responder a la conversación existente de Zernio
+            await _zernio.reply_to_conversation(
+                conversation_id=conversation_id,
+                account_id=zernio_account_id,
+                message=ai_response,
+            )
+        elif zernio_account_id:
+            # Fallback: crear nueva conversación/mensaje por recipientId
             await _zernio.send_message(
-                account_id=account["accountId"],
+                account_id=zernio_account_id,
                 platform=platform,
                 recipient_id=sender_id,
                 message=ai_response,
             )
+        else:
+            # Último fallback: buscar account_id de las cuentas conectadas del negocio
+            connected: list[dict] = business.zernio_connected_platforms or []
+            acct = next((a for a in connected if a.get("platform") == platform), None)
+            if acct:
+                acct_id = acct.get("accountId") or acct.get("_id") or acct.get("id")
+                if acct_id:
+                    await _zernio.send_message(
+                        account_id=acct_id,
+                        platform=platform,
+                        recipient_id=sender_id,
+                        message=ai_response,
+                    )
+            else:
+                log.warning("zernio_dm_no_account_found", platform=platform)
     except Exception as send_err:
         log.error("zernio_dm_send_failed", error=str(send_err), platform=platform)
 

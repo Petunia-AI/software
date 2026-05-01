@@ -428,13 +428,13 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
                     <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-violet-200/40 blur-2xl pointer-events-none" />
                     <div className="relative flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-violet-500 font-semibold uppercase tracking-wider mb-1">Score BANT Global</p>
+                        <p className="text-xs text-violet-500 font-semibold uppercase tracking-wider mb-1">Score de Calificación</p>
                         <div className="flex items-end gap-2">
                           <span className="text-4xl font-black" style={{ color: scoreColor }}>{data.qualification_score.toFixed(1)}</span>
                           <span className="text-base text-muted-foreground mb-1">/10</span>
                         </div>
                         <p className="text-xs mt-1" style={{ color: scoreColor }}>
-                          {data.qualification_score >= 7 ? "✅ Lead muy calificado — prioridad alta" : data.qualification_score >= 4 ? "⚠️ En proceso de calificación" : "❌ Necesita nurturing"}
+                          {data.qualification_score >= 7 ? "Lead muy calificado — prioridad alta" : data.qualification_score >= 4 ? "En proceso de calificación" : "Necesita nurturing"}
                         </p>
                       </div>
                       <div className="relative w-20 h-20 flex-shrink-0">
@@ -496,12 +496,17 @@ export default function LeadDrawer({ lead, onClose, onDelete }: LeadDrawerProps)
                     <TimelineItem icon={<Calendar size={13} />} iconBg="from-amber-400 to-orange-500" title="Próximo seguimiento" time={data.next_followup_at} future />
                   )}
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                    className="mt-4 p-5 rounded-2xl border border-dashed border-border text-center bg-accent/20">
+                    className="mt-4 p-5 rounded-2xl border border-border bg-accent/20">
                     <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center mx-auto mb-3">
-                      <AlertCircle size={18} className="text-violet-400" />
+                      <MessageSquare size={18} className="text-violet-400" />
                     </div>
-                    <p className="text-xs font-semibold text-foreground">Historial de conversaciones</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Próximamente disponible</p>
+                    <p className="text-xs font-semibold text-foreground text-center">Historial de conversaciones</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 text-center mb-3">Ver todas las interacciones del lead</p>
+                    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                      onClick={() => router.push(`/conversations?lead=${data.id}`)}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-sm shadow-violet-500/20">
+                      <MessageSquare size={12} /> Ver conversaciones
+                    </motion.button>
                   </motion.div>
                 </div>
               )}

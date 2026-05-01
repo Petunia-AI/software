@@ -3,14 +3,12 @@
 import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { businessApi, metaApi, tiktokApi, zernioApi } from "@/lib/api";
+import { businessApi, zernioApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { PageHeader } from "@/components/ui/page-header";
-import { MetaConnect } from "@/components/meta-connect";
-import { TikTokConnect } from "@/components/tiktok-connect";
 import { ZernioConnect } from "@/components/zernio-connect";
 import toast from "react-hot-toast";
-import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, Smartphone, Phone, RefreshCw, Eye, EyeOff, CheckCircle2, Music2, Share2, Settings2 } from "lucide-react";
+import { Save, Building2, Sparkles, MessageSquare, Check, Code2, Copy, ExternalLink, RefreshCw, Share2, Settings2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const WIDGET_BASE = process.env.NEXT_PUBLIC_WIDGET_URL || "https://app.aipetunia.com";
@@ -99,40 +97,6 @@ function SettingsContent() {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Manejar redirección de vuelta desde Meta OAuth
-  useEffect(() => {
-    const metaParam = searchParams.get("meta");
-    if (!metaParam) return;
-    if (metaParam === "connected") {
-      const pages = searchParams.get("pages") || "0";
-      const waPhones = searchParams.get("wa_phones") || "0";
-      toast.success(
-        `✅ Meta conectado. ${pages} página(s) encontrada(s)${
-          parseInt(waPhones) > 0 ? ` y ${waPhones} número(s) de WhatsApp` : ""
-        }.`,
-        { duration: 5000 }
-      );
-      qc.invalidateQueries({ queryKey: ["meta-status"] });
-      qc.invalidateQueries({ queryKey: ["business"] });
-    } else if (metaParam === "error") {
-      const reason = searchParams.get("reason") || "desconocido";
-      if (reason !== "cancelled") {
-        toast.error(`Error al conectar con Meta: ${reason}`);
-      }
-    }
-
-    const tiktokParam = searchParams.get("tiktok");
-    if (tiktokParam === "connected") {
-      toast.success("✅ TikTok conectado correctamente", { duration: 5000 });
-      qc.invalidateQueries({ queryKey: ["tiktok-status"] });
-    } else if (tiktokParam === "error") {
-      const reason = searchParams.get("reason") || "desconocido";
-      if (reason !== "cancelled") toast.error(`Error al conectar con TikTok: ${reason}`);
-    }
-
-    // Limpiar query params de la URL
-    router.replace("/settings", { scroll: false });
-  }, [searchParams, router, qc]);
 
   // Manejar redirección de vuelta desde Zernio OAuth
   useEffect(() => {
@@ -155,28 +119,12 @@ function SettingsContent() {
     queryFn: () => businessApi.get().then((r) => r.data),
   });
 
-  const { data: metaStatus, refetch: refetchMeta } = useQuery({
-    queryKey: ["meta-status"],
-    queryFn: () => metaApi.getStatus().then((r) => r.data),
-    staleTime: 30_000,
-  });
-
-  const { data: tiktokStatus, refetch: refetchTiktok } = useQuery({
-    queryKey: ["tiktok-status"],
-    queryFn: () => tiktokApi.getStatus().then((r) => r.data),
-    staleTime: 30_000,
-  });
-
   const { data: zernioStatus, refetch: refetchZernio } = useQuery({
     queryKey: ["zernio-status"],
     queryFn: () => zernioApi.getStatus().then((r) => r.data),
     staleTime: 30_000,
   });
 
-  const [igSaved, setIgSaved] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
-  const [testingWa, setTestingWa] = useState(false);
-  const [showMetaToken, setShowMetaToken] = useState(false);
-  const [showPageToken, setShowPageToken] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   const [form, setForm] = useState({
     name: "", industry: "", description: "",
@@ -221,26 +169,6 @@ function SettingsContent() {
   const set = (field: string) => (v: string | boolean) =>
     setForm((prev) => ({ ...prev, [field]: v }));
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
-  const webhookUrl = `${API_BASE}/api/webhooks/whatsapp-meta`;
-
-  const testWhatsApp = async () => {
-    setTestingWa(true);
-    try {
-      const token = document.cookie.match(/token=([^;]+)/)?.[1] ?? localStorage.getItem("token") ?? "";
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/business/whatsapp/test`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${(await import("@/store/auth")).useAuthStore.getState().token}` },
-      });
-      const data = await res.json();
-      if (res.ok) toast.success(data.message);
-      else toast.error(data.detail || "Error al enviar mensaje de prueba");
-    } catch {
-      toast.error("Error de conexión");
-    } finally {
-      setTestingWa(false);
-    }
-  };
 
   const widgetCode = `<script
   src="${WIDGET_BASE}/widget.js"
@@ -353,122 +281,6 @@ function SettingsContent() {
             <Toggle label="Facebook Messenger" desc="Responde mensajes de Messenger de tu página de Facebook"
               checked={form.messenger_enabled} onChange={set("messenger_enabled") as (v: boolean) => void} />
           </div>
-        </Section>
-
-        {/* WhatsApp extra config — solo se muestra si WA está habilitado */}
-        {form.whatsapp_enabled && (
-          <Section icon={Smartphone} title="Configuración de WhatsApp Business"
-            subtitle="Phone Number ID y token (si no se auto-configuró vía Meta)" delay={0.2}>
-            <div className="space-y-5">
-
-              {/* Phone */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">Tu número de WhatsApp Business</p>
-                  <input type="text" value={form.whatsapp_phone}
-                    onChange={(e) => setForm((p) => ({ ...p, whatsapp_phone: e.target.value }))}
-                    placeholder="+521234567890" className="input-stripe font-mono" />
-                  <p className="text-xs text-muted-foreground mt-1">El número real con código de país.</p>
-                </div>
-              </div>
-
-              {/* Phone Number ID */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">
-                    Phone Number ID{" "}
-                    <a href="https://business.facebook.com/wa/manage/phone-numbers/" target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-green-600 hover:underline inline-flex items-center gap-0.5">
-                      Meta Business Manager <ExternalLink size={10} />
-                    </a>
-                  </p>
-                  <input type="text" value={form.meta_phone_number_id}
-                    onChange={(e) => setForm((p) => ({ ...p, meta_phone_number_id: e.target.value }))}
-                    placeholder="123456789012345" className="input-stripe font-mono" />
-                  <p className="text-xs text-muted-foreground mt-1">Solo necesario si configuraste WA manualmente (sin OAuth).</p>
-                </div>
-              </div>
-
-              {/* WA Token */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">Access Token</p>
-                  {business?.meta_wa_token_set && !form.meta_wa_token && (
-                    <div className="flex items-center gap-1.5 mb-2 text-xs text-green-600">
-                      <CheckCircle2 size={12} /> Token configurado
-                    </div>
-                  )}
-                  <div className="relative">
-                    <input type={showMetaToken ? "text" : "password"} value={form.meta_wa_token}
-                      onChange={(e) => setForm((p) => ({ ...p, meta_wa_token: e.target.value }))}
-                      placeholder={business?.meta_wa_token_set ? "••••••••••••••••" : "EAAxxxxxxxxxxxxxxxx..."}
-                      className="input-stripe font-mono pr-10" />
-                    <button type="button" onClick={() => setShowMetaToken(!showMetaToken)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showMetaToken ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Webhook URL */}
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1.5">
-                    URL del Webhook <span className="text-xs text-green-600 font-normal">✓ Configurada por la plataforma</span>
-                  </p>
-                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                    <code className="text-xs font-mono text-foreground break-all flex-1">{webhookUrl}</code>
-                    <button onClick={() => { navigator.clipboard.writeText(webhookUrl); toast.success("URL copiada"); }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-xs font-medium rounded-lg transition text-muted-foreground hover:text-foreground flex-shrink-0">
-                      <Copy size={11} /> Copiar
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 flex-wrap">
-                <button onClick={() => mutation.mutate()} disabled={mutation.isPending}
-                  className="btn-primary disabled:opacity-40">
-                  {mutation.isPending
-                    ? <><RefreshCw size={13} className="animate-spin" /> Guardando...</>
-                    : <><Check size={13} /> Guardar WhatsApp</>}
-                </button>
-                <button onClick={testWhatsApp} disabled={testingWa || !form.whatsapp_phone}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 text-sm font-semibold disabled:opacity-40 transition">
-                  {testingWa
-                    ? <><RefreshCw size={13} className="animate-spin" /> Enviando...</>
-                    : <><Phone size={13} /> Enviar mensaje de prueba</>}
-                </button>
-              </div>
-
-            </div>
-          </Section>
-        )}
-
-        {/* WhatsApp — Meta OAuth */}
-        <Section icon={Smartphone} title="Conectar WhatsApp"
-          subtitle="Vincula tu número de WhatsApp Business en un clic con Meta" delay={0.23}>
-          <MetaConnect
-            status={metaStatus}
-            onUpdate={() => {
-              refetchMeta();
-              qc.invalidateQueries({ queryKey: ["business"] });
-            }}
-          />
-        </Section>
-
-        {/* TikTok Connect */}
-        <Section icon={Music2} title="Conectar con TikTok"
-          subtitle="Publica videos y responde comentarios automáticamente" delay={0.25}>
-          <TikTokConnect
-            status={tiktokStatus}
-            onUpdate={() => refetchTiktok()}
-          />
         </Section>
 
         {/* Zernio — Social Media OAuth */}

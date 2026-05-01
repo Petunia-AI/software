@@ -328,11 +328,12 @@ async def job_zernio_poll_comments():
                         )
                         for comment in comments:
                             comment_id   = comment.get("_id") or comment.get("id", "")
-                            text         = comment.get("text", "").strip()
+                            text         = (comment.get("text") or comment.get("content") or "").strip()
                             commenter_id = (
-                                comment.get("authorId") or comment.get("userId") or ""
+                                comment.get("authorId") or comment.get("userId") or
+                                (comment.get("author") or {}).get("id") or ""
                             )
-                            post_id = comment.get("postId", "")
+                            post_id = comment.get("postId") or comment.get("videoId") or ""
 
                             if not text or not commenter_id or not comment_id:
                                 continue

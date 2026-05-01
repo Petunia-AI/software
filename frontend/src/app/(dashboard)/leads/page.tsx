@@ -14,7 +14,7 @@ import {
   Users, Search, Mail, Phone, Building2, Star,
   Download, Upload, FileSpreadsheet, ChevronDown, CheckCircle2,
   AlertCircle, Loader2, LayoutGrid, List, Filter, X, DollarSign,
-  ArrowUpRight, Award, Trash2, CircleDot,
+  ArrowUpRight, Award, Trash2, CircleDot, UserPlus, Plus,
 } from "lucide-react";
 import {
   UsersThree, Star as PhStar, Confetti, CurrencyDollar,
@@ -83,6 +83,7 @@ export default function LeadsPage() {
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
@@ -92,6 +93,15 @@ export default function LeadsPage() {
       qc.invalidateQueries({ queryKey: ["leads"] });
       if (selectedLead && confirmDelete?.id === selectedLead.id) setSelectedLead(null);
       setConfirmDelete(null);
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => leadsApi.create(data),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      setShowCreateModal(false);
+      setSelectedLead(res.data as Lead);
     },
   });
 
@@ -203,6 +213,11 @@ export default function LeadsPage() {
                     <LayoutGrid size={13} /> Kanban
                   </button>
                 </div>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl transition-all shadow-sm">
+                  <Plus size={13} /> Nuevo lead
+                </button>
                 <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImport} />
                 <button onClick={() => fileInputRef.current?.click()} disabled={importing}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all">
@@ -294,7 +309,7 @@ export default function LeadsPage() {
                     <label className="text-xs font-medium text-muted-foreground">Fuente:</label>
                     <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="input-stripe py-1 text-xs w-auto">
                       <option value="">Todas</option>
-                      {["whatsapp","instagram","webchat","manual","referral"].map(s => (
+                      {["whatsapp","instagram","facebook","messenger","webchat","email","manual","referral","tiktok","linkedin"].map(s => (
                         <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>
                       ))}
                     </select>
@@ -324,7 +339,7 @@ export default function LeadsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-accent/40">
-                    {["Lead","Empresa","Etapa","Score BANT","Valor","Fuente","Último contacto",""].map((h,i) => (
+                    {["Lead","Empresa","Etapa","Score","Valor","Fuente","Último contacto",""].map((h,i) => (
                       <th key={i} className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground first:px-5 last:w-16">{h}</th>
                     ))}
                   </tr>
@@ -415,6 +430,17 @@ export default function LeadsPage() {
         onDelete={(lead) => setConfirmDelete(lead)}
       />
 
+      {/* Create lead modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateLeadModal
+            onClose={() => setShowCreateModal(false)}
+            onSave={(data) => createMutation.mutate(data)}
+            saving={createMutation.isPending}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Confirm delete modal */}
       <AnimatePresence>
         {confirmDelete && (
@@ -466,5 +492,151 @@ export default function LeadsPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ── Create Lead Modal ────────────────────────────────────────────────────────
+
+const LEAD_STAGES = [
+  { value: "new", label: "Nuevo" },
+  { value: "qualifying", label: "Calificando" },
+  { value: "qualified", label: "Calificado" },
+  { value: "nurturing", label: "Nurturing" },
+  { value: "demo_scheduled", label: "Demo agendada" },
+  { value: "proposal_sent", label: "Propuesta enviada" },
+  { value: "negotiating", label: "Negociando" },
+  { value: "closed_won", label: "Ganado" },
+  { value: "closed_lost", label: "Perdido" },
+];
+
+const LEAD_SOURCES = [
+  "whatsapp","instagram","facebook","messenger","webchat","email","manual","referral","tiktok","linkedin",
+];
+
+function CreateLeadModal({ onClose, onSave, saving }: {
+  onClose: () => void;
+  onSave: (data: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState<Record<string, string>>({
+    name: "", email: "", phone: "", company: "", position: "",
+    source: "manual", stage: "new", estimated_value: "", notes: "",
+  });
+
+  function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const data: Record<string, unknown> = { ...form };
+    if (data.estimated_value) data.estimated_value = parseFloat(data.estimated_value as string);
+    else delete data.estimated_value;
+    // strip empty strings
+    Object.keys(data).forEach(k => { if (data[k] === "") delete data[k]; });
+    onSave(data);
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        onClick={e => e.stopPropagation()}
+        className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+      >
+        {/* Header */}
+        <div className="relative overflow-hidden px-6 pt-5 pb-4" style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <UserPlus size={16} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-white">Nuevo lead</h2>
+                <p className="text-xs text-white/60">Ingresa los datos del contacto</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Nombre completo</label>
+              <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Ej: Ana García"
+                className="input-stripe w-full" autoFocus />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Email</label>
+              <input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="correo@ejemplo.com"
+                className="input-stripe w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Teléfono</label>
+              <input type="tel" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+52 55 0000 0000"
+                className="input-stripe w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Empresa</label>
+              <input value={form.company} onChange={e => set("company", e.target.value)} placeholder="Nombre de empresa"
+                className="input-stripe w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Cargo</label>
+              <input value={form.position} onChange={e => set("position", e.target.value)} placeholder="Director, Gerente…"
+                className="input-stripe w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Fuente</label>
+              <select value={form.source} onChange={e => set("source", e.target.value)} className="input-stripe w-full">
+                {LEAD_SOURCES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Etapa</label>
+              <select value={form.stage} onChange={e => set("stage", e.target.value)} className="input-stripe w-full">
+                {LEAD_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Valor estimado (USD)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <input type="number" min="0" step="100" value={form.estimated_value} onChange={e => set("estimated_value", e.target.value)}
+                  placeholder="0" className="input-stripe w-full pl-7" />
+              </div>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Notas iniciales</label>
+              <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={3}
+                placeholder="Contexto del lead, cómo llegó, intereses…"
+                className="input-stripe w-full resize-none" />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-accent transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-md shadow-violet-500/25">
+              {saving
+                ? <><Loader2 size={14} className="animate-spin" /> Creando…</>
+                : <><UserPlus size={14} /> Crear lead</>}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
   );
 }
