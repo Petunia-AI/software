@@ -27,16 +27,17 @@ FORMAT_ORIENTATION: dict[str, str] = {
     "reel":  "portrait",    # 9:16 — Reels/TikTok
 }
 
-# Duración en segundos según formato (máx soportado actualmente: 10s)
+# Duración en segundos según formato
 FORMAT_DURATION: dict[str, int] = {
-    "post":  6,
-    "story": 6,
-    "reel":  6,
+    "post":  15,
+    "story": 15,
+    "reel":  15,
 }
 
 QUALITY_SUFFIX = (
     "cinematic quality, professional social media video, "
-    "smooth motion, vivid colors, modern commercial aesthetic, no watermarks"
+    "smooth motion, vivid colors, modern commercial aesthetic, no watermarks, "
+    "no subtitles, no text overlay, no captions, no voice, no narration, no audio, silent video"
 )
 
 
