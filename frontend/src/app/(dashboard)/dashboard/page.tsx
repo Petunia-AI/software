@@ -25,22 +25,14 @@ import {
 import { motion } from "framer-motion";
 import Link from "next/link";
 
-/* ─────────── Futuristic Tooltip ─────────── */
-function FuturisticTooltip({ active, payload, label }: TooltipProps<number, string>) {
+/* ─────────── Clean Tooltip ─────────── */
+function CleanTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
   return (
-    <div
-      className="px-3 py-2 rounded-xl text-xs"
-      style={{
-        background: "rgba(15,10,40,0.92)",
-        border: "1px solid rgba(139,92,246,0.35)",
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 0 20px rgba(139,92,246,0.25), 0 4px 24px rgba(0,0,0,0.4)",
-      }}
-    >
-      <p className="text-purple-300 font-semibold mb-1">{label}</p>
+    <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg text-xs">
+      <p className="text-gray-500 font-medium mb-1">{label}</p>
       {payload.map((p) => (
-        <p key={p.name} className="text-white font-bold">
+        <p key={p.name} className="font-bold text-gray-800">
           {p.name}: <span style={{ color: p.color }}>{p.value}</span>
         </p>
       ))}
@@ -50,15 +42,32 @@ function FuturisticTooltip({ active, payload, label }: TooltipProps<number, stri
 
 const BAR_COLORS = ["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EC4899", "#6366F1"];
 
-const CHANNEL_STYLE: Record<string, { glow: string; bar: string; text: string }> = {
-  whatsapp:  { glow: "rgba(16,185,129,0.6)",  bar: "linear-gradient(90deg,#10B981,#34D399)", text: "text-emerald-400" },
-  instagram: { glow: "rgba(236,72,153,0.6)",  bar: "linear-gradient(90deg,#EC4899,#F472B6)", text: "text-pink-400" },
-  webchat:   { glow: "rgba(139,92,246,0.6)",  bar: "linear-gradient(90deg,#8B5CF6,#A78BFA)", text: "text-violet-400" },
-  email:     { glow: "rgba(14,165,233,0.6)",  bar: "linear-gradient(90deg,#0EA5E9,#38BDF8)", text: "text-sky-400" },
-  messenger: { glow: "rgba(59,130,246,0.6)",  bar: "linear-gradient(90deg,#3B82F6,#60A5FA)", text: "text-blue-400" },
-  linkedin:  { glow: "rgba(10,102,194,0.6)",  bar: "linear-gradient(90deg,#0A66C2,#3B82F6)", text: "text-blue-500" },
-  tiktok:    { glow: "rgba(255,255,255,0.3)",  bar: "linear-gradient(90deg,#374151,#6B7280)", text: "text-gray-400" },
+const CHANNEL_COLOR: Record<string, string> = {
+  whatsapp:  "#10B981",
+  instagram: "#EC4899",
+  webchat:   "#8B5CF6",
+  email:     "#0EA5E9",
+  messenger: "#3B82F6",
+  linkedin:  "#0A66C2",
+  tiktok:    "#374151",
 };
+
+const DEMO_TREND = [
+  { date: "día 1",  count: 4 },
+  { date: "día 2",  count: 7 },
+  { date: "día 3",  count: 5 },
+  { date: "día 4",  count: 10 },
+  { date: "día 5",  count: 8 },
+  { date: "día 6",  count: 13 },
+  { date: "día 7",  count: 11 },
+  { date: "día 8",  count: 16 },
+  { date: "día 9",  count: 14 },
+  { date: "día 10", count: 18 },
+  { date: "día 11", count: 15 },
+  { date: "día 12", count: 21 },
+  { date: "día 13", count: 17 },
+  { date: "día 14", count: 24 },
+];
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -96,6 +105,8 @@ export default function DashboardPage() {
   const trendData = (trend as Record<string, unknown>[] | undefined) ?? [];
   const agentData = (agentPerf as Record<string, unknown>[] | undefined) ?? [];
   const convsData = (convs as Record<string, unknown>[] | undefined) ?? [];
+  const chartData = trendData.length > 0 ? trendData : DEMO_TREND;
+  const isDemo = trendData.length === 0;
 
   return (
     <div className="p-4 md:p-8 max-w-[1280px] mx-auto space-y-4 md:space-y-6">
@@ -167,60 +178,47 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="xl:col-span-2 rounded-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(25,15,60,0.97))",
-            border: "1px solid rgba(139,92,246,0.18)",
-            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
-          }}
+          className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
         >
-          <div className="flex items-center justify-between px-6 pt-6 pb-4">
+          <div className="flex items-center justify-between px-6 pt-5 pb-3">
             <div>
-              <p className="font-bold text-white tracking-tight">Conversaciones · 14 días</p>
-              <p className="text-xs mt-0.5 font-medium" style={{ color: "rgba(167,139,250,0.6)" }}>Volumen diario acumulado</p>
+              <p className="font-bold text-gray-900 text-sm">Conversaciones · 14 días</p>
+              <p className="text-xs text-gray-400 mt-0.5">Volumen diario acumulado</p>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-              style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", color: "#A78BFA" }}>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-xs font-semibold text-violet-500">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Tiempo real
+              {isDemo ? "Ejemplo" : "Tiempo real"}
             </div>
           </div>
-          <div className="px-2 pb-5">
-            {trendData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[200px] gap-3">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                  <Activity size={24} style={{ color: "#A78BFA" }} />
-                </div>
-                <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>Sin datos aún</p>
-                <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>Las conversaciones de los últimos 14 días aparecerán aquí</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={trendData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="neonViolet" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%"   stopColor="#8B5CF6" stopOpacity={0.45} />
-                      <stop offset="60%"  stopColor="#6D28D9" stopOpacity={0.12} />
-                      <stop offset="100%" stopColor="#4C1D95" stopOpacity={0}    />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 6" stroke="rgba(139,92,246,0.08)" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }}
-                    axisLine={false} tickLine={false} tickFormatter={(v: string) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }}
-                    axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip content={<FuturisticTooltip />}
-                    cursor={{ stroke: "rgba(139,92,246,0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                  <Area type="monotone" dataKey="count" stroke="#A78BFA" strokeWidth={2.5}
-                    fill="url(#neonViolet)" dot={false}
-                    activeDot={{ r: 5, fill: "#A78BFA", strokeWidth: 0, style: { filter: "drop-shadow(0 0 6px #A78BFA)" } }}
-                    name="Conversaciones"
-                    style={{ filter: "drop-shadow(0 0 5px rgba(139,92,246,0.5))" }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+          <div className="px-2 pb-2">
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="areaViolet" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#8B5CF6" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0}   />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 6" stroke="#F3F4F6" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9CA3AF", fontWeight: 500 }}
+                  axisLine={false} tickLine={false}
+                  tickFormatter={(v: string) => v.includes("-") ? v.slice(5) : v} />
+                <YAxis tick={{ fontSize: 10, fill: "#9CA3AF", fontWeight: 500 }}
+                  axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip content={<CleanTooltip />}
+                  cursor={{ stroke: "#E5E7EB", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                <Area type="monotone" dataKey="count" stroke="#8B5CF6" strokeWidth={2.5}
+                  fill="url(#areaViolet)" dot={false}
+                  activeDot={{ r: 5, fill: "#8B5CF6", strokeWidth: 2, stroke: "#fff" }}
+                  name="Conversaciones" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
+          {isDemo && (
+            <p className="text-center text-[11px] text-gray-400 pb-3">
+              Vista previa — los datos reales aparecerán cuando haya conversaciones
+            </p>
+          )}
         </motion.div>
 
         {/* Actividad reciente */}
@@ -228,72 +226,62 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="rounded-2xl overflow-hidden flex flex-col"
-          style={{
-            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(25,15,60,0.97))",
-            border: "1px solid rgba(139,92,246,0.18)",
-            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
-          }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col"
         >
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <p className="font-bold text-white text-sm tracking-tight">Actividad reciente</p>
-            <Link href="/conversations" className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#A78BFA" }}>
+            <p className="font-bold text-gray-900 text-sm">Actividad reciente</p>
+            <Link href="/conversations" className="flex items-center gap-1 text-xs font-semibold text-violet-500 hover:text-violet-700 transition-colors">
               Ver todas <ArrowUpRight size={12} />
             </Link>
           </div>
           <div className="flex-1 px-3 pb-4 space-y-0.5">
             {convsData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 gap-3">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                  <MessageSquare size={20} style={{ color: "#A78BFA" }} />
+                <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center">
+                  <MessageSquare size={20} className="text-violet-400" />
                 </div>
-                <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>Sin conversaciones aún</p>
-                <Link href="/conversations" className="text-xs font-semibold" style={{ color: "#A78BFA" }}>
+                <p className="text-sm font-semibold text-gray-400">Sin conversaciones aún</p>
+                <Link href="/conversations" className="text-xs font-semibold text-violet-500">
                   Ir a conversaciones →
                 </Link>
               </div>
             ) : (
-              convsData.map((conv) => {
-                const cs = CHANNEL_STYLE[conv.channel as string] ?? CHANNEL_STYLE.webchat;
-                return (
-                  <Link key={conv.id as string} href={`/conversations/${conv.id}`}
-                    className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all hover:bg-white/5">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
-                      style={{
-                        background: ({
-                          whatsapp:  "linear-gradient(135deg,#10B981,#059669)",
-                          instagram: "linear-gradient(135deg,#EC4899,#BE185D)",
-                          webchat:   "linear-gradient(135deg,#8B5CF6,#6D28D9)",
-                          email:     "linear-gradient(135deg,#0EA5E9,#0284C7)",
-                          messenger: "linear-gradient(135deg,#3B82F6,#2563EB)",
-                          linkedin:  "linear-gradient(135deg,#0A66C2,#004182)",
-                          tiktok:    "linear-gradient(135deg,#374151,#111827)",
-                        } as Record<string,string>)[conv.channel as string] ?? "linear-gradient(135deg,#7C3AED,#6D28D9)",
-                        boxShadow: `0 0 10px ${cs.glow}`,
-                      }}>
-                      {({
-                        whatsapp:  <ChatCircle size={14} weight="fill" />,
-                        instagram: <Camera size={14} weight="fill" />,
-                        webchat:   <GlobeHemisphereWest size={14} weight="fill" />,
-                        email:     <EnvelopeSimple size={14} weight="fill" />,
-                        messenger: <FacebookLogo size={14} weight="fill" />,
-                        linkedin:  <LinkedinLogo size={14} weight="fill" />,
-                        tiktok:    <MusicNote size={14} weight="fill" />,
-                      } as Record<string, React.ReactNode>)[conv.channel as string] ?? <ChatCircle size={14} weight="fill" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "rgba(255,255,255,0.9)" }}>
-                        {(conv.lead_name as string) || `Chat #${(conv.id as string).slice(0, 6)}`}
-                      </p>
-                      <div className="mt-0.5"><AgentBadge agent={conv.current_agent as string} /></div>
-                    </div>
-                    <p className="text-[10px] flex-shrink-0" style={{ color: "rgba(255,255,255,0.28)" }}>
-                      {conv.last_message_at ? timeAgo(conv.last_message_at as string) : "—"}
+              convsData.map((conv) => (
+                <Link key={conv.id as string} href={`/conversations/${conv.id}`}
+                  className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all hover:bg-gray-50">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
+                    style={{
+                      background: ({
+                        whatsapp:  "linear-gradient(135deg,#10B981,#059669)",
+                        instagram: "linear-gradient(135deg,#EC4899,#BE185D)",
+                        webchat:   "linear-gradient(135deg,#8B5CF6,#6D28D9)",
+                        email:     "linear-gradient(135deg,#0EA5E9,#0284C7)",
+                        messenger: "linear-gradient(135deg,#3B82F6,#2563EB)",
+                        linkedin:  "linear-gradient(135deg,#0A66C2,#004182)",
+                        tiktok:    "linear-gradient(135deg,#374151,#111827)",
+                      } as Record<string, string>)[conv.channel as string] ?? "linear-gradient(135deg,#7C3AED,#6D28D9)",
+                    }}>
+                    {({
+                      whatsapp:  <ChatCircle size={14} weight="fill" />,
+                      instagram: <Camera size={14} weight="fill" />,
+                      webchat:   <GlobeHemisphereWest size={14} weight="fill" />,
+                      email:     <EnvelopeSimple size={14} weight="fill" />,
+                      messenger: <FacebookLogo size={14} weight="fill" />,
+                      linkedin:  <LinkedinLogo size={14} weight="fill" />,
+                      tiktok:    <MusicNote size={14} weight="fill" />,
+                    } as Record<string, React.ReactNode>)[conv.channel as string] ?? <ChatCircle size={14} weight="fill" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {(conv.lead_name as string) || `Chat #${(conv.id as string).slice(0, 6)}`}
                     </p>
-                  </Link>
-                );
-              })
+                    <div className="mt-0.5"><AgentBadge agent={conv.current_agent as string} /></div>
+                  </div>
+                  <p className="text-[10px] text-gray-400 flex-shrink-0">
+                    {conv.last_message_at ? timeAgo(conv.last_message_at as string) : "—"}
+                  </p>
+                </Link>
+              ))
             )}
           </div>
         </motion.div>
@@ -307,45 +295,30 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="rounded-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(20,12,50,0.97))",
-            border: "1px solid rgba(139,92,246,0.18)",
-            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
-          }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
         >
-          <div className="flex items-center gap-3 px-6 pt-6 pb-4">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)" }}>
-              <Bot size={14} style={{ color: "#A78BFA" }} />
+          <div className="flex items-center gap-3 px-6 pt-5 pb-4">
+            <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+              <Bot size={14} className="text-violet-500" />
             </div>
-            <p className="font-bold text-white text-sm tracking-tight">Rendimiento por agente</p>
+            <p className="font-bold text-gray-900 text-sm">Rendimiento por agente</p>
           </div>
           {agentData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[170px] gap-2 pb-4">
-              <Bot size={28} style={{ color: "rgba(255,255,255,0.12)" }} />
-              <p className="text-sm" style={{ color: "rgba(255,255,255,0.25)" }}>Sin datos de agentes aún</p>
+            <div className="flex flex-col items-center justify-center h-[170px] gap-2 pb-6">
+              <Bot size={28} className="text-gray-200" />
+              <p className="text-sm text-gray-400">Sin datos de agentes aún</p>
             </div>
           ) : (
             <div className="px-2 pb-5">
               <ResponsiveContainer width="100%" height={170}>
                 <BarChart data={agentData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
-                  <defs>
-                    {BAR_COLORS.map((c, i) => (
-                      <linearGradient key={i} id={`barG${i}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%"   stopColor={c} stopOpacity={0.9} />
-                        <stop offset="100%" stopColor={c} stopOpacity={0.35} />
-                      </linearGradient>
-                    ))}
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 6" stroke="rgba(139,92,246,0.08)" vertical={false} />
-                  <XAxis dataKey="agent" tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip content={<FuturisticTooltip />} cursor={{ fill: "rgba(139,92,246,0.07)" }} />
+                  <CartesianGrid strokeDasharray="3 6" stroke="#F3F4F6" vertical={false} />
+                  <XAxis dataKey="agent" tick={{ fontSize: 10, fill: "#9CA3AF", fontWeight: 500 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#9CA3AF", fontWeight: 500 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<CleanTooltip />} cursor={{ fill: "#F9FAFB" }} />
                   <Bar dataKey="messages" radius={[6, 6, 2, 2]} name="Mensajes" maxBarSize={48}>
                     {agentData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={`url(#barG${index % BAR_COLORS.length})`}
-                        style={{ filter: `drop-shadow(0 0 6px ${BAR_COLORS[index % BAR_COLORS.length]}88)` }} />
+                      <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} fillOpacity={0.85} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -359,47 +332,41 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="rounded-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(10,20,45,0.97))",
-            border: "1px solid rgba(139,92,246,0.18)",
-            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
-          }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
         >
-          <div className="flex items-center gap-3 px-6 pt-6 pb-4">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "rgba(6,182,212,0.2)", border: "1px solid rgba(6,182,212,0.3)" }}>
-              <Activity size={14} style={{ color: "#22D3EE" }} />
+          <div className="flex items-center gap-3 px-6 pt-5 pb-4">
+            <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center">
+              <Activity size={14} className="text-cyan-500" />
             </div>
-            <p className="font-bold text-white text-sm tracking-tight">Distribución por canal</p>
+            <p className="font-bold text-gray-900 text-sm">Distribución por canal</p>
           </div>
           {!stats?.conversations_by_channel || Object.keys(stats.conversations_by_channel).length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[170px] gap-2 pb-4">
-              <Activity size={28} style={{ color: "rgba(255,255,255,0.12)" }} />
-              <p className="text-sm" style={{ color: "rgba(255,255,255,0.25)" }}>Sin datos de canales aún</p>
+            <div className="flex flex-col items-center justify-center h-[170px] gap-2 pb-6">
+              <Activity size={28} className="text-gray-200" />
+              <p className="text-sm text-gray-400">Sin datos de canales aún</p>
             </div>
           ) : (
             <div className="px-6 pb-6 space-y-4">
               {Object.entries(stats.conversations_by_channel).map(([channel, count]) => {
                 const total = stats.total_conversations || 1;
                 const pct = Math.round((count as number / total) * 100);
-                const cs = CHANNEL_STYLE[channel] ?? CHANNEL_STYLE.webchat;
+                const color = CHANNEL_COLOR[channel] ?? "#8B5CF6";
                 return (
                   <div key={channel}>
                     <div className="flex items-center justify-between mb-2">
                       <ChannelBadge channel={channel} />
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-bold tabular-nums ${cs.text}`}>{count as number}</span>
-                        <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>{pct}%</span>
+                        <span className="text-sm font-bold tabular-nums" style={{ color }}>{count as number}</span>
+                        <span className="text-xs text-gray-400">{pct}%</span>
                       </div>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                    <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
                         transition={{ delay: 0.45, duration: 0.9, ease: "easeOut" }}
                         className="h-full rounded-full"
-                        style={{ background: cs.bar, boxShadow: `0 0 8px ${cs.glow}` }}
+                        style={{ backgroundColor: color, opacity: 0.8 }}
                       />
                     </div>
                   </div>
