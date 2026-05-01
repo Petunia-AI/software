@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   SquaresFour, ChatCircleText, UsersThree, BellRinging,
   TrendUp, Robot, PenNib, Buildings, EnvelopeSimple,
-  CalendarDots, ChatCircle, SlidersHorizontal, Wallet,
+  CalendarDots, SlidersHorizontal, Wallet,
 } from "@phosphor-icons/react";
 
 const NAV_ITEMS = [
@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { href: "/content",                icon: PenNib,            label: "Contenido" },
   { href: "/email",                  icon: EnvelopeSimple,    label: "Email CRM" },
   { href: "/meetings",               icon: CalendarDots,      label: "Reuniones" },
-  { href: "/integrations/whatsapp",  icon: ChatCircle,        label: "WhatsApp" },
   { href: "/properties",             icon: Buildings,         label: "Propiedades" },
   { href: "/settings",               icon: SlidersHorizontal, label: "Config" },
   { href: "/billing",                icon: Wallet,            label: "Billing" },

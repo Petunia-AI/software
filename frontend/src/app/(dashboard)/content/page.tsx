@@ -1795,7 +1795,7 @@ export default function ContentPage() {
         </div>
       ) : (
         <AnimatePresence>
-          <div className={viewMode === "grid" ? "grid grid-cols-2 xl:grid-cols-4 gap-4" : "space-y-3"}>
+          <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" : "space-y-3"}>
             {posts.map((post) => (
               <PostCard key={post.id} post={post} onApprove={() => approvePost(post.id)} onPublish={() => publishPost(post.id)} onSchedule={() => setSchedulingPost(post.id)} onDelete={() => deletePost(post.id)} onCheckVideo={() => checkVideoStatus(post.id)} onEdit={() => setEditingPost(post)} onGenerateImage={() => generatePostImage(post.id)} />
             ))}
