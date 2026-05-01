@@ -63,13 +63,9 @@ export default function LoginPage() {
         />
 
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="relative z-10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Petunia AI" className="w-12 h-12 drop-shadow-lg" />
-          <div>
-            <p className="text-white font-bold text-lg leading-tight">Petunia AI</p>
-            <p className="text-white/40 text-xs">Real Estate Automation</p>
-          </div>
+          <img src="/logo.png" alt="Petunia AI" className="h-12 w-auto drop-shadow-lg" />
         </div>
 
         {/* Hero copy */}
