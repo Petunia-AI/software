@@ -131,8 +131,10 @@ async def zernio_connect(
     business = await _get_business(current_user, db)
     await _ensure_profile(business, db)
 
-    # URL a la que Zernio redirige tras completar el OAuth (de vuelta a Petunia)
-    redirect_url = f"{settings.frontend_url}/settings?zernio=connected"
+    # URL a la que Zernio redirige tras completar el OAuth.
+    # Usamos /zernio-callback (página pública) para evitar que el middleware
+    # bloquee la redirección cross-site por falta de cookie auth_token.
+    redirect_url = f"{settings.frontend_url}/zernio-callback"
 
     try:
         url = await zernio_service.get_connect_url(platform, business.zernio_profile_id, redirect_url=redirect_url)

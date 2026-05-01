@@ -56,7 +56,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Excluye archivos estáticos, imágenes y API routes internas
-    "/((?!_next/static|_next/image|favicon.ico|widget|api).*)",
+    // Excluye archivos estáticos, imágenes, API routes internas y callback de Zernio OAuth
+    "/((?!_next/static|_next/image|favicon.ico|widget|api|zernio-callback).*)",
   ],
 };
