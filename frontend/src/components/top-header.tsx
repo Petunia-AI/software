@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import {
-  Bell, ChevronRight, LogOut,
+  ChevronRight, LogOut,
   LayoutDashboard, MessageCircle, UsersRound, CalendarCheck,
   TrendingUp, BrainCircuit, PenLine, SlidersHorizontal,
   CreditCard, Building2, ChevronDown,
@@ -73,19 +73,6 @@ export function TopHeader() {
 
       {/* Right side */}
       <div className="flex items-center gap-2">
-        {/* Notification bell */}
-        <button
-          className="relative p-2 rounded-xl hover:bg-secondary transition-colors"
-          aria-label="Notificaciones"
-        >
-          <Bell size={16} className="text-muted-foreground" />
-          {/* Red dot */}
-          <span
-            className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-red-500"
-            style={{ boxShadow: "0 0 5px rgba(239,68,68,0.6)" }}
-          />
-        </button>
-
         {/* User avatar + dropdown */}
         <div className="relative pl-1 border-l border-border" ref={menuRef}>
           <button
