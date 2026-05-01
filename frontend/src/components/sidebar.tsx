@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import {
   SquaresFour, ChatCircleText, UsersThree, BellRinging,
   TrendUp, Robot, PenNib, Buildings,
-  CaretDown, MagnifyingGlass,
   EnvelopeSimple, CalendarDots,
 } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -31,7 +30,6 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
-  const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   const { data: followupStats } = useQuery({
     queryKey: ["followup-stats-sidebar"],
@@ -45,40 +43,12 @@ export function Sidebar() {
     <aside className="sidebar w-60 flex flex-col h-full select-none flex-shrink-0">
 
       {/* ── Logo header ── */}
-      <button
-        onClick={() => setWorkspaceOpen(!workspaceOpen)}
-        className="relative z-10 flex items-center gap-3 px-4 py-4 w-full text-left group"
+      <div
+        className="relative z-10 flex items-center px-4 py-4"
         style={{ borderBottom: "1px solid rgba(107,139,255,0.12)" }}
       >
-        {/* Logo icon */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="Petunia AI" className="w-8 h-8 object-contain flex-shrink-0" />
-
-        <CaretDown
-          size={13}
-          className={cn("transition-transform flex-shrink-0", workspaceOpen && "rotate-180")}
-          style={{ color: "rgba(107,139,255,0.45)" }}
-        />
-      </button>
-
-      {/* ── Search ── */}
-      <div className="relative z-10 px-3 py-2.5"
-        style={{ borderBottom: "1px solid rgba(107,139,255,0.12)" }}>
-        <button
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-all duration-150 hover:bg-indigo-50/70"
-          style={{
-            background: "rgba(107,139,255,0.06)",
-            border: "1px solid rgba(107,139,255,0.15)",
-            color: "rgba(60,75,120,0.55)"
-          }}
-        >
-          <MagnifyingGlass size={12} />
-          <span className="flex-1 text-left">Buscar...</span>
-          <kbd className="text-[9px] px-1.5 py-0.5 rounded font-mono"
-            style={{ background: "rgba(107,139,255,0.08)", color: "rgba(60,75,120,0.55)", border: "1px solid rgba(107,139,255,0.15)" }}>
-            ⌘K
-          </kbd>
-        </button>
+        <img src="/logo.png" alt="Petunia AI" className="h-9 w-auto object-contain" />
       </div>
 
       {/* ── Navigation ── */}
