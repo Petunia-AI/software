@@ -40,7 +40,7 @@ export default function ConversationDetailPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { data: conv, isLoading } = useQuery({
+  const { data: conv, isLoading, isError } = useQuery({
     queryKey: ["conversation", params.id],
     queryFn: () => conversationsApi.get(params.id).then((r) => r.data),
     refetchInterval: 8_000,
@@ -119,6 +119,20 @@ export default function ConversationDetailPage() {
         <div className="text-center">
           <Loader2 size={28} className="animate-spin text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground mt-3">Cargando conversación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="font-medium text-foreground">No se pudo cargar la conversación</p>
+          <p className="text-sm text-muted-foreground mt-1">Verifica que la conversación existe o intenta de nuevo</p>
+          <Link href="/conversations" className="btn-secondary mt-4 inline-flex">
+            <ArrowLeft size={14} /> Volver a conversaciones
+          </Link>
         </div>
       </div>
     );

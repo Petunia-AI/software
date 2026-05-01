@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, nullslast
 from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models.conversation import Conversation, ConversationStatus
@@ -67,7 +67,7 @@ async def list_conversations(
         select(Conversation)
         .where(Conversation.business_id == current_user.business_id)
         .options(selectinload(Conversation.messages), selectinload(Conversation.lead))
-        .order_by(desc(Conversation.last_message_at))
+        .order_by(nullslast(desc(Conversation.last_message_at)))
         .limit(limit)
         .offset(offset)
     )

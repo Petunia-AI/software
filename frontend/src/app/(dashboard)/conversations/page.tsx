@@ -214,6 +214,11 @@ function ConversationsInner() {
                         👤 Humano activo
                       </span>
                     )}
+                    {!(conv.message_count as number) && (
+                      <span className="badge text-[10px] bg-gray-100 text-gray-400 flex-shrink-0">
+                        Sin mensajes
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <AgentBadge agent={conv.current_agent as string} />
