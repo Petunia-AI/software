@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { TopHeader } from "@/components/top-header";
 import { MobileNav } from "@/components/mobile-nav";
+import { AssistantWidget } from "@/components/assistant-widget";
 import { useAuthStore } from "@/store/auth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Bottom nav — only mobile */}
       <MobileNav />
+
+      {/* AI Assistant floating widget */}
+      <AssistantWidget />
     </div>
   );
 }

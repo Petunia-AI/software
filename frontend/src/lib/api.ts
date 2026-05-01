@@ -235,3 +235,9 @@ export const propertiesApi = {
   setCover:    (id: string, imageId: string) => api.post(`/properties/${id}/images/${imageId}/cover`),
   deleteImage: (id: string, imageId: string) => api.delete(`/properties/${id}/images/${imageId}`),
 };
+
+// ============ ASSISTANT ============
+export const assistantApi = {
+  chat: (messages: { role: string; content: string }[]) =>
+    api.post<{ reply: string }>("/assistant/chat", { messages }),
+};
