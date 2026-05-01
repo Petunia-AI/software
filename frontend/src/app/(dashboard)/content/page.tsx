@@ -11,6 +11,7 @@ import {
   Wand2, Film, FileImage, Newspaper, Zap, Building2,
   Pencil, AlertCircle, ImagePlus, HardDrive,
   ChevronLeft, ChevronRight, CalendarDays, MapPin, Layers, Rocket,
+  LayoutDashboard, Home, BookOpen, User, Star, Flame, Tag,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import MediaLibrary, { type MediaAsset } from "./MediaLibrary";
@@ -108,13 +109,13 @@ const CONTENT_TYPES: { value: ContentType; label: string; emoji: string }[] = [
 ];
 
 const CONTENT_THEMES = [
-  { id: "mixed",       emoji: "🎯", title: "Mixto",          desc: "Combinación balanceada de tipos" },
-  { id: "properties",  emoji: "🏘️", title: "Propiedades",    desc: "Publicita tu catálogo de inmuebles" },
-  { id: "informativo", emoji: "📰", title: "Informativo",    desc: "Tips, mercado, consejos del sector" },
-  { id: "marca",       emoji: "✨", title: "Marca personal", desc: "Branding, equipo, valores" },
-  { id: "testimonios", emoji: "⭐", title: "Testimonios",    desc: "Casos de éxito y reseñas" },
-  { id: "tendencias",  emoji: "🔥", title: "Tendencias",     desc: "Noticias y trends del sector" },
-  { id: "promocional", emoji: "💰", title: "Promocional",    desc: "Ofertas, precios, urgencia" },
+  { id: "mixed",       Icon: LayoutDashboard, color: "#7C3AED", bg: "from-violet-500 to-purple-600",  title: "Mixto",          desc: "Combinación balanceada de tipos" },
+  { id: "properties",  Icon: Home,            color: "#0891B2", bg: "from-cyan-500 to-sky-600",      title: "Propiedades",    desc: "Publicita tu catálogo de inmuebles" },
+  { id: "informativo", Icon: BookOpen,        color: "#2563EB", bg: "from-blue-500 to-indigo-600",   title: "Informativo",    desc: "Tips, mercado, consejos del sector" },
+  { id: "marca",       Icon: User,            color: "#EC4899", bg: "from-pink-500 to-rose-500",     title: "Marca personal", desc: "Branding, equipo, valores" },
+  { id: "testimonios", Icon: Star,            color: "#D97706", bg: "from-amber-500 to-orange-500",  title: "Testimonios",    desc: "Casos de éxito y reseñas" },
+  { id: "tendencias",  Icon: Flame,           color: "#DC2626", bg: "from-red-500 to-orange-600",    title: "Tendencias",     desc: "Noticias y trends del sector" },
+  { id: "promocional", Icon: Tag,             color: "#059669", bg: "from-emerald-500 to-teal-600",  title: "Promocional",    desc: "Ofertas, precios, urgencia" },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -724,16 +725,26 @@ function ContentThemeWizard({ onClose, onGenerate, generating, features, token }
         <div>
           <label className="block text-xs font-semibold text-muted-foreground mb-2.5 uppercase tracking-wide">Tema del calendario</label>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {CONTENT_THEMES.map((t) => (
-              <button key={t.id} onClick={() => handleThemeSelect(t.id)}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${theme === t.id ? "border-indigo-400 bg-indigo-50" : "border-border bg-white hover:border-indigo-200 hover:bg-indigo-50/30"}`}>
-                <span className="text-2xl leading-none">{t.emoji}</span>
-                <span className={`text-[10px] font-bold leading-tight ${theme === t.id ? "text-indigo-700" : "text-foreground"}`}>{t.title}</span>
-              </button>
-            ))}
+            {CONTENT_THEMES.map((t) => {
+              const active = theme === t.id;
+              return (
+                <button key={t.id} onClick={() => handleThemeSelect(t.id)}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center ${active ? "border-transparent shadow-md" : "border-border bg-white hover:border-indigo-200 hover:bg-slate-50"}`}
+                  style={active ? { background: `linear-gradient(135deg, ${t.color}22, ${t.color}11)`, borderColor: t.color } : {}}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
+                    style={{ background: active ? `linear-gradient(135deg, ${t.color}, ${t.color}cc)` : `${t.color}18` }}>
+                    <t.Icon size={17} style={{ color: active ? "#fff" : t.color }} strokeWidth={active ? 2.2 : 1.8} />
+                  </div>
+                  <span className="text-[10px] font-bold leading-tight" style={{ color: active ? t.color : undefined }}>{t.title}</span>
+                </button>
+              );
+            })}
           </div>
           {selectedTheme && (
-            <p className="mt-2 text-xs text-muted-foreground">{selectedTheme.emoji} <span className="font-medium text-foreground">{selectedTheme.title}:</span> {selectedTheme.desc}</p>
+            <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+              <selectedTheme.Icon size={12} style={{ color: selectedTheme.color }} />
+              <span className="font-medium text-foreground">{selectedTheme.title}:</span> {selectedTheme.desc}
+            </p>
           )}
         </div>
 
