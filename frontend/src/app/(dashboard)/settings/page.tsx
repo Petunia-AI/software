@@ -134,6 +134,22 @@ function SettingsContent() {
     router.replace("/settings", { scroll: false });
   }, [searchParams, router, qc]);
 
+  // Manejar redirección de vuelta desde Zernio OAuth
+  useEffect(() => {
+    const zernioParam = searchParams.get("zernio");
+    if (!zernioParam) return;
+    if (zernioParam === "connected") {
+      const platform = searchParams.get("platform") || "";
+      const username = searchParams.get("username") || "";
+      toast.success(
+        `✅ ${platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Red social"} conectado${username ? ` como ${username}` : ""} ✓`,
+        { duration: 5000 }
+      );
+      qc.invalidateQueries({ queryKey: ["zernio-status"] });
+    }
+    router.replace("/settings", { scroll: false });
+  }, [searchParams, router, qc]);
+
   const { data: business, isLoading } = useQuery({
     queryKey: ["business"],
     queryFn: () => businessApi.get().then((r) => r.data),

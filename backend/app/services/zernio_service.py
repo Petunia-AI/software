@@ -93,18 +93,21 @@ class ZernioService:
 
     # ── Conexión OAuth por plataforma ─────────────────────────────────────────
 
-    async def get_connect_url(self, platform: str, profile_id: str) -> str:
+    async def get_connect_url(self, platform: str, profile_id: str, redirect_url: str | None = None) -> str:
         """
         Obtiene la URL de OAuth para que el cliente vincule una plataforma específica.
         El cliente abre esta URL en su navegador para autorizar.
 
-        GET /v1/connect/{platform}?profileId=xxx
+        GET /v1/connect/{platform}?profileId=xxx&redirect_url=yyy
         """
+        params: dict = {"profileId": profile_id}
+        if redirect_url:
+            params["redirect_url"] = redirect_url
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
                 f"{ZERNIO_BASE}/connect/{platform}",
                 headers=_headers(),
-                params={"profileId": profile_id},
+                params=params,
             )
             if not resp.is_success:
                 body = ""

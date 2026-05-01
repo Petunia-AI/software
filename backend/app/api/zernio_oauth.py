@@ -131,8 +131,11 @@ async def zernio_connect(
     business = await _get_business(current_user, db)
     await _ensure_profile(business, db)
 
+    # URL a la que Zernio redirige tras completar el OAuth (de vuelta a Petunia)
+    redirect_url = f"{settings.frontend_url}/settings?zernio=connected"
+
     try:
-        url = await zernio_service.get_connect_url(platform, business.zernio_profile_id)
+        url = await zernio_service.get_connect_url(platform, business.zernio_profile_id, redirect_url=redirect_url)
     except Exception as e:
         err_str = str(e)
         # Si Zernio devuelve 400 para ese profileId, puede ser un ID stale no detectado —
@@ -142,7 +145,7 @@ async def zernio_connect(
             await _reset_profile(business, db, reason="connect_returned_400")
             await _ensure_profile(business, db)
             try:
-                url = await zernio_service.get_connect_url(platform, business.zernio_profile_id)
+                url = await zernio_service.get_connect_url(platform, business.zernio_profile_id, redirect_url=redirect_url)
             except Exception as e2:
                 logger.error("zernio_connect_url_failed_retry", platform=platform, error=str(e2))
                 raise HTTPException(502, f"Error al obtener URL de conexión para {platform}: {str(e2)}")
