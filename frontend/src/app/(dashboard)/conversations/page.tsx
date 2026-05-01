@@ -172,11 +172,11 @@ function ConversationsInner() {
             >
               <Link
                 href={`/conversations/${conv.id}`}
-                className="flex items-center gap-4 p-4 bg-white border border-border rounded-2xl hover:border-primary/30 hover:shadow-sm transition-all group"
+                className="flex items-center gap-3 p-3 sm:p-4 bg-white border border-border rounded-2xl hover:border-primary/30 hover:shadow-sm transition-all group min-w-0"
                 style={{ boxShadow: "var(--shadow-xs)" }}
               >
                 {/* Channel icon */}
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
                   style={{
                     background: ({
                       whatsapp: "linear-gradient(135deg,#10B981,#059669)",
@@ -200,9 +200,9 @@ function ConversationsInner() {
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-foreground">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-1.5 mb-1 min-w-0">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {(() => {
                         const n = conv.lead_name as string
                         if (n && !/^\d+$/.test(n)) return n
@@ -210,33 +210,31 @@ function ConversationsInner() {
                       })()}
                     </span>
                     {!!conv.is_human_takeover && (
-                      <span className="badge badge-orange text-[10px]">
+                      <span className="badge badge-orange text-[10px] flex-shrink-0">
                         👤 Humano activo
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <AgentBadge agent={conv.current_agent as string} />
-                    <span className="text-xs text-muted-foreground">·</span>
                     <ChannelBadge channel={conv.channel as string} />
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">
-                      {conv.message_count as number} mensajes
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                      {conv.message_count as number} msgs
                     </span>
                   </div>
                 </div>
 
                 {/* Status + time */}
-                <div className="text-right flex-shrink-0 ml-2">
-                  <div className="flex items-center gap-1.5 justify-end mb-1">
+                <div className="text-right flex-shrink-0">
+                  <div className="flex items-center gap-1 justify-end mb-1">
                     <span className={cn(
-                      "w-2 h-2 rounded-full",
+                      "w-2 h-2 rounded-full flex-shrink-0",
                       conv.status === "active"   && "bg-green-500",
                       conv.status === "waiting"  && "bg-yellow-500",
                       conv.status === "resolved" && "bg-gray-300",
                       conv.status === "escalated"&& "bg-red-500",
                     )} />
-                    <span className="text-xs text-muted-foreground capitalize font-medium">
+                    <span className="text-xs text-muted-foreground capitalize font-medium hidden sm:inline">
                       {conv.status as string}
                     </span>
                   </div>
