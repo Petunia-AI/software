@@ -3,7 +3,7 @@ import io
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func, case, coalesce
 from app.database import get_db
 from app.models.conversation import Conversation, ConversationStatus, Channel
 from app.models.lead import Lead, LeadStage
@@ -99,14 +99,15 @@ async def conversations_trend(
 ):
     """Tendencia de conversaciones por día."""
     since = datetime.now(timezone.utc) - timedelta(days=days)
+    date_col = coalesce(Conversation.started_at, Conversation.last_message_at)
     result = await db.execute(
         select(
-            func.date(Conversation.started_at).label("date"),
+            func.date(date_col).label("date"),
             func.count(Conversation.id).label("count"),
         )
-        .where(Conversation.business_id == current_user.business_id, Conversation.started_at >= since)
-        .group_by(func.date(Conversation.started_at))
-        .order_by(func.date(Conversation.started_at))
+        .where(Conversation.business_id == current_user.business_id, date_col >= since)
+        .group_by(func.date(date_col))
+        .order_by(func.date(date_col))
     )
     return [{"date": str(row.date), "count": row.count} for row in result.all()]
 
