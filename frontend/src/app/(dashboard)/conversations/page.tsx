@@ -73,7 +73,8 @@ function ConversationsInner() {
   const activeCount = convs.filter((c: Record<string, unknown>) => c.status === "active").length;
 
   return (
-    <div className="p-4 md:p-8 max-w-[1280px] mx-auto">
+    <div className="flex flex-col min-h-full">
+      <div className="p-4 md:p-6">
       <PageHeader
         title="Conversaciones"
         subtitle={`${convs.length} totales · ${activeCount} activas`}
@@ -94,7 +95,9 @@ function ConversationsInner() {
           Nueva conversación
         </button>
       </PageHeader>
+      </div>
 
+      <div className="flex-1 px-4 md:px-6 pb-8">
       {/* ── Filters bar ── */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <div className="relative">
@@ -246,6 +249,7 @@ function ConversationsInner() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
