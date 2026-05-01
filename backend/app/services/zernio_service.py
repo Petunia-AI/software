@@ -106,7 +106,17 @@ class ZernioService:
                 headers=_headers(),
                 params={"profileId": profile_id},
             )
-            resp.raise_for_status()
+            if not resp.is_success:
+                body = ""
+                try:
+                    body = resp.json()
+                except Exception:
+                    body = resp.text
+                raise httpx.HTTPStatusError(
+                    f"Zernio {resp.status_code} para {platform}: {body}",
+                    request=resp.request,
+                    response=resp,
+                )
             data = resp.json()
             url = data.get("authUrl") or data.get("url") or data.get("connectUrl")
             if not url:

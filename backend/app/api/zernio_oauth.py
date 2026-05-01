@@ -46,9 +46,34 @@ async def _get_business(current_user: User, db: AsyncSession) -> Business:
 
 
 async def _ensure_profile(business: Business, db: AsyncSession) -> None:
-    """Crea el perfil en Zernio si no existe aún."""
+    """
+    Garantiza que el negocio tiene un perfil válido en Zernio.
+
+    Si ya tiene un ID guardado, verifica que realmente exista en Zernio —
+    esto maneja el caso en que el ID fue migrado de Ayrshare (campo renombrado)
+    y por tanto no corresponde a un perfil real de Zernio.
+    Si no existe o el ID es inválido, lo resetea y crea uno nuevo.
+    """
     if business.zernio_profile_id:
-        return
+        # Verificar que el perfil existe en Zernio
+        try:
+            await zernio_service.get_profile(business.zernio_profile_id)
+            return  # Existe y es válido
+        except Exception as e:
+            logger.warning(
+                "zernio_stale_profile_id",
+                business_id=business.id,
+                stale_id=business.zernio_profile_id[:8] if business.zernio_profile_id else "?",
+                error=str(e),
+                action="resetting and creating new profile",
+            )
+            # El ID es inválido (migrado de Ayrshare u otro motivo) — resetear
+            business.zernio_profile_id = None
+            business.zernio_ref_id = None
+            business.zernio_connected_platforms = []
+            business.zernio_enabled = False
+            await db.commit()
+
     short_id = str(business.id)[:8]
     base_title = re.sub(r"\s+\[[\w-]+\]$", "", (business.name or "Negocio").strip())
     name = f"{base_title} [{short_id}]"
