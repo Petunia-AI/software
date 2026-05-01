@@ -72,13 +72,9 @@ export function MobileSidebarSheet({
               className="flex items-center justify-between px-4 py-4"
               style={{ borderBottom: "1px solid rgba(107,139,255,0.12)" }}
             >
-              <div className="flex items-center gap-3">
+              <div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.png" alt="Petunia AI" className="w-8 h-8 object-contain" />
-                <div>
-                  <p className="text-[13px] font-bold" style={{ color: "#1A1F3C" }}>Petunia AI</p>
-                  <p className="text-[10px] font-medium" style={{ color: "rgba(107,139,255,0.75)" }}>Agente de ventas</p>
-                </div>
+                <img src="/logo.png" alt="Petunia AI" className="h-8 w-auto object-contain" />
               </div>
               <button
                 onClick={onClose}
