@@ -181,6 +181,7 @@ async def publish_via_zernio(
     platform_accounts: list[dict],
     image_url: str | None = None,
     scheduled_date: str | None = None,
+    format_type: str = "post",
 ) -> dict:
     """
     Publica en una o varias redes usando Zernio.
@@ -190,11 +191,20 @@ async def publish_via_zernio(
     """
     from app.services.zernio_service import zernio_service
 
+    # Para Instagram, añadir contentType cuando es story o reel
+    resolved_accounts = []
+    for acc in platform_accounts:
+        if acc.get("platform") == "instagram" and format_type in ("story", "reel"):
+            content_type_map = {"story": "story", "reel": "reels"}
+            acc = dict(acc)
+            acc["platformSpecificData"] = {"contentType": content_type_map[format_type]}
+        resolved_accounts.append(acc)
+
     try:
         result = await zernio_service.post(
             profile_id=profile_id,
             text=caption,
-            platform_accounts=platform_accounts,
+            platform_accounts=resolved_accounts,
             media_urls=[image_url] if image_url else None,
             scheduled_date=scheduled_date,
             publish_now=(scheduled_date is None),
@@ -217,6 +227,7 @@ async def publish_post(
     image_url: str | None = None,
     zernio_profile_id: str | None = None,
     zernio_connected_platforms: list[dict] | None = None,
+    format_type: str = "post",
 ) -> dict:
     """
     Dispatcher que enruta al publisher correcto.
@@ -245,6 +256,7 @@ async def publish_post(
                 caption=caption,
                 platform_accounts=[{"platform": match["platform"], "accountId": match["accountId"]}],
                 image_url=image_url,
+                format_type=format_type,
             )
 
     # Fallback a APIs directas

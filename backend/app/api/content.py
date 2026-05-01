@@ -145,6 +145,7 @@ async def _do_publish(post_id: str, _unused_db: AsyncSession | None = None):
                 image_url=post.image_url,
                 zernio_profile_id=zernio_profile_id,
                 zernio_connected_platforms=zernio_connected_platforms,
+                format_type=post.format_type,
             )
 
             post.status = ContentStatus.published if pub_result["success"] else ContentStatus.failed

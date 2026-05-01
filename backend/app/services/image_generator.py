@@ -20,11 +20,15 @@ FAL_MODEL_ENDPOINT = "https://fal.run/fal-ai/nano-banana-2"
 # ── Aspect ratio por formato y canal ────────────────────────────────────────
 # nano-banana-2 usa aspect_ratio en vez de width/height absolutos
 FORMAT_ASPECT_RATIO: dict[str, str] = {
-    "post":            "1:1",    # cuadrado estándar
+    "post":            "4:5",    # 4:5 portrait — mejor engagement en Instagram feed
     "story":           "9:16",   # vertical Stories/Reels
     "reel":            "9:16",   # vertical Reels/TikTok
     "linkedin_banner": "16:9",   # landscape LinkedIn
 }
+
+# Instagram feed acepta 0.75–1.91 → 4:5 (0.8) es el óptimo
+# Imágenes 9:16 (0.56) NUNCA van a feed; solo a story/reel
+INSTAGRAM_FEED_SAFE_RATIOS = {"4:5", "1:1", "16:9"}
 
 CHANNEL_FORMAT_OVERRIDE: dict[str, str] = {
     "linkedin": "linkedin_banner",
@@ -32,6 +36,7 @@ CHANNEL_FORMAT_OVERRIDE: dict[str, str] = {
 
 # Dimensiones aproximadas para el frontend (según aspect ratio + resolución 2K)
 APPROX_DIMENSIONS: dict[str, tuple[int, int]] = {
+    "4:5":  (1080, 1350),
     "1:1":  (2048, 2048),
     "9:16": (1152, 2048),
     "16:9": (2048, 1152),
@@ -85,8 +90,11 @@ async def generate_social_image(
 
     # Determinar aspect ratio y dimensiones aproximadas
     fmt_key = CHANNEL_FORMAT_OVERRIDE.get(channel, format_type)
-    aspect_ratio = FORMAT_ASPECT_RATIO.get(fmt_key, "1:1")
-    w, h = APPROX_DIMENSIONS.get(aspect_ratio, (2048, 2048))
+    aspect_ratio = FORMAT_ASPECT_RATIO.get(fmt_key, "4:5")
+    # Para Instagram feed, forzar ratio seguro (no 9:16 ni 0.56)
+    if channel == "instagram" and format_type == "post" and aspect_ratio not in INSTAGRAM_FEED_SAFE_RATIOS:
+        aspect_ratio = "4:5"
+    w, h = APPROX_DIMENSIONS.get(aspect_ratio, (1080, 1350))
 
     brand_context = f"for {business_name}" if business_name else "for a business"
     enhanced_prompt = (
