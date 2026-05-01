@@ -35,9 +35,11 @@ FORMAT_DURATION: dict[str, int] = {
 }
 
 QUALITY_SUFFIX = (
-    "cinematic quality, professional social media video, "
-    "smooth motion, vivid colors, modern commercial aesthetic, no watermarks, "
-    "no subtitles, no text overlay, no captions, no voice, no narration, no audio, silent video"
+    "cinematic B-roll footage only, smooth camera motion, vivid colors, "
+    "modern commercial aesthetic, no watermarks, "
+    "NO people talking, NO speaking mouth, NO dialogue, NO voiceover, NO narration, "
+    "NO audio, NO voice, NO speech, completely silent mute video, "
+    "no subtitles, no text overlay, no captions"
 )
 
 
@@ -78,6 +80,7 @@ async def generate_social_video(
     brand_context = f"for {business_name}" if business_name else "for a business"
 
     enhanced_prompt = (
+        f"Cinematic B-roll, no speech, no talking, completely silent. "
         f"Professional social media {format_type} video {brand_context}. "
         f"{video_prompt}. "
         f"{QUALITY_SUFFIX}."
