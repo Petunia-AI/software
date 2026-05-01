@@ -59,7 +59,7 @@ PLAN_LIMITS: dict[str, dict] = {
         "content_channels":        ["facebook", "instagram"],
         "content_formats":         ["post", "story"],
         "image_generation":        True,
-        "video_generation":        False,
+        "video_generation":        True,
         "heygen":                  False,
         "content_posts_per_month": 30,
         # Almacenamiento de media
@@ -76,7 +76,7 @@ PLAN_LIMITS: dict[str, dict] = {
         "content_channels":        ["facebook", "instagram"],
         "content_formats":         ["post", "story"],
         "image_generation":        True,
-        "video_generation":        False,
+        "video_generation":        True,
         "heygen":                  False,
         "content_posts_per_month": 100,
         # Almacenamiento de media

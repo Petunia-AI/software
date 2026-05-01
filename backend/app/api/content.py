@@ -19,7 +19,7 @@ from app.models.subscription import Subscription, SubscriptionStatus, PLAN_LIMIT
 from app.agents.content_agent import generate_post, generate_content_calendar, generate_image_prompt_from_post, generate_campaign_brief
 from app.services.social_publisher import publish_post
 from app.services.image_generator import generate_social_image, generate_property_ad_image
-from app.services.heygen_service import create_video, get_video_status
+from app.services.video_generator import generate_social_video, get_video_status
 from app.core.rate_limit import limiter
 from fastapi import Request
 from app.models.property import Property as PropertyModel
@@ -40,7 +40,7 @@ class GeneratePostRequest(BaseModel):
     topic: Optional[str] = None
     tone: str = "profesional pero cercano"
     generate_image: bool = False     # Generar imagen con fal.ai (Starter/Pro/Premium)
-    generate_video: bool = False     # Generar video con HeyGen (solo Premium)
+    generate_video: bool = False     # Generar video con Grok (Starter/Pro/Premium)
     use_image_url: Optional[str] = None  # Usar imagen de propiedad del stock (evita generación IA)
 
 class GenerateCalendarRequest(BaseModel):
@@ -182,7 +182,6 @@ async def get_plan_features(
         "content_formats":         limits.get("content_formats", ["post", "story"]),
         "image_generation":        limits.get("image_generation", False),
         "video_generation":        limits.get("video_generation", False),
-        "heygen":                  limits.get("heygen", False),
         "content_posts_per_month": limits.get("content_posts_per_month", 5),
     }
 
@@ -525,11 +524,11 @@ async def _generate_impl(
                    "Actualiza al plan Starter o superior.",
         )
 
-    # ── Validación de video HeyGen ────────────────────────────────────────────
-    if data.generate_video and not limits.get("heygen", False):
+    # ── Validación de generación de video ──────────────────────────────────────
+    if data.generate_video and not limits.get("video_generation", False):
         raise HTTPException(
             status_code=403,
-            detail="La generación de videos con HeyGen está disponible solo en el plan Premium.",
+            detail="La generación de videos está disponible en el plan Starter o superior.",
         )
 
     ctx = _business_ctx(business)
@@ -564,18 +563,19 @@ async def _generate_impl(
         animation_style = image_result.get("animation_style", "fade-in")
         image_error = image_result.get("error")
 
-    # ── Generar video con HeyGen (si se solicita) ─────────────────────────────
+    # ── Generar video con Grok (si se solicita) ──────────────────────────────
     video_job_id = None
     video_error = None
 
     if data.generate_video:
-        # Usamos el caption como script del video
-        script = ai_data.get("video_script") or ai_data.get("caption", "")
-        video_result = await create_video(
-            script=script,
+        video_prompt = ai_data.get("video_script") or ai_data.get("suggested_image_prompt") or ai_data.get("caption", "")
+        video_result = await generate_social_video(
+            video_prompt=video_prompt,
             format_type=data.format_type,
+            channel=data.channel,
+            business_name=ctx["name"],
         )
-        video_job_id = video_result.get("video_id")
+        video_job_id = video_result.get("request_id")
         video_error = video_result.get("error")
 
     # ── Guardar post en base de datos ─────────────────────────────────────────
@@ -1051,7 +1051,7 @@ async def check_video_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Consulta el estado de un video HeyGen en proceso."""
+    """Consulta el estado de un video Grok en proceso."""
     result = await db.execute(
         select(SocialPost).where(
             SocialPost.id == post_id,
@@ -1076,6 +1076,7 @@ async def check_video_status(
     return {
         "post_id": post_id,
         "video_job_id": video_job_id,
-        **status_data,
+        "progress": status_data.get("progress", 0),
+        **{k: v for k, v in status_data.items() if k != "progress"},
     }
 

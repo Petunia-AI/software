@@ -90,6 +90,9 @@ class Settings(BaseSettings):
     # fal.ai — Generación de imágenes (FLUX model)
     fal_api_key: str = ""
 
+    # xAI Grok — Generación de videos (grok-imagine-video)
+    xai_api_key: str = ""
+
     # HeyGen — Generación de videos con avatares IA (solo plan Premium)
     heygen_api_key: str = ""
 

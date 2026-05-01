@@ -62,7 +62,6 @@ interface PlanFeatures {
   content_formats: FormatType[];
   image_generation: boolean;
   video_generation: boolean;
-  heygen: boolean;
   content_posts_per_month: number;
 }
 
@@ -261,7 +260,7 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
   const [aiGenImage, setAiGenImage] = useState(false);
 
   const canImage = features?.image_generation ?? false;
-  const canVideo = features?.heygen ?? false;
+  const canVideo = features?.video_generation ?? false;
   const isTikTok = channel === "tiktok";
 
   // TikTok siempre usa formato reel
@@ -424,16 +423,16 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
 
             <div className="space-y-2">
               {isTikTok ? (
-                /* TikTok: solo video de biblioteca o HeyGen */
+                /* TikTok: solo video de biblioteca o video IA */
                 <>
                   <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                     <AlertCircle size={13} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-amber-700">TikTok solo acepta videos. Sube un video a tu biblioteca o genera uno con HeyGen.</p>
+                    <p className="text-xs text-amber-700">TikTok solo acepta videos. Sube un video a tu biblioteca o genera uno con IA.</p>
                   </div>
                   <button onClick={() => canVideo && setGenVideo(!genVideo)} disabled={!canVideo}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all w-full justify-center ${!canVideo ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : genVideo ? "border-pink-400 bg-pink-50 text-pink-700" : "border-border bg-white text-muted-foreground hover:border-pink-300"}`}>
                     {canVideo ? <Video size={14} className={genVideo ? "text-pink-600" : ""} /> : <Lock size={14} />}
-                    <span>Generar video con HeyGen</span>
+                    <span>Generar video con IA</span>
                     {!canVideo && <span className="ml-auto flex items-center gap-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full"><Crown size={7} />Premium</span>}
                   </button>
                   <button onClick={toggleUseLibraryImage}
@@ -456,7 +455,7 @@ function GeneratorPanel({ onClose, onGenerate, onGenerateSmart, generating, feat
                     <button onClick={() => canVideo && setGenVideo(!genVideo)} disabled={!canVideo}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all flex-1 justify-center ${!canVideo ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : genVideo ? "border-pink-400 bg-pink-50 text-pink-700" : "border-border bg-white text-muted-foreground hover:border-pink-300"}`}>
                       {canVideo ? <Video size={14} className={genVideo ? "text-pink-600" : ""} /> : <Lock size={14} />}
-                      <span>Video HeyGen</span>
+                      <span>Video IA</span>
                       {!canVideo && <span className="ml-auto flex items-center gap-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full"><Crown size={7} />Premium</span>}
                     </button>
                   </div>
@@ -1011,7 +1010,7 @@ function PostCard({ post, onApprove, onPublish, onSchedule, onDelete, onCheckVid
       {post.video_job_id && !post.video_url && (
         <div className="flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2.5">
           <Film size={13} className="text-pink-500 flex-shrink-0" />
-          <div className="flex-1"><p className="text-xs font-medium text-pink-700">Video HeyGen en proceso...</p><p className="text-[10px] text-pink-500">Puede tardar 5-10 min</p></div>
+          <div className="flex-1"><p className="text-xs font-medium text-pink-700">Video IA en proceso...</p><p className="text-[10px] text-pink-500">Puede tardar algunos minutos</p></div>
           <button onClick={onCheckVideo} className="text-[10px] font-semibold text-pink-600 hover:text-pink-700 underline">Verificar</button>
         </div>
       )}
@@ -1350,7 +1349,7 @@ function EditPostModal({ post, token, onClose, onSaved, onPublish, onSchedule }:
 
 function PlanBadge({ features }: { features: PlanFeatures | null }) {
   if (!features) return null;
-  if (features.heygen) return (
+  if (features.video_generation) return (
     <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-sm"><Crown size={11} /> Premium</span>
   );
   if (features.image_generation) return (
@@ -1427,7 +1426,7 @@ export default function ContentPage() {
     const parts = ["Generando post con Petunia AI"];
     if (opts.propImageUrl) parts.push("+ foto de propiedad");
     else if (opts.genImage) parts.push("+ imagen fal.ai");
-    if (opts.genVideo) parts.push("+ video HeyGen");
+    if (opts.genVideo) parts.push("+ video IA");
     const toastId = toast.loading(parts.join(" "));
     try {
       const res = await fetch(`${API}/content/generate`, {
@@ -1453,7 +1452,7 @@ export default function ContentPage() {
         setPanel("none");
         let msg = opts.scheduledAt ? `Post programado para ${new Date(opts.scheduledAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })} 📅` : "Post generado exitosamente";
         if (post.image_url) msg += " con imagen ✨";
-        if (post.video_job_id) msg += " · video HeyGen en proceso 🎬";
+        if (post.video_job_id) msg += " · video IA en proceso 🎬";
         toast.success(msg, { id: toastId });
         silentRefresh();
       } else {
