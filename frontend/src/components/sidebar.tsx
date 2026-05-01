@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   SquaresFour, ChatCircleText, UsersThree, BellRinging,
   TrendUp, Robot, PenNib, Buildings,
-  EnvelopeSimple, Slideshow,
+  EnvelopeSimple, Slideshow, SlidersHorizontal, Wallet,
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +25,8 @@ const navItems = [
   { href: "/email",                  icon: EnvelopeSimple,    label: "Email CRM",         badge: null,      color: "from-sky-500 to-blue-600",       glow: "rgba(14,165,233,0.35)",  iconWeight: "duotone" as const },
   { href: "/presentaciones",         icon: Slideshow,         label: "Presentaciones",     badge: null,      color: "from-violet-500 to-purple-600",  glow: "rgba(139,92,246,0.35)",  iconWeight: "duotone" as const },
   { href: "/properties",             icon: Buildings,         label: "Propiedades",       badge: null,      color: "from-teal-500 to-green-600",     glow: "rgba(20,184,166,0.35)",  iconWeight: "duotone" as const },
+  { href: "/settings",               icon: SlidersHorizontal, label: "Configuración",     badge: null,      color: "from-slate-500 to-slate-600",   glow: "rgba(100,116,139,0.35)", iconWeight: "duotone" as const },
+  { href: "/billing",                icon: Wallet,            label: "Billing",           badge: null,      color: "from-green-500 to-emerald-600", glow: "rgba(16,185,129,0.35)",  iconWeight: "duotone" as const },
 ];
 
 export function Sidebar() {
