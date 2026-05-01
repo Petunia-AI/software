@@ -2,27 +2,23 @@
 Properties API — Gestión de propiedades inmobiliarias por negocio.
 Incluye ficha técnica, galería de imágenes y stock para contenido.
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from typing import Optional
-from pathlib import Path
 import uuid
-import os
 import mimetypes
 
 from app.database import get_db
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.models.property import Property, PropertyImage, PropertyType, OperationType, PropertyStatus
-from app.config import get_settings
+from app.services.storage_service import save_media, delete_media
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
-UPLOAD_DIR = Path("uploads/properties")
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_SIZE_MB = 10
 
@@ -306,33 +302,25 @@ async def upload_image(
     db:           AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Sube una imagen para la propiedad y la guarda en disco."""
-    # Validate the property belongs to this business
+    """Sube una imagen para la propiedad y la guarda en R2 o disco."""
     prop = await _get_property(db, property_id, current_user.business_id)
 
-    # Validate mime type
     content_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or ""
     if content_type not in ALLOWED_MIME:
         raise HTTPException(400, f"Tipo de archivo no permitido: {content_type}. Use JPEG, PNG o WebP.")
 
-    # Read & validate size
     content = await file.read()
     if len(content) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(400, f"La imagen no debe superar {MAX_SIZE_MB}MB.")
 
-    # Save to disk
-    ext = Path(file.filename or "image.jpg").suffix.lower() or ".jpg"
-    filename = f"{uuid.uuid4()}{ext}"
-    upload_path = UPLOAD_DIR / property_id
-    upload_path.mkdir(parents=True, exist_ok=True)
-    (upload_path / filename).write_bytes(content)
+    # Save via storage_service (R2 if configured, otherwise local)
+    storage_key, image_url = await save_media(
+        business_id=current_user.business_id,
+        original_filename=file.filename or "image.jpg",
+        file_bytes=content,
+        mime_type=content_type,
+    )
 
-    # Build URL — usar BACKEND_URL del config para evitar URLs internas de Docker
-    settings = get_settings()
-    base_url = settings.backend_url.rstrip("/")
-    image_url = f"{base_url}/uploads/properties/{property_id}/{filename}"
-
-    # Determine if first image → set as cover
     existing_count = await db.scalar(
         select(func.count(PropertyImage.id)).where(PropertyImage.property_id == property_id)
     ) or 0
@@ -347,6 +335,20 @@ async def upload_image(
         order=existing_count,
     )
     db.add(img)
+
+    if is_cover:
+        prop.cover_image_url = image_url
+
+    await db.commit()
+    await db.refresh(img)
+
+    return {
+        "id":       img.id,
+        "url":      img.url,
+        "caption":  img.caption,
+        "is_cover": img.is_cover,
+        "order":    img.order,
+    }
 
     # If first image, set property cover
     if is_cover:
@@ -406,7 +408,7 @@ async def delete_image(
     was_cover = target.is_cover
     await db.delete(target)
 
-    # If it was the cover, assign the next available image
+    # Reassign cover if needed
     remaining = [i for i in prop.images if i.id != image_id]
     if was_cover and remaining:
         remaining[0].is_cover = True
@@ -414,12 +416,11 @@ async def delete_image(
     elif not remaining:
         prop.cover_image_url = None
 
-    # Try to delete the physical file (best-effort)
+    # Attempt to delete from storage (R2 or local) — best-effort
     try:
-        url_path = target.url.split("/uploads/")[-1]
-        file_path = UPLOAD_DIR.parent / url_path
-        if file_path.exists():
-            file_path.unlink()
+        parts = target.url.rstrip("/").split("/")
+        storage_key = "/".join(parts[-2:])
+        await delete_media(storage_key)
     except Exception:
         pass
 
