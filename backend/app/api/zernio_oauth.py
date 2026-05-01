@@ -45,34 +45,48 @@ async def _get_business(current_user: User, db: AsyncSession) -> Business:
     return business
 
 
+# Formato de Ayrshare: 8HEX-8HEX-8HEX-8HEX (ej. 312DE106-DFB34DE1-BF8358D6-4A7B9DD0)
+_AYRSHARE_ID_RE = re.compile(r'^[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}$', re.IGNORECASE)
+
+
+def _is_ayrshare_id(profile_id: str) -> bool:
+    """Devuelve True si el ID tiene el formato de Ayrshare (no es un ID válido de Zernio)."""
+    return bool(_AYRSHARE_ID_RE.match(profile_id))
+
+
+async def _reset_profile(business: Business, db: AsyncSession, reason: str) -> None:
+    """Limpia el perfil de Zernio y guarda."""
+    logger.warning(
+        "zernio_stale_profile_reset",
+        business_id=business.id,
+        stale_id=(business.zernio_profile_id or "")[:12],
+        reason=reason,
+    )
+    business.zernio_profile_id = None
+    business.zernio_ref_id = None
+    business.zernio_connected_platforms = []
+    business.zernio_enabled = False
+    await db.commit()
+
+
 async def _ensure_profile(business: Business, db: AsyncSession) -> None:
     """
     Garantiza que el negocio tiene un perfil válido en Zernio.
 
-    Si ya tiene un ID guardado, verifica que realmente exista en Zernio —
-    esto maneja el caso en que el ID fue migrado de Ayrshare (campo renombrado)
-    y por tanto no corresponde a un perfil real de Zernio.
-    Si no existe o el ID es inválido, lo resetea y crea uno nuevo.
+    Detecta IDs migrados de Ayrshare por su formato (8-8-8-8 hex) y los descarta
+    directamente sin llamar a la API, forzando la creación de un perfil nuevo.
     """
     if business.zernio_profile_id:
-        # Verificar que el perfil existe en Zernio
-        try:
-            await zernio_service.get_profile(business.zernio_profile_id)
-            return  # Existe y es válido
-        except Exception as e:
-            logger.warning(
-                "zernio_stale_profile_id",
-                business_id=business.id,
-                stale_id=business.zernio_profile_id[:8] if business.zernio_profile_id else "?",
-                error=str(e),
-                action="resetting and creating new profile",
-            )
-            # El ID es inválido (migrado de Ayrshare u otro motivo) — resetear
-            business.zernio_profile_id = None
-            business.zernio_ref_id = None
-            business.zernio_connected_platforms = []
-            business.zernio_enabled = False
-            await db.commit()
+        # Descartar IDs de Ayrshare sin llamar a la API
+        if _is_ayrshare_id(business.zernio_profile_id):
+            await _reset_profile(business, db, reason="ayrshare_format_id")
+        else:
+            # Verificar que el perfil existe en Zernio
+            try:
+                await zernio_service.get_profile(business.zernio_profile_id)
+                return  # Existe y es válido
+            except Exception as e:
+                await _reset_profile(business, db, reason=f"get_profile_failed: {e}")
 
     short_id = str(business.id)[:8]
     base_title = re.sub(r"\s+\[[\w-]+\]$", "", (business.name or "Negocio").strip())
@@ -120,8 +134,21 @@ async def zernio_connect(
     try:
         url = await zernio_service.get_connect_url(platform, business.zernio_profile_id)
     except Exception as e:
-        logger.error("zernio_connect_url_failed", platform=platform, error=str(e))
-        raise HTTPException(502, f"Error al obtener URL de conexión para {platform}: {str(e)}")
+        err_str = str(e)
+        # Si Zernio devuelve 400 para ese profileId, puede ser un ID stale no detectado —
+        # resetear y crear perfil nuevo, luego reintentar una vez.
+        if "400" in err_str and business.zernio_profile_id:
+            logger.warning("zernio_connect_400_retry", platform=platform, stale_id=business.zernio_profile_id[:12])
+            await _reset_profile(business, db, reason="connect_returned_400")
+            await _ensure_profile(business, db)
+            try:
+                url = await zernio_service.get_connect_url(platform, business.zernio_profile_id)
+            except Exception as e2:
+                logger.error("zernio_connect_url_failed_retry", platform=platform, error=str(e2))
+                raise HTTPException(502, f"Error al obtener URL de conexión para {platform}: {str(e2)}")
+        else:
+            logger.error("zernio_connect_url_failed", platform=platform, error=err_str)
+            raise HTTPException(502, f"Error al obtener URL de conexión para {platform}: {err_str}")
 
     return {"url": url, "platform": platform, "profile_id": business.zernio_profile_id}
 
