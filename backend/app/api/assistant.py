@@ -5,11 +5,14 @@ POST /assistant/chat  — Responde preguntas sobre cómo usar Petunia
 """
 from __future__ import annotations
 
+import logging
 from typing import List
 
-from anthropic import AsyncAnthropic
+from anthropic import AsyncAnthropic, APIStatusError, APIConnectionError
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 from app.api.auth import get_current_user
 from app.config import settings
@@ -118,12 +121,22 @@ async def assistant_chat(
 
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-    response = await client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=512,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": m.role, "content": m.content} for m in messages],
-    )
+    try:
+        response = await client.messages.create(
+            model="claude-3-5-haiku-20241022",
+            max_tokens=512,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": m.role, "content": m.content} for m in messages],
+        )
+    except APIStatusError as e:
+        logger.error("Anthropic API error: %s %s", e.status_code, e.message)
+        raise HTTPException(status_code=503, detail="El asistente no está disponible en este momento")
+    except APIConnectionError as e:
+        logger.error("Anthropic connection error: %s", e)
+        raise HTTPException(status_code=503, detail="El asistente no está disponible en este momento")
+    except Exception as e:
+        logger.error("Assistant unexpected error: %s", e)
+        raise HTTPException(status_code=503, detail="El asistente no está disponible en este momento")
 
     reply = response.content[0].text if response.content else "Lo siento, no pude generar una respuesta."
     return ChatResponse(reply=reply)
