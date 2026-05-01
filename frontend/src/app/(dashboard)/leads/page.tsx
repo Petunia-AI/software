@@ -84,6 +84,8 @@ export default function LeadsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
@@ -106,11 +108,20 @@ export default function LeadsPage() {
   });
 
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads", filterStage],
+    queryKey: ["leads", filterStage, page],
     queryFn: () =>
-      leadsApi.list({ stage: filterStage || undefined, limit: 500 }).then(r => r.data as Lead[]),
+      leadsApi.list({ stage: filterStage || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE }).then(r => r.data as Lead[]),
     refetchInterval: 20_000,
+    placeholderData: (prev) => prev,
   });
+
+  const { data: countData } = useQuery({
+    queryKey: ["leads-count", filterStage],
+    queryFn: () => leadsApi.count({ stage: filterStage || undefined }).then(r => r.data as { total: number }),
+  });
+
+  const totalLeads = countData?.total ?? 0;
+  const totalPages = Math.ceil(totalLeads / PAGE_SIZE);
 
   const filtered = leads.filter(l => {
     const s = search.toLowerCase();
@@ -127,7 +138,7 @@ export default function LeadsPage() {
     return true;
   });
 
-  const total     = leads.length;
+  const total     = totalLeads;
   const qualified = leads.filter(l => l.qualification_score >= 7).length;
   const won       = leads.filter(l => l.stage === "closed_won").length;
   const pipeline  = leads.reduce((sum, l) => sum + (l.estimated_value ?? 0), 0);
@@ -251,9 +262,9 @@ export default function LeadsPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <KpiCard title="Total leads"  value={total}     PhIcon={UsersThree}   gradient="from-violet-500 to-purple-600"  bar="from-violet-400 to-purple-500"  glow="shadow-violet-500/20"  delay={0}    />
-            <KpiCard title="Calificados" value={qualified}  PhIcon={PhStar}       gradient="from-emerald-500 to-teal-600"   bar="from-emerald-400 to-teal-400"   glow="shadow-emerald-500/20" delay={0.06} subtitle="Score ≥ 7" />
-            <KpiCard title="Ganados"     value={won}        PhIcon={Confetti}     gradient="from-blue-500 to-indigo-600"    bar="from-blue-400 to-indigo-400"    glow="shadow-blue-500/20"    delay={0.12} />
-            <KpiCard title="Pipeline"    value={pipeline > 0 ? `$${pipeline.toLocaleString()}` : "—"} PhIcon={CurrencyDollar} gradient="from-amber-400 to-orange-500" bar="from-amber-400 to-orange-400" glow="shadow-amber-500/20" delay={0.18} />
+            <KpiCard title="Calificados" value={qualified}  PhIcon={PhStar}       gradient="from-emerald-500 to-teal-600"   bar="from-emerald-400 to-teal-400"   glow="shadow-emerald-500/20" delay={0.06} subtitle="Score ≥ 7 (pág. actual)" />
+            <KpiCard title="Ganados"     value={won}        PhIcon={Confetti}     gradient="from-blue-500 to-indigo-600"    bar="from-blue-400 to-indigo-400"    glow="shadow-blue-500/20"    delay={0.12} subtitle="pág. actual" />
+            <KpiCard title="Pipeline"    value={pipeline > 0 ? `$${pipeline.toLocaleString()}` : "—"} PhIcon={CurrencyDollar} gradient="from-amber-400 to-orange-500" bar="from-amber-400 to-orange-400" glow="shadow-amber-500/20" delay={0.18} subtitle="pág. actual" />
           </div>
 
           {/* Import result */}
@@ -276,7 +287,7 @@ export default function LeadsPage() {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar leads…" className="input-stripe pl-9 w-56" />
               {search && <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X size={13} /></button>}
             </div>
-            <select value={filterStage} onChange={e => setFilterStage(e.target.value)} className="input-stripe w-auto">
+            <select value={filterStage} onChange={e => { setFilterStage(e.target.value); setPage(0); }} className="input-stripe w-auto">
               <option value="">Todas las etapas</option>
               {[["new","Nuevo"],["qualifying","Calificando"],["qualified","Calificado"],
                 ["nurturing","Nurturing"],["demo_scheduled","Demo agendada"],
@@ -290,13 +301,13 @@ export default function LeadsPage() {
               {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
             </button>
             {hasActiveFilters && (
-              <button onClick={() => { setSearch(""); setFilterSource(""); setFilterScore(""); setFilterStage(""); }}
+              <button onClick={() => { setSearch(""); setFilterSource(""); setFilterScore(""); setFilterStage(""); setPage(0); }}
                 className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
                 <X size={12} /> Limpiar
               </button>
             )}
             <span className="ml-auto text-sm text-muted-foreground font-medium">
-              {filtered.length} lead{filtered.length !== 1 ? "s" : ""}
+              {filtered.length} de {totalLeads} lead{totalLeads !== 1 ? "s" : ""}
             </span>
           </div>
 
@@ -419,6 +430,53 @@ export default function LeadsPage() {
                   ))}
                 </tbody>
               </table>
+
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-accent/20">
+                  <p className="text-xs text-muted-foreground">
+                    Página <span className="font-semibold text-foreground">{page + 1}</span> de <span className="font-semibold text-foreground">{totalPages}</span>
+                    &nbsp;·&nbsp; {totalLeads} leads en total
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setPage(0)}
+                      disabled={page === 0}
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+                    >«</button>
+                    <button
+                      onClick={() => setPage(p => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+                    >Anterior</button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const start = Math.max(0, Math.min(page - 2, totalPages - 5));
+                      const p = start + i;
+                      return (
+                        <button key={p} onClick={() => setPage(p)}
+                          className={cn(
+                            "w-8 h-8 text-xs rounded-lg border transition-colors font-semibold",
+                            p === page
+                              ? "bg-violet-600 border-violet-600 text-white"
+                              : "border-border hover:bg-accent"
+                          )}>
+                          {p + 1}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                      disabled={page >= totalPages - 1}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+                    >Siguiente</button>
+                    <button
+                      onClick={() => setPage(totalPages - 1)}
+                      disabled={page >= totalPages - 1}
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+                    >»</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

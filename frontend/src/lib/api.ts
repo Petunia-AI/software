@@ -54,8 +54,10 @@ export const conversationsApi = {
 
 // ============ LEADS ============
 export const leadsApi = {
-  list: (params?: { stage?: string; min_score?: number; limit?: number }) =>
+  list: (params?: { stage?: string; source?: string; min_score?: number; limit?: number; offset?: number }) =>
     api.get("/leads", { params }),
+  count: (params?: { stage?: string; source?: string; min_score?: number }) =>
+    api.get("/leads/count", { params }),
   get: (id: string) => api.get(`/leads/${id}`),
   create: (data: Record<string, unknown>) => api.post("/leads", data),
   update: (id: string, data: Record<string, unknown>) =>

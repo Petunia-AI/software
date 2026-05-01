@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from app.database import get_db
 from app.models.lead import Lead, LeadStage, LeadSource
 from app.api.auth import get_current_user
@@ -34,6 +34,27 @@ VALID_STAGES  = {e.value for e in LeadStage}
 VALID_SOURCES = {e.value for e in LeadSource}
 
 router = APIRouter(prefix="/leads", tags=["leads"])
+
+
+@router.get("/count")
+async def count_leads(
+    stage: Optional[str] = None,
+    source: Optional[str] = None,
+    min_score: Optional[float] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(func.count(Lead.id)).where(
+        Lead.business_id == current_user.business_id, Lead.is_active == True
+    )
+    if stage:
+        query = query.where(Lead.stage == stage)
+    if source:
+        query = query.where(Lead.source == source)
+    if min_score is not None:
+        query = query.where(Lead.qualification_score >= min_score)
+    total = await db.scalar(query)
+    return {"total": total or 0}
 
 
 @router.get("", response_model=List[LeadOut])
