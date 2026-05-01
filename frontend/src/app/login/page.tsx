@@ -118,10 +118,9 @@ export default function LoginPage() {
         <div className="w-full max-w-[400px] animate-fade-up">
 
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
+          <div className="lg:hidden mb-8">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Petunia AI" className="w-9 h-9" />
-            <p className="font-bold text-foreground">Petunia AI</p>
+            <img src="/logo.png" alt="Petunia AI" className="h-9 w-auto" />
           </div>
 
           <div className="mb-8">
