@@ -19,21 +19,45 @@ import {
 } from "@phosphor-icons/react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, BarChart, Bar,
+  Tooltip, ResponsiveContainer, BarChart, Bar, Cell,
+  TooltipProps,
 } from "recharts";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
-const CHART_STYLE = {
-  contentStyle: {
-    background: "#fff",
-    border: "1px solid hsl(220,13%,89%)",
-    borderRadius: "12px",
-    fontSize: "12px",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-  },
-  labelStyle: { color: "hsl(220,9%,46%)", fontWeight: 500 },
-  cursor: { fill: "rgba(99,91,255,0.05)" },
+/* ─────────── Futuristic Tooltip ─────────── */
+function FuturisticTooltip({ active, payload, label }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      className="px-3 py-2 rounded-xl text-xs"
+      style={{
+        background: "rgba(15,10,40,0.92)",
+        border: "1px solid rgba(139,92,246,0.35)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 0 20px rgba(139,92,246,0.25), 0 4px 24px rgba(0,0,0,0.4)",
+      }}
+    >
+      <p className="text-purple-300 font-semibold mb-1">{label}</p>
+      {payload.map((p) => (
+        <p key={p.name} className="text-white font-bold">
+          {p.name}: <span style={{ color: p.color }}>{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+const BAR_COLORS = ["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EC4899", "#6366F1"];
+
+const CHANNEL_STYLE: Record<string, { glow: string; bar: string; text: string }> = {
+  whatsapp:  { glow: "rgba(16,185,129,0.6)",  bar: "linear-gradient(90deg,#10B981,#34D399)", text: "text-emerald-400" },
+  instagram: { glow: "rgba(236,72,153,0.6)",  bar: "linear-gradient(90deg,#EC4899,#F472B6)", text: "text-pink-400" },
+  webchat:   { glow: "rgba(139,92,246,0.6)",  bar: "linear-gradient(90deg,#8B5CF6,#A78BFA)", text: "text-violet-400" },
+  email:     { glow: "rgba(14,165,233,0.6)",  bar: "linear-gradient(90deg,#0EA5E9,#38BDF8)", text: "text-sky-400" },
+  messenger: { glow: "rgba(59,130,246,0.6)",  bar: "linear-gradient(90deg,#3B82F6,#60A5FA)", text: "text-blue-400" },
+  linkedin:  { glow: "rgba(10,102,194,0.6)",  bar: "linear-gradient(90deg,#0A66C2,#3B82F6)", text: "text-blue-500" },
+  tiktok:    { glow: "rgba(255,255,255,0.3)",  bar: "linear-gradient(90deg,#374151,#6B7280)", text: "text-gray-400" },
 };
 
 export default function DashboardPage() {
@@ -48,6 +72,7 @@ export default function DashboardPage() {
   const { data: trend } = useQuery({
     queryKey: ["trend"],
     queryFn: () => analyticsApi.trend(14).then((r) => r.data),
+    refetchInterval: 60_000,
   });
 
   const { data: agentPerf } = useQuery({
@@ -68,10 +93,14 @@ export default function DashboardPage() {
     setGreeting(h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches");
   }, []);
 
+  const trendData = (trend as Record<string, unknown>[] | undefined) ?? [];
+  const agentData = (agentPerf as Record<string, unknown>[] | undefined) ?? [];
+  const convsData = (convs as Record<string, unknown>[] | undefined) ?? [];
+
   return (
     <div className="p-4 md:p-8 max-w-[1280px] mx-auto space-y-4 md:space-y-6">
 
-      {/* ── Hero banner ── */}
+      {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -81,30 +110,21 @@ export default function DashboardPage() {
           boxShadow: "0 8px 40px rgba(99,91,255,0.30)",
         }}
       >
-        {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/4 pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-48 h-48 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />
-
         <div className="relative flex items-center justify-between px-5 md:px-8 py-5 md:py-7 gap-4">
-          {/* Left: greeting */}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Sparkles size={13} className="text-white/60" />
               <span className="text-white/60 text-sm font-medium">{greeting},</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-white">{firstName} 👋</h1>
-            <p className="text-white/55 text-xs md:text-sm mt-1">
-              Aquí está el resumen de tu agente IA hoy
-            </p>
+            <p className="text-white/55 text-xs md:text-sm mt-1">Aquí está el resumen de tu agente IA hoy</p>
           </div>
-
-          {/* Right: live counters */}
           <div className="hidden sm:flex flex-col items-end gap-3">
             <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
               <CircleDot size={10} className="text-emerald-300 animate-pulse" />
-              <span className="text-white/90 text-xs font-semibold">
-                {stats?.active_conversations ?? 0} activas ahora
-              </span>
+              <span className="text-white/90 text-xs font-semibold">{stats?.active_conversations ?? 0} activas ahora</span>
             </div>
             <div className="flex items-center gap-5">
               {[
@@ -116,9 +136,7 @@ export default function DashboardPage() {
                   {i > 0 && <div className="w-px h-9 bg-white/20" />}
                   <div className="text-right">
                     <p className="text-white/55 text-[10px] uppercase tracking-widest">{item.label}</p>
-                    <p className="text-white font-black text-2xl tabular-nums">
-                      {statsLoading ? "—" : item.value}
-                    </p>
+                    <p className="text-white font-black text-2xl tabular-nums">{statsLoading ? "—" : item.value}</p>
                   </div>
                 </div>
               ))}
@@ -127,292 +145,266 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      {/* ── KPI Cards ── */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
         ) : (
           <>
-            <Link href="/conversations">
-            <StatCard
-              title="Conversaciones"
-              value={stats?.total_conversations ?? 0}
-              subtitle={`${stats?.active_conversations ?? 0} activas ahora`}
-              icon={MessageSquare}
-              iconBg="bg-gradient-to-br from-violet-500 to-purple-600"
-              iconColor="text-white"
-              delay={0}
-              onClick={() => {}}
-            />
-            </Link>
-            <Link href="/leads">
-            <StatCard
-              title="Leads generados"
-              value={stats?.total_leads ?? 0}
-              subtitle={`${stats?.qualified_leads ?? 0} calificados`}
-              icon={Users}
-              iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-              iconColor="text-white"
-              delay={0.05}
-              onClick={() => {}}
-            />
-            </Link>
-            <Link href="/leads?filter=closed_won">
-            <StatCard
-              title="Conversión"
-              value={`${stats?.conversion_rate ?? 0}%`}
-              subtitle={`${stats?.closed_won ?? 0} cierres ganados`}
-              icon={TrendingUp}
-              iconBg="bg-gradient-to-br from-emerald-500 to-green-600"
-              iconColor="text-white"
-              delay={0.1}
-              onClick={() => {}}
-            />
-            </Link>
-            <Link href="/leads?filter=high_score">
-            <StatCard
-              title="Score BANT"
-              value={`${stats?.avg_qualification_score ?? 0}/10`}
-              subtitle="Calificación media de leads"
-              icon={Zap}
-              iconBg="bg-gradient-to-br from-amber-400 to-orange-500"
-              iconColor="text-white"
-              delay={0.15}
-              onClick={() => {}}
-            />
-            </Link>
+            <Link href="/conversations"><StatCard title="Conversaciones" value={stats?.total_conversations ?? 0} subtitle={`${stats?.active_conversations ?? 0} activas ahora`} icon={MessageSquare} iconBg="bg-gradient-to-br from-violet-500 to-purple-600" iconColor="text-white" delay={0} onClick={() => {}} /></Link>
+            <Link href="/leads"><StatCard title="Leads generados" value={stats?.total_leads ?? 0} subtitle={`${stats?.qualified_leads ?? 0} calificados`} icon={Users} iconBg="bg-gradient-to-br from-blue-500 to-cyan-500" iconColor="text-white" delay={0.05} onClick={() => {}} /></Link>
+            <Link href="/leads?filter=closed_won"><StatCard title="Conversión" value={`${stats?.conversion_rate ?? 0}%`} subtitle={`${stats?.closed_won ?? 0} cierres ganados`} icon={TrendingUp} iconBg="bg-gradient-to-br from-emerald-500 to-green-600" iconColor="text-white" delay={0.1} onClick={() => {}} /></Link>
+            <Link href="/leads?filter=high_score"><StatCard title="Score BANT" value={`${stats?.avg_qualification_score ?? 0}/10`} subtitle="Calificación media de leads" icon={Zap} iconBg="bg-gradient-to-br from-amber-400 to-orange-500" iconColor="text-white" delay={0.15} onClick={() => {}} /></Link>
           </>
         )}
       </div>
 
-      {/* ── Main grid ── */}
+      {/* Main grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-        {/* Trend chart — 2 cols */}
+        {/* Trend chart */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="xl:col-span-2 card-stripe p-6"
+          className="xl:col-span-2 rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(25,15,60,0.97))",
+            border: "1px solid rgba(139,92,246,0.18)",
+            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between px-6 pt-6 pb-4">
             <div>
-              <p className="font-semibold text-foreground">Conversaciones — 14 días</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Volumen diario acumulado</p>
+              <p className="font-bold text-white tracking-tight">Conversaciones · 14 días</p>
+              <p className="text-xs mt-0.5 font-medium" style={{ color: "rgba(167,139,250,0.6)" }}>Volumen diario acumulado</p>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">
-              <Activity size={12} className="text-primary" />
-              <span>Tiempo real</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+              style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", color: "#A78BFA" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Tiempo real
             </div>
           </div>
-
-          {(!trend || (trend as unknown[]).length === 0) ? (
-            <div className="flex flex-col items-center justify-center h-[210px] gap-2 text-muted-foreground">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
-                <Activity size={24} className="text-violet-400" />
+          <div className="px-2 pb-5">
+            {trendData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[200px] gap-3">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                  <Activity size={24} style={{ color: "#A78BFA" }} />
+                </div>
+                <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>Sin datos aún</p>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>Las conversaciones de los últimos 14 días aparecerán aquí</p>
               </div>
-              <p className="text-sm font-semibold text-foreground">Sin datos aún</p>
-              <p className="text-xs">Las conversaciones de los últimos 14 días aparecerán aquí</p>
-            </div>
-          ) : (
-          <ResponsiveContainer width="100%" height={210}>
-            <AreaChart data={trend as Record<string,unknown>[]} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="gViolet" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="hsl(243,75%,59%)" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="hsl(243,75%,59%)" stopOpacity={0}   />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,93%)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11, fill: "hsl(220,9%,60%)" }}
-                axisLine={false} tickLine={false}
-                tickFormatter={(v) => v.slice(5)}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "hsl(220,9%,60%)" }}
-                axisLine={false} tickLine={false}
-              />
-              <Tooltip {...CHART_STYLE} />
-              <Area
-                type="monotone"
-                dataKey="count"
-                stroke="hsl(243,75%,59%)"
-                strokeWidth={2.5}
-                fill="url(#gViolet)"
-                dot={false}
-                activeDot={{ r: 5, strokeWidth: 0, fill: "hsl(243,75%,59%)" }}
-                name="Conversaciones"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-          )}
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={trendData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="neonViolet" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="#8B5CF6" stopOpacity={0.45} />
+                      <stop offset="60%"  stopColor="#6D28D9" stopOpacity={0.12} />
+                      <stop offset="100%" stopColor="#4C1D95" stopOpacity={0}    />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 6" stroke="rgba(139,92,246,0.08)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }}
+                    axisLine={false} tickLine={false} tickFormatter={(v: string) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }}
+                    axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<FuturisticTooltip />}
+                    cursor={{ stroke: "rgba(139,92,246,0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                  <Area type="monotone" dataKey="count" stroke="#A78BFA" strokeWidth={2.5}
+                    fill="url(#neonViolet)" dot={false}
+                    activeDot={{ r: 5, fill: "#A78BFA", strokeWidth: 0, style: { filter: "drop-shadow(0 0 6px #A78BFA)" } }}
+                    name="Conversaciones"
+                    style={{ filter: "drop-shadow(0 0 5px rgba(139,92,246,0.5))" }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </motion.div>
 
-        {/* Recent activity */}
+        {/* Actividad reciente */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="card-stripe p-5 flex flex-col"
+          className="rounded-2xl overflow-hidden flex flex-col"
+          style={{
+            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(25,15,60,0.97))",
+            border: "1px solid rgba(139,92,246,0.18)",
+            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <p className="font-semibold text-foreground">Actividad reciente</p>
-            <Link
-              href="/conversations"
-              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-            >
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+            <p className="font-bold text-white text-sm tracking-tight">Actividad reciente</p>
+            <Link href="/conversations" className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#A78BFA" }}>
               Ver todas <ArrowUpRight size={12} />
             </Link>
           </div>
-
-          <div className="flex-1 space-y-1">
-            {!convs || (convs as unknown[]).length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-36 gap-2">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
-                  <MessageSquare size={22} className="text-violet-400" />
+          <div className="flex-1 px-3 pb-4 space-y-0.5">
+            {convsData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 gap-3">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                  <MessageSquare size={20} style={{ color: "#A78BFA" }} />
                 </div>
-                <p className="text-sm font-semibold text-foreground">Sin conversaciones aún</p>
-                <p className="text-xs text-muted-foreground">Los chats aparecerán aquí en tiempo real</p>
-                <Link href="/conversations" className="mt-1 text-xs text-primary font-medium hover:underline">Ir a conversaciones →</Link>
+                <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>Sin conversaciones aún</p>
+                <Link href="/conversations" className="text-xs font-semibold" style={{ color: "#A78BFA" }}>
+                  Ir a conversaciones →
+                </Link>
               </div>
             ) : (
-              (convs as Record<string, unknown>[]).map((conv) => (
-                <Link
-                  key={conv.id as string}
-                  href={`/conversations/${conv.id}`}
-                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-secondary/60 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
-                    style={{
-                      background: ({
-                        whatsapp: "linear-gradient(135deg,#10B981,#059669)",
-                        instagram: "linear-gradient(135deg,#EC4899,#BE185D)",
-                        webchat:   "linear-gradient(135deg,#6366F1,#4F46E5)",
-                        email:     "linear-gradient(135deg,#0EA5E9,#0284C7)",
-                        messenger: "linear-gradient(135deg,#3B82F6,#2563EB)",
-                        linkedin:  "linear-gradient(135deg,#0A66C2,#004182)",
-                        tiktok:    "linear-gradient(135deg,#111827,#374151)",
-                      } as Record<string,string>)[conv.channel as string] ?? "linear-gradient(135deg,#7C3AED,#6D28D9)"
-                    }}>
-                    {({
-                      whatsapp:  <ChatCircle size={15} weight="duotone" />,
-                      instagram: <Camera size={15} weight="duotone" />,
-                      webchat:   <GlobeHemisphereWest size={15} weight="duotone" />,
-                      email:     <EnvelopeSimple size={15} weight="duotone" />,
-                      messenger: <FacebookLogo size={15} weight="duotone" />,
-                      linkedin:  <LinkedinLogo size={15} weight="duotone" />,
-                      tiktok:    <MusicNote size={15} weight="duotone" />,
-                    } as Record<string, React.ReactNode>)[conv.channel as string] ?? <ChatCircle size={15} weight="duotone" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {(conv.lead_name as string) || `Chat #${(conv.id as string).slice(0, 6)}`}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <AgentBadge agent={conv.current_agent as string} />
+              convsData.map((conv) => {
+                const cs = CHANNEL_STYLE[conv.channel as string] ?? CHANNEL_STYLE.webchat;
+                return (
+                  <Link key={conv.id as string} href={`/conversations/${conv.id}`}
+                    className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all hover:bg-white/5">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
+                      style={{
+                        background: ({
+                          whatsapp:  "linear-gradient(135deg,#10B981,#059669)",
+                          instagram: "linear-gradient(135deg,#EC4899,#BE185D)",
+                          webchat:   "linear-gradient(135deg,#8B5CF6,#6D28D9)",
+                          email:     "linear-gradient(135deg,#0EA5E9,#0284C7)",
+                          messenger: "linear-gradient(135deg,#3B82F6,#2563EB)",
+                          linkedin:  "linear-gradient(135deg,#0A66C2,#004182)",
+                          tiktok:    "linear-gradient(135deg,#374151,#111827)",
+                        } as Record<string,string>)[conv.channel as string] ?? "linear-gradient(135deg,#7C3AED,#6D28D9)",
+                        boxShadow: `0 0 10px ${cs.glow}`,
+                      }}>
+                      {({
+                        whatsapp:  <ChatCircle size={14} weight="fill" />,
+                        instagram: <Camera size={14} weight="fill" />,
+                        webchat:   <GlobeHemisphereWest size={14} weight="fill" />,
+                        email:     <EnvelopeSimple size={14} weight="fill" />,
+                        messenger: <FacebookLogo size={14} weight="fill" />,
+                        linkedin:  <LinkedinLogo size={14} weight="fill" />,
+                        tiktok:    <MusicNote size={14} weight="fill" />,
+                      } as Record<string, React.ReactNode>)[conv.channel as string] ?? <ChatCircle size={14} weight="fill" />}
                     </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">
-                    {conv.last_message_at ? timeAgo(conv.last_message_at as string) : "—"}
-                  </p>
-                </Link>
-              ))
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "rgba(255,255,255,0.9)" }}>
+                        {(conv.lead_name as string) || `Chat #${(conv.id as string).slice(0, 6)}`}
+                      </p>
+                      <div className="mt-0.5"><AgentBadge agent={conv.current_agent as string} /></div>
+                    </div>
+                    <p className="text-[10px] flex-shrink-0" style={{ color: "rgba(255,255,255,0.28)" }}>
+                      {conv.last_message_at ? timeAgo(conv.last_message_at as string) : "—"}
+                    </p>
+                  </Link>
+                );
+              })
             )}
           </div>
         </motion.div>
       </div>
 
-      {/* ── Second row ── */}
+      {/* Second row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
-        {/* Agentes performance */}
+        {/* Agente performance */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="card-stripe p-6"
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(20,12,50,0.97))",
+            border: "1px solid rgba(139,92,246,0.18)",
+            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Bot size={14} className="text-white" />
+          <div className="flex items-center gap-3 px-6 pt-6 pb-4">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)" }}>
+              <Bot size={14} style={{ color: "#A78BFA" }} />
             </div>
-            <p className="font-semibold text-foreground">Rendimiento por agente</p>
+            <p className="font-bold text-white text-sm tracking-tight">Rendimiento por agente</p>
           </div>
-          {agentPerf && agentPerf.length > 0 ? (
-            <ResponsiveContainer width="100%" height={170}>
-              <BarChart data={agentPerf} margin={{ top: 0, right: 4, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,93%)" vertical={false} />
-                <XAxis
-                  dataKey="agent"
-                  tick={{ fontSize: 11, fill: "hsl(220,9%,60%)" }}
-                  axisLine={false} tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "hsl(220,9%,60%)" }}
-                  axisLine={false} tickLine={false}
-                />
-                <Tooltip {...CHART_STYLE} />
-                <Bar dataKey="messages" fill="hsl(243,75%,59%)" radius={[6, 6, 0, 0]} name="Mensajes" />
-              </BarChart>
-            </ResponsiveContainer>
+          {agentData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[170px] gap-2 pb-4">
+              <Bot size={28} style={{ color: "rgba(255,255,255,0.12)" }} />
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.25)" }}>Sin datos de agentes aún</p>
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-[170px] gap-2 text-muted-foreground">
-              <Bot size={28} className="text-muted-foreground/30" />
-              <p className="text-sm">Sin datos de agentes aún</p>
+            <div className="px-2 pb-5">
+              <ResponsiveContainer width="100%" height={170}>
+                <BarChart data={agentData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
+                  <defs>
+                    {BAR_COLORS.map((c, i) => (
+                      <linearGradient key={i} id={`barG${i}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor={c} stopOpacity={0.9} />
+                        <stop offset="100%" stopColor={c} stopOpacity={0.35} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 6" stroke="rgba(139,92,246,0.08)" vertical={false} />
+                  <XAxis dataKey="agent" tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "rgba(167,139,250,0.5)", fontWeight: 500 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<FuturisticTooltip />} cursor={{ fill: "rgba(139,92,246,0.07)" }} />
+                  <Bar dataKey="messages" radius={[6, 6, 2, 2]} name="Mensajes" maxBarSize={48}>
+                    {agentData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={`url(#barG${index % BAR_COLORS.length})`}
+                        style={{ filter: `drop-shadow(0 0 6px ${BAR_COLORS[index % BAR_COLORS.length]}88)` }} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
         </motion.div>
 
         {/* Canales */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="card-stripe p-6"
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg,rgba(15,10,40,0.97),rgba(10,20,45,0.97))",
+            border: "1px solid rgba(139,92,246,0.18)",
+            boxShadow: "0 0 40px rgba(139,92,246,0.08),inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-              <Activity size={14} className="text-white" />
+          <div className="flex items-center gap-3 px-6 pt-6 pb-4">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "rgba(6,182,212,0.2)", border: "1px solid rgba(6,182,212,0.3)" }}>
+              <Activity size={14} style={{ color: "#22D3EE" }} />
             </div>
-            <p className="font-semibold text-foreground">Distribución por canal</p>
+            <p className="font-bold text-white text-sm tracking-tight">Distribución por canal</p>
           </div>
-          {stats?.conversations_by_channel && Object.keys(stats.conversations_by_channel).length > 0 ? (
-            <div className="space-y-4">
+          {!stats?.conversations_by_channel || Object.keys(stats.conversations_by_channel).length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[170px] gap-2 pb-4">
+              <Activity size={28} style={{ color: "rgba(255,255,255,0.12)" }} />
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.25)" }}>Sin datos de canales aún</p>
+            </div>
+          ) : (
+            <div className="px-6 pb-6 space-y-4">
               {Object.entries(stats.conversations_by_channel).map(([channel, count]) => {
                 const total = stats.total_conversations || 1;
                 const pct = Math.round((count as number / total) * 100);
-                const colors: Record<string, string> = {
-                  whatsapp:  "bg-emerald-500",
-                  instagram: "bg-pink-500",
-                  webchat:   "bg-violet-500",
-                };
+                const cs = CHANNEL_STYLE[channel] ?? CHANNEL_STYLE.webchat;
                 return (
                   <div key={channel}>
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-2">
                       <ChannelBadge channel={channel} />
-                      <span className="text-sm font-semibold text-foreground tabular-nums">
-                        {count as number}
-                        <span className="text-muted-foreground font-normal text-xs ml-1.5">({pct}%)</span>
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold tabular-nums ${cs.text}`}>{count as number}</span>
+                        <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>{pct}%</span>
+                      </div>
                     </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
-                        transition={{ delay: 0.4, duration: 0.7, ease: "easeOut" }}
-                        className={`h-full rounded-full ${colors[channel] ?? "bg-primary"}`}
+                        transition={{ delay: 0.45, duration: 0.9, ease: "easeOut" }}
+                        className="h-full rounded-full"
+                        style={{ background: cs.bar, boxShadow: `0 0 8px ${cs.glow}` }}
                       />
                     </div>
                   </div>
                 );
               })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-[170px] gap-2 text-muted-foreground">
-              <Activity size={28} className="text-muted-foreground/30" />
-              <p className="text-sm">Sin datos de canales aún</p>
             </div>
           )}
         </motion.div>
