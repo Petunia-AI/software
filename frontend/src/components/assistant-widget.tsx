@@ -47,11 +47,16 @@ export function AssistantWidget() {
     try {
       const res = await assistantApi.chat(newMessages);
       setMessages([...newMessages, { role: "assistant", content: res.data.reply }]);
-    } catch {
-      setMessages([...newMessages, {
-        role: "assistant",
-        content: "Lo siento, ocurrió un error. Intenta de nuevo en un momento.",
-      }]);
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      let msg = "Lo siento, ocurrió un error. Intenta de nuevo en un momento.";
+      if (status === 503 || detail?.includes("no disponible")) {
+        msg = "El asistente no está disponible en este momento. Contacta a soporte si el problema persiste.";
+      } else if (status === 401) {
+        msg = "Tu sesión expiró. Recarga la página e inicia sesión nuevamente.";
+      }
+      setMessages([...newMessages, { role: "assistant", content: msg }]);
     } finally {
       setLoading(false);
     }
