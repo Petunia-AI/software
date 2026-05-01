@@ -73,7 +73,7 @@ function ConversationsInner() {
   const activeCount = convs.filter((c: Record<string, unknown>) => c.status === "active").length;
 
   return (
-    <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
+    <div className="p-4 md:p-8 max-w-[1280px] mx-auto">
       <PageHeader
         title="Conversaciones"
         subtitle={`${convs.length} totales · ${activeCount} activas`}
