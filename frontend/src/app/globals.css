@@ -84,6 +84,9 @@
     font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
     font-feature-settings: "cv11", "ss01", "cv01";
     font-variation-settings: "opsz" 32;
+    /* iOS PWA: evitar fondo blanco durante carga */
+    background-color: #F5F3F0;
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, h4 { @apply tracking-tight font-semibold; }
