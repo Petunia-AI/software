@@ -18,7 +18,6 @@ const MORE_ITEMS = [
   { href: "/content",    icon: PenNib,          label: "Contenido",         color: "from-pink-500 to-rose-500" },
   { href: "/email",      icon: EnvelopeSimple,  label: "Email CRM",         color: "from-sky-500 to-blue-600" },
   { href: "/meetings",   icon: CalendarDots,    label: "Reuniones",         color: "from-violet-500 to-purple-600" },
-  { href: "/integrations/whatsapp", icon: ChatCircle, label: "WhatsApp Business", color: "from-green-500 to-emerald-600" },
   { href: "/properties", icon: Buildings,       label: "Propiedades",       color: "from-teal-500 to-green-600" },
   { href: "/settings",   icon: SlidersHorizontal, label: "Configuración",  color: "from-slate-500 to-gray-600" },
   { href: "/billing",    icon: Wallet,          label: "Plan & Billing",    color: "from-violet-600 to-indigo-600" },

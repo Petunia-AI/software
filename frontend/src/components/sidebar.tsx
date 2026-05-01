@@ -26,7 +26,6 @@ const navItems = [
   { href: "/content",                icon: PenNib,            label: "Contenido",         badge: null,      color: "from-pink-500 to-rose-500",      glow: "rgba(236,72,153,0.35)",  iconWeight: "duotone" as const },
   { href: "/email",                  icon: EnvelopeSimple,    label: "Email CRM",         badge: null,      color: "from-sky-500 to-blue-600",       glow: "rgba(14,165,233,0.35)",  iconWeight: "duotone" as const },
   { href: "/meetings",               icon: CalendarDots,      label: "Reuniones",         badge: null,      color: "from-violet-500 to-purple-600",  glow: "rgba(139,92,246,0.35)",  iconWeight: "duotone" as const },
-  { href: "/integrations/whatsapp",  icon: ChatCircle,        label: "WhatsApp Business", badge: null,      color: "from-green-500 to-emerald-600",  glow: "rgba(16,185,129,0.35)",  iconWeight: "duotone" as const },
   { href: "/properties",             icon: Buildings,         label: "Propiedades",       badge: null,      color: "from-teal-500 to-green-600",     glow: "rgba(20,184,166,0.35)",  iconWeight: "duotone" as const },
 ];
 
