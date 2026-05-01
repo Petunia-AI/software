@@ -220,7 +220,7 @@ class ZernioService:
         scheduled_date: ISO 8601 string para programar (opcional)
         publish_now: True para publicar inmediatamente
 
-        Nota: TikTok e Instagram requieren mediaUrls (imagen/video) obligatorio.
+        Nota: TikTok e Instagram requieren mediaItems (imagen/video) obligatorio.
         """
         requires_media = {"instagram"}
         requires_video = {"tiktok"}
@@ -251,7 +251,9 @@ class ZernioService:
             "platforms": filtered_accounts,
         }
         if media_urls:
-            body["mediaUrls"] = media_urls
+            def _media_type(url: str) -> str:
+                return "video" if url.lower().split("?")[0].endswith((".mp4", ".mov", ".avi", ".webm")) else "image"
+            body["mediaItems"] = [{"url": u, "type": _media_type(u)} for u in media_urls]
         if publish_now:
             body["publishNow"] = True
         elif scheduled_date:
