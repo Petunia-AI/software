@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   SquaresFour, ChatCircleText, UsersThree, BellRinging,
   TrendUp, Robot, PenNib, Buildings,
-  EnvelopeSimple, CalendarDots,
+  EnvelopeSimple, Slideshow,
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -23,7 +23,7 @@ const navItems = [
   { href: "/agents",                 icon: Robot,             label: "Agentes IA",        badge: null,      color: "from-fuchsia-500 to-purple-600", glow: "rgba(217,70,239,0.35)",  iconWeight: "duotone" as const },
   { href: "/content",                icon: PenNib,            label: "Contenido",         badge: null,      color: "from-pink-500 to-rose-500",      glow: "rgba(236,72,153,0.35)",  iconWeight: "duotone" as const },
   { href: "/email",                  icon: EnvelopeSimple,    label: "Email CRM",         badge: null,      color: "from-sky-500 to-blue-600",       glow: "rgba(14,165,233,0.35)",  iconWeight: "duotone" as const },
-  { href: "/meetings",               icon: CalendarDots,      label: "Reuniones",         badge: null,      color: "from-violet-500 to-purple-600",  glow: "rgba(139,92,246,0.35)",  iconWeight: "duotone" as const },
+  { href: "/presentaciones",         icon: Slideshow,         label: "Presentaciones",     badge: null,      color: "from-violet-500 to-purple-600",  glow: "rgba(139,92,246,0.35)",  iconWeight: "duotone" as const },
   { href: "/properties",             icon: Buildings,         label: "Propiedades",       badge: null,      color: "from-teal-500 to-green-600",     glow: "rgba(20,184,166,0.35)",  iconWeight: "duotone" as const },
 ];
 

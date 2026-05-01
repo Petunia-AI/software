@@ -19,6 +19,7 @@ from app.api import zernio_oauth
 from app.api import widget as widget_router
 from app.api import email_integration as email_router
 from app.api import meetings as meetings_router
+from app.api import presentations as presentations_router
 from app.api import assistant as assistant_router
 from app.core.scheduler import start_scheduler, stop_scheduler
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
@@ -102,6 +103,7 @@ app.include_router(zernio_oauth.router, prefix="/api")
 app.include_router(widget_router.router, prefix="/api")
 app.include_router(email_router.router, prefix="/api")
 app.include_router(meetings_router.router, prefix="/api")
+app.include_router(presentations_router.router, prefix="/api")
 app.include_router(assistant_router.router, prefix="/api")
 
 # Servir imágenes subidas como archivos estáticos
