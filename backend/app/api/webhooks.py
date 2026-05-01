@@ -111,13 +111,23 @@ async def whatsapp_webhook(request: Request, db: AsyncSession = Depends(get_db))
         conv.messages = []
         conv.lead = lead
 
+    # Deduplicar: Twilio puede reenviar el webhook si no respondemos a tiempo
+    message_sid = parsed.get("message_sid")
+    if message_sid:
+        dup_result = await db.execute(
+            select(Message).where(Message.channel_message_id == message_sid).limit(1)
+        )
+        if dup_result.scalar_one_or_none():
+            logger.info("twilio_duplicate_ignored", message_sid=message_sid)
+            return Response(content="", media_type="text/xml")
+
     # Guardar mensaje entrante
     user_msg = Message(
         id=str(uuid.uuid4()),
         conversation_id=conv.id,
         role=MessageRole.USER,
         content=body,
-        channel_message_id=parsed.get("message_sid"),
+        channel_message_id=message_sid,
     )
     db.add(user_msg)
     await db.flush()
@@ -351,6 +361,15 @@ async def _process_meta_wa_message(
         await db.flush()
         conv.messages = []
         conv.lead = lead
+
+    # Deduplicar: Meta reintenta webhooks si no responde con 200 rápido
+    if message_id:
+        dup_result = await db.execute(
+            select(Message).where(Message.channel_message_id == message_id).limit(1)
+        )
+        if dup_result.scalar_one_or_none():
+            logger.info("meta_wa_duplicate_ignored", message_id=message_id)
+            return
 
     # Guardar mensaje entrante
     user_msg = Message(

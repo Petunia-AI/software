@@ -13,10 +13,11 @@ import structlog
 logger = structlog.get_logger()
 
 # Umbrales de decisión
-CLOSE_SCORE_THRESHOLD = 7.0       # Score >= 7 → Closer
+CLOSE_SCORE_THRESHOLD = 9.0       # Score >= 9 → Closer (antes 7, ahora más exigente)
 DISQUALIFY_THRESHOLD = 2.0        # Score < 2 → Descartar
 NURTURE_THRESHOLD = 4.0           # Score 2-4 → Nurturing
 MAX_CLOSE_ATTEMPTS = 3             # Si el Closer falla 3 veces → Nurturer
+MIN_MESSAGES_TO_QUALIFY = 5       # Mínimo de mensajes del usuario antes de calificar
 
 
 class AgentOrchestrator:
@@ -102,11 +103,11 @@ class AgentOrchestrator:
             conversation_history, business, configs.get("qualifier")
         )
 
-        # 5. Re-calificar cada 3 mensajes del usuario
+        # 5. Re-calificar cada 3 mensajes del usuario, pero solo a partir del mínimo
         user_message_count = sum(1 for m in conversation_history if m.role == "user")
         qualification = None
 
-        if user_message_count > 0 and user_message_count % 3 == 0:
+        if user_message_count >= MIN_MESSAGES_TO_QUALIFY and user_message_count % 3 == 0:
             qualification = await self.qualifier.qualify(conversation_history, business)
             logger.info("lead_qualified", score=qualification.score, action=qualification.recommended_action)
 
