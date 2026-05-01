@@ -206,8 +206,17 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {(!trend || (trend as unknown[]).length === 0) ? (
+            <div className="flex flex-col items-center justify-center h-[210px] gap-2 text-muted-foreground">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+                <Activity size={24} className="text-violet-400" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Sin datos aún</p>
+              <p className="text-xs">Las conversaciones de los últimos 14 días aparecerán aquí</p>
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={210}>
-            <AreaChart data={trend ?? []} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <AreaChart data={trend as Record<string,unknown>[]} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="gViolet" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%"   stopColor="hsl(243,75%,59%)" stopOpacity={0.2} />
@@ -238,6 +247,7 @@ export default function DashboardPage() {
               />
             </AreaChart>
           </ResponsiveContainer>
+          )}
         </motion.div>
 
         {/* Recent activity */}
@@ -258,16 +268,17 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex-1 space-y-1">
-            {!convs || convs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-36 text-muted-foreground">
-                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-2">
-                  <MessageSquare size={20} className="opacity-30" />
+            {!convs || (convs as unknown[]).length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-36 gap-2">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+                  <MessageSquare size={22} className="text-violet-400" />
                 </div>
-                <p className="text-sm font-medium">Sin conversaciones aún</p>
-                <p className="text-xs mt-0.5 opacity-60">Los chats aparecerán aquí</p>
+                <p className="text-sm font-semibold text-foreground">Sin conversaciones aún</p>
+                <p className="text-xs text-muted-foreground">Los chats aparecerán aquí en tiempo real</p>
+                <Link href="/conversations" className="mt-1 text-xs text-primary font-medium hover:underline">Ir a conversaciones →</Link>
               </div>
             ) : (
-              convs.map((conv: Record<string, unknown>) => (
+              (convs as Record<string, unknown>[]).map((conv) => (
                 <Link
                   key={conv.id as string}
                   href={`/conversations/${conv.id}`}
@@ -297,7 +308,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      #{(conv.id as string).slice(0, 8)}
+                      {(conv.lead_name as string) || `Chat #${(conv.id as string).slice(0, 6)}`}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <AgentBadge agent={conv.current_agent as string} />
@@ -310,6 +321,8 @@ export default function DashboardPage() {
               ))
             )}
           </div>
+            )}
+          </div>
         </motion.div>
       </div>
 
@@ -317,19 +330,19 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
         {/* Agentes performance */}
-        {agentPerf && agentPerf.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="card-stripe p-6"
-          >
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <Bot size={14} className="text-white" />
-              </div>
-              <p className="font-semibold text-foreground">Rendimiento por agente</p>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="card-stripe p-6"
+        >
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+              <Bot size={14} className="text-white" />
             </div>
+            <p className="font-semibold text-foreground">Rendimiento por agente</p>
+          </div>
+          {agentPerf && agentPerf.length > 0 ? (
             <ResponsiveContainer width="100%" height={170}>
               <BarChart data={agentPerf} margin={{ top: 0, right: 4, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,93%)" vertical={false} />
@@ -346,23 +359,28 @@ export default function DashboardPage() {
                 <Bar dataKey="messages" fill="hsl(243,75%,59%)" radius={[6, 6, 0, 0]} name="Mensajes" />
               </BarChart>
             </ResponsiveContainer>
-          </motion.div>
-        )}
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[170px] gap-2 text-muted-foreground">
+              <Bot size={28} className="text-muted-foreground/30" />
+              <p className="text-sm">Sin datos de agentes aún</p>
+            </div>
+          )}
+        </motion.div>
 
         {/* Canales */}
-        {stats?.conversations_by_channel && Object.keys(stats.conversations_by_channel).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className="card-stripe p-6"
-          >
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                <Activity size={14} className="text-white" />
-              </div>
-              <p className="font-semibold text-foreground">Distribución por canal</p>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="card-stripe p-6"
+        >
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+              <Activity size={14} className="text-white" />
             </div>
+            <p className="font-semibold text-foreground">Distribución por canal</p>
+          </div>
+          {stats?.conversations_by_channel && Object.keys(stats.conversations_by_channel).length > 0 ? (
             <div className="space-y-4">
               {Object.entries(stats.conversations_by_channel).map(([channel, count]) => {
                 const total = stats.total_conversations || 1;
@@ -393,8 +411,13 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-          </motion.div>
-        )}
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[170px] gap-2 text-muted-foreground">
+              <Activity size={28} className="text-muted-foreground/30" />
+              <p className="text-sm">Sin datos de canales aún</p>
+            </div>
+          )}
+        </motion.div>
       </div>
     </div>
   );
