@@ -92,7 +92,7 @@ async def _ensure_profile(business: Business, db: AsyncSession) -> None:
     base_title = re.sub(r"\s+\[[\w-]+\]$", "", (business.name or "Negocio").strip())
     name = f"{base_title} [{short_id}]"
     try:
-        profile_data = await zernio_service.create_profile(
+        profile_data = await zernio_service.get_or_create_profile(
             name=name,
             description=f"Perfil Petunia — business_id: {business.id}",
         )

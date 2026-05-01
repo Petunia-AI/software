@@ -67,9 +67,37 @@ class ZernioService:
                 headers=_headers(),
                 json={"name": name, "description": description},
             )
-            resp.raise_for_status()
+            if not resp.is_success:
+                body = ""
+                try:
+                    body = resp.json()
+                except Exception:
+                    body = resp.text
+                raise httpx.HTTPStatusError(
+                    f"Zernio {resp.status_code} al crear perfil: {body}",
+                    request=resp.request,
+                    response=resp,
+                )
             data = resp.json()
             return data.get("profile", data)
+
+    async def get_or_create_profile(self, name: str, description: str = "") -> dict:
+        """
+        Busca si ya existe un perfil con este nombre exacto (para evitar duplicados).
+        Si existe lo devuelve, si no crea uno nuevo.
+        """
+        async with httpx.AsyncClient(timeout=15) as client:
+            # Listar perfiles existentes
+            resp = await client.get(f"{ZERNIO_BASE}/profiles", headers=_headers())
+            if resp.is_success:
+                data = resp.json()
+                profiles = data.get("profiles", data) if isinstance(data, dict) else data
+                if isinstance(profiles, list):
+                    for p in profiles:
+                        if p.get("name") == name:
+                            return p
+        # No existe — crear
+        return await self.create_profile(name, description)
 
     async def get_profile(self, profile_id: str) -> dict:
         """Obtiene un perfil por su ID."""
