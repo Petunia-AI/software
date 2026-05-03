@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Layers, Plus, Sparkles, Download, Printer,
-  Trash2, Loader2, X, CheckCircle2, AlertCircle, RotateCcw,
+  Trash2, Loader2, X, CheckCircle2, AlertCircle, RotateCcw, FileDown,
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -111,6 +111,7 @@ export default function PresentacionesPage() {
   // Regenerate state
   const [regenerating, setRegenerating] = useState(false);
   const [showRegenPanel, setShowRegenPanel] = useState(false);
+  const [downloadingPptx, setDownloadingPptx] = useState(false);
 
   // Confirm delete
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -270,6 +271,31 @@ export default function PresentacionesPage() {
     a.download = `${title.replace(/\s+/g, "_")}_presentacion.html`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function downloadPPTX(presentationId: string, title: string) {
+    setDownloadingPptx(true);
+    try {
+      const resp = await fetch(`${API}/presentations/${presentationId}/download.pptx`, {
+        headers: authHeaders(),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || "Error al generar el PowerPoint");
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${title.replace(/\s+/g, "_")}_presentacion.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("PowerPoint descargado ✅", "success");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error al descargar el PowerPoint", "error");
+    } finally {
+      setDownloadingPptx(false);
+    }
   }
 
   function printPresentation(html: string) {
@@ -582,6 +608,18 @@ export default function PresentacionesPage() {
                       className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700"
                     >
                       <Printer className="w-3.5 h-3.5" /> PDF
+                    </button>
+                    <button
+                      onClick={() => downloadPPTX(selected.id, selected.title)}
+                      disabled={downloadingPptx}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      {downloadingPptx ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <FileDown className="w-3.5 h-3.5" />
+                      )}
+                      {downloadingPptx ? "Generando..." : "PPTX"}
                     </button>
                   </>
                 )}

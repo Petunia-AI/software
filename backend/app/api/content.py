@@ -143,6 +143,7 @@ async def _do_publish(post_id: str, _unused_db: AsyncSession | None = None):
                 channel=post.channel.value,
                 caption=caption_with_hashtags,
                 image_url=post.image_url,
+                video_url=getattr(post, "video_url", None),
                 zernio_profile_id=zernio_profile_id,
                 zernio_connected_platforms=zernio_connected_platforms,
                 format_type=post.format_type,
@@ -1068,9 +1069,44 @@ async def check_video_status(
 
     status_data = await get_video_status(video_job_id)
 
-    # Si el video está listo, guardar la URL
+    # Si el video está listo, descargarlo y guardarlo en storage permanente
     if status_data.get("status") == "completed" and status_data.get("video_url"):
-        post.video_url = status_data["video_url"]
+        temp_url = status_data["video_url"]
+        permanent_url = temp_url  # fallback si la descarga falla
+        try:
+            import httpx as _httpx
+            from app.services.storage_service import save_media as _save_media
+            from app.models.media_asset import MediaAsset as _MediaAsset
+            async with _httpx.AsyncClient(timeout=120) as _client:
+                video_resp = await _client.get(temp_url)
+                video_resp.raise_for_status()
+                video_bytes = video_resp.content
+            original_filename = f"grok_video_{post_id}.mp4"
+            _key, permanent_url = await _save_media(
+                business_id=str(current_user.business_id),
+                original_filename=original_filename,
+                file_bytes=video_bytes,
+                mime_type="video/mp4",
+            )
+            stored_filename = _key.rsplit("/", 1)[-1]
+            # Registrar en biblioteca de medios
+            _asset = _MediaAsset(
+                business_id=str(current_user.business_id),
+                original_filename=original_filename,
+                stored_filename=stored_filename,
+                mime_type="video/mp4",
+                file_type="video",
+                file_size_bytes=len(video_bytes),
+                storage_path=_key,
+                public_url=permanent_url,
+            )
+            db.add(_asset)
+            logger.info("grok_video_saved_to_storage", post_id=post_id, key=_key, bytes=len(video_bytes))
+        except Exception as _e:
+            logger.warning("grok_video_download_failed", post_id=post_id, error=str(_e))
+
+        post.video_url = permanent_url
+        status_data["video_url"] = permanent_url
         await db.commit()
 
     return {

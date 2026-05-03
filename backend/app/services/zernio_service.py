@@ -234,7 +234,7 @@ class ZernioService:
             ]
         else:
             is_video = any(
-                url.lower().endswith((".mp4", ".mov", ".avi", ".webm"))
+                url.lower().split("?")[0].endswith((".mp4", ".mov", ".avi", ".webm"))
                 for url in media_urls
             )
             if not is_video:

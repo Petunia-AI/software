@@ -1450,11 +1450,11 @@ export default function ContentPage() {
         setPosts((prev) => [post, ...prev]);
         setStats((s) => ({ ...s, total: s.total + 1, by_status: { ...s.by_status, draft: (s.by_status.draft ?? 0) + 1 } }));
         setPanel("none");
-        let msg = opts.scheduledAt ? `Post programado para ${new Date(opts.scheduledAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })} 📅` : "Post generado exitosamente";
+        let msg = opts.scheduledAt ? `Post programado para ${new Date(opts.scheduledAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })} 📅` : "✅ Post creado — ya aparece en tu lista";
         if (post.image_url) msg += " con imagen ✨";
         if (post.video_job_id) msg += " · video IA en proceso 🎬";
-        toast.success(msg, { id: toastId });
-        silentRefresh();
+        toast.success(msg, { id: toastId, duration: 5000 });
+        setTimeout(() => silentRefresh(), 3000);
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.detail || "Error al generar el post", { id: toastId });
@@ -1481,11 +1481,11 @@ export default function ContentPage() {
         setPanel("none");
         const p = post._smart_params;
         const channelLabel = CHANNEL_CONFIG[post.channel as Channel]?.label ?? post.channel;
-        let msg = `Post creado para ${channelLabel} · ${post.content_type}`;
+        let msg = `✅ Post creado para ${channelLabel} · ${post.content_type}`;
         if (p?.rationale) msg += ` — ${p.rationale}`;
         if (post.image_url) msg += " 🎨";
         toast.success(msg, { id: toastId, duration: 5000 });
-        silentRefresh();
+        setTimeout(() => silentRefresh(), 3000);
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.detail || "Error al generar el post con IA", { id: toastId });

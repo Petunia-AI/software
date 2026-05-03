@@ -180,6 +180,7 @@ async def publish_via_zernio(
     caption: str,
     platform_accounts: list[dict],
     image_url: str | None = None,
+    video_url: str | None = None,
     scheduled_date: str | None = None,
     format_type: str = "post",
 ) -> dict:
@@ -201,11 +202,13 @@ async def publish_via_zernio(
         resolved_accounts.append(acc)
 
     try:
+        # Prefer video_url for platforms that require video (e.g. TikTok)
+        media_url = video_url or image_url
         result = await zernio_service.post(
             profile_id=profile_id,
             text=caption,
             platform_accounts=resolved_accounts,
-            media_urls=[image_url] if image_url else None,
+            media_urls=[media_url] if media_url else None,
             scheduled_date=scheduled_date,
             publish_now=(scheduled_date is None),
         )
@@ -225,6 +228,7 @@ async def publish_post(
     channel: str,
     caption: str,
     image_url: str | None = None,
+    video_url: str | None = None,
     zernio_profile_id: str | None = None,
     zernio_connected_platforms: list[dict] | None = None,
     format_type: str = "post",
@@ -256,6 +260,7 @@ async def publish_post(
                 caption=caption,
                 platform_accounts=[{"platform": match["platform"], "accountId": match["accountId"]}],
                 image_url=image_url,
+                video_url=video_url,
                 format_type=format_type,
             )
 

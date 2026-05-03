@@ -48,6 +48,9 @@ structlog==24.4.0
 
 # Email
 resend==2.4.0
+
+# Presentations
+python-pptx==1.0.2
 jinja2==3.1.4
 
 # Stripe
