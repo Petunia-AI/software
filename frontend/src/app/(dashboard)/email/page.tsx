@@ -7,6 +7,8 @@ import {
   Search, ChevronDown, X, Check, AlertCircle, Loader2, ExternalLink,
   FileText, Reply, Clock, User, AtSign, Link2, Zap, Pencil, Bold,
   Italic, List, AlignLeft, Signature, Sparkles,
+  Megaphone, BarChart3, Play, Pause, UserPlus, FlaskConical, ChevronRight,
+  ListChecks, MailOpen, MousePointerClick, Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/auth";
@@ -1065,11 +1067,553 @@ function TemplateManager({ token, onClose }: { token: string; onClose: () => voi
   );
 }
 
+// ── Email Marketing View ───────────────────────────────────────────────────────
+
+interface Campaign {
+  id: string;
+  name: string;
+  subject: string;
+  status: "draft" | "sending" | "sent";
+  from_name?: string;
+  from_email?: string;
+  body_html: string;
+  total_sent: number;
+  total_opened: number;
+  total_clicked: number;
+  audience_filter?: string;
+  sent_at?: string;
+  created_at: string;
+}
+
+interface SequenceStep {
+  id: string;
+  step_number: number;
+  subject: string;
+  body_html: string;
+  delay_hours: number;
+}
+
+interface Sequence {
+  id: string;
+  name: string;
+  description?: string;
+  trigger: string;
+  is_active: boolean;
+  steps: SequenceStep[];
+  created_at: string;
+}
+
+interface MarketingStats {
+  total_campaigns: number;
+  total_sent: number;
+  total_opened: number;
+  total_clicked: number;
+  open_rate: number;
+  click_rate: number;
+  total_sequences: number;
+  active_enrollments: number;
+}
+
+function EmailMarketingView({ token }: { token: string }) {
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const [tab, setTab] = useState<"campaigns" | "sequences">("campaigns");
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [sequences, setSequences] = useState<Sequence[]>([]);
+  const [stats, setStats] = useState<MarketingStats | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Campaign form
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
+  const [editCampaign, setEditCampaign] = useState<Campaign | null>(null);
+  const [campaignName, setCampaignName] = useState("");
+  const [campaignSubject, setCampaignSubject] = useState("");
+  const [campaignFromName, setCampaignFromName] = useState("");
+  const [campaignFromEmail, setCampaignFromEmail] = useState("");
+  const [campaignAudience, setCampaignAudience] = useState("");
+  const campaignBodyRef = useRef<HTMLDivElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTest, setSendingTest] = useState<string | null>(null);
+  const [sendingCampaign, setSendingCampaign] = useState<string | null>(null);
+
+  // Sequence form
+  const [showSeqForm, setShowSeqForm] = useState(false);
+  const [seqName, setSeqName] = useState("");
+  const [seqDescription, setSeqDescription] = useState("");
+  const [seqTrigger, setSeqTrigger] = useState("manual");
+  const [seqFromName, setSeqFromName] = useState("");
+  const [seqFromEmail, setSeqFromEmail] = useState("");
+  const [seqSteps, setSeqSteps] = useState<Omit<SequenceStep, "id">[]>([
+    { step_number: 1, subject: "", body_html: "", delay_hours: 0 },
+  ]);
+  const [savingSeq, setSavingSeq] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [cRes, sRes, stRes] = await Promise.all([
+        fetch(`${API}/email/campaigns`, { headers }),
+        fetch(`${API}/email/sequences`, { headers }),
+        fetch(`${API}/email/marketing/stats`, { headers }),
+      ]);
+      if (cRes.ok) setCampaigns(await cRes.json());
+      if (sRes.ok) setSequences(await sRes.json());
+      if (stRes.ok) setStats(await stRes.json());
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  function openNewCampaign() {
+    setEditCampaign(null);
+    setCampaignName(""); setCampaignSubject(""); setCampaignFromName(""); setCampaignFromEmail(""); setCampaignAudience("");
+    setShowCampaignForm(true);
+    setTimeout(() => { if (campaignBodyRef.current) campaignBodyRef.current.innerHTML = ""; }, 50);
+  }
+
+  function openEditCampaign(c: Campaign) {
+    setEditCampaign(c);
+    setCampaignName(c.name); setCampaignSubject(c.subject);
+    setCampaignFromName(c.from_name || ""); setCampaignFromEmail(c.from_email || "");
+    setCampaignAudience(c.audience_filter || "");
+    setShowCampaignForm(true);
+    setTimeout(() => { if (campaignBodyRef.current) campaignBodyRef.current.innerHTML = c.body_html || ""; }, 50);
+  }
+
+  async function saveCampaign() {
+    if (!campaignName || !campaignSubject) return toast.error("Nombre y asunto son obligatorios");
+    setSaving(true);
+    const body = {
+      name: campaignName, subject: campaignSubject,
+      body_html: campaignBodyRef.current?.innerHTML || "",
+      from_name: campaignFromName || undefined,
+      from_email: campaignFromEmail || undefined,
+      audience_filter: campaignAudience || undefined,
+    };
+    try {
+      const r = editCampaign
+        ? await fetch(`${API}/email/campaigns/${editCampaign.id}`, { method: "PATCH", headers, body: JSON.stringify(body) })
+        : await fetch(`${API}/email/campaigns`, { method: "POST", headers, body: JSON.stringify(body) });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || "Error"); }
+      toast.success(editCampaign ? "Campaña actualizada" : "Campaña creada");
+      setShowCampaignForm(false);
+      fetchData();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al guardar");
+    } finally { setSaving(false); }
+  }
+
+  async function sendCampaign(id: string) {
+    if (!confirm("¿Enviar esta campaña a todos los leads de la audiencia?")) return;
+    setSendingCampaign(id);
+    try {
+      const r = await fetch(`${API}/email/campaigns/${id}/send`, { method: "POST", headers });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) { toast.success(`Enviando a ${d.total_recipients} leads`); fetchData(); }
+      else toast.error(d.detail || "Error al enviar");
+    } finally { setSendingCampaign(null); }
+  }
+
+  async function sendTestEmail(id: string) {
+    if (!testEmail) return toast.error("Ingresa un email de prueba");
+    setSendingTest(id);
+    try {
+      const r = await fetch(`${API}/email/campaigns/${id}/test`, { method: "POST", headers, body: JSON.stringify({ email: testEmail }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) toast.success("Email de prueba enviado");
+      else toast.error(d.detail || "Error");
+    } finally { setSendingTest(null); }
+  }
+
+  async function deleteCampaign(id: string) {
+    if (!confirm("¿Eliminar esta campaña?")) return;
+    const r = await fetch(`${API}/email/campaigns/${id}`, { method: "DELETE", headers });
+    if (r.ok) { toast.success("Campaña eliminada"); fetchData(); }
+  }
+
+  function openNewSeq() {
+    setSeqName(""); setSeqDescription(""); setSeqTrigger("manual"); setSeqFromName(""); setSeqFromEmail("");
+    setSeqSteps([{ step_number: 1, subject: "", body_html: "", delay_hours: 0 }]);
+    setShowSeqForm(true);
+  }
+
+  function addSeqStep() {
+    setSeqSteps((prev) => [...prev, { step_number: prev.length + 1, subject: "", body_html: "", delay_hours: 24 }]);
+  }
+
+  async function saveSequence() {
+    if (!seqName) return toast.error("Nombre es obligatorio");
+    setSavingSeq(true);
+    const body = {
+      name: seqName, description: seqDescription || undefined,
+      trigger: seqTrigger,
+      from_name: seqFromName || undefined,
+      from_email: seqFromEmail || undefined,
+      steps: seqSteps.filter((s) => s.subject && s.body_html),
+    };
+    try {
+      const r = await fetch(`${API}/email/sequences`, { method: "POST", headers, body: JSON.stringify(body) });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || "Error"); }
+      toast.success("Secuencia creada");
+      setShowSeqForm(false);
+      fetchData();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al guardar");
+    } finally { setSavingSeq(false); }
+  }
+
+  async function toggleSeqActive(seq: Sequence) {
+    const r = await fetch(`${API}/email/sequences/${seq.id}`, { method: "PATCH", headers, body: JSON.stringify({ is_active: !seq.is_active }) });
+    if (r.ok) { toast.success(seq.is_active ? "Secuencia pausada" : "Secuencia activada"); fetchData(); }
+  }
+
+  async function deleteSequence(id: string) {
+    if (!confirm("¿Eliminar esta secuencia?")) return;
+    const r = await fetch(`${API}/email/sequences/${id}`, { method: "DELETE", headers });
+    if (r.ok) { toast.success("Secuencia eliminada"); fetchData(); }
+  }
+
+  const statusBadge = (status: string) => {
+    if (status === "sent") return <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">Enviada</span>;
+    if (status === "sending") return <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 animate-pulse">Enviando...</span>;
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Borrador</span>;
+  };
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Stats bar */}
+      {stats && (
+        <div className="grid grid-cols-4 gap-3 p-4 bg-white border-b border-border">
+          {[
+            { label: "Enviados", value: stats.total_sent.toLocaleString(), icon: <Send size={14} className="text-sky-500" /> },
+            { label: "Tasa apertura", value: `${stats.open_rate}%`, icon: <MailOpen size={14} className="text-violet-500" /> },
+            { label: "Tasa de clics", value: `${stats.click_rate}%`, icon: <MousePointerClick size={14} className="text-emerald-500" /> },
+            { label: "Inscripciones activas", value: stats.active_enrollments.toString(), icon: <Users size={14} className="text-amber-500" /> },
+          ].map((s) => (
+            <div key={s.label} className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-border">
+              <div className="p-2 rounded-lg bg-white shadow-sm">{s.icon}</div>
+              <div>
+                <p className="text-xs text-muted-foreground leading-none mb-0.5">{s.label}</p>
+                <p className="text-sm font-bold text-foreground">{s.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex border-b border-border bg-white px-4 gap-4">
+        {(["campaigns", "sequences"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`py-3 text-xs font-semibold border-b-2 transition-colors ${tab === t ? "border-violet-500 text-violet-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            {t === "campaigns" ? <><Megaphone size={12} className="inline mr-1.5" />Campañas únicas</> : <><ListChecks size={12} className="inline mr-1.5" />Secuencias automáticas</>}
+          </button>
+        ))}
+        <div className="ml-auto flex items-center">
+          <button onClick={() => tab === "campaigns" ? openNewCampaign() : openNewSeq()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
+            <Plus size={12} /> {tab === "campaigns" ? "Nueva campaña" : "Nueva secuencia"}
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {loading ? (
+          <div className="flex items-center justify-center h-40"><Loader2 size={24} className="animate-spin text-violet-500" /></div>
+        ) : tab === "campaigns" ? (
+          <div className="space-y-3">
+            {campaigns.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center">
+                  <Megaphone size={24} className="text-violet-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground mb-1">Sin campañas aún</p>
+                  <p className="text-sm text-muted-foreground">Crea tu primera campaña de email y envíala a tus leads.</p>
+                </div>
+                <button onClick={openNewCampaign}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
+                  <Plus size={14} /> Nueva campaña
+                </button>
+              </div>
+            ) : (
+              campaigns.map((c) => (
+                <div key={c.id} className="p-4 rounded-xl bg-white border border-border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-foreground truncate">{c.name}</h3>
+                        {statusBadge(c.status)}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{c.subject}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-[11px] text-muted-foreground mb-3">
+                    <span className="flex items-center gap-1"><Send size={10} /> {c.total_sent} enviados</span>
+                    <span className="flex items-center gap-1"><MailOpen size={10} /> {c.total_opened} aperturas</span>
+                    <span className="flex items-center gap-1"><MousePointerClick size={10} /> {c.total_clicked} clics</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {c.status === "draft" && (
+                      <>
+                        <button onClick={() => openEditCampaign(c)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                          <Pencil size={10} /> Editar
+                        </button>
+                        <div className="flex items-center gap-1 ml-auto">
+                          <input type="email" value={testEmail} onChange={(e) => setTestEmail(e.target.value)}
+                            placeholder="test@email.com" className="text-xs px-2 py-1 rounded-lg border border-border outline-none focus:border-violet-300 w-36" />
+                          <button onClick={() => sendTestEmail(c.id)} disabled={sendingTest === c.id}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors">
+                            {sendingTest === c.id ? <Loader2 size={10} className="animate-spin" /> : <FlaskConical size={10} />} Probar
+                          </button>
+                          <button onClick={() => sendCampaign(c.id)} disabled={sendingCampaign === c.id}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors">
+                            {sendingCampaign === c.id ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />} Enviar
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    <button onClick={() => deleteCampaign(c.id)} className="ml-auto p-1 text-muted-foreground hover:text-red-500 transition-colors">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sequences.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center">
+                  <ListChecks size={24} className="text-violet-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground mb-1">Sin secuencias aún</p>
+                  <p className="text-sm text-muted-foreground">Crea una cadena de emails automática para nutrir tus leads.</p>
+                </div>
+                <button onClick={openNewSeq}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
+                  <Plus size={14} /> Nueva secuencia
+                </button>
+              </div>
+            ) : (
+              sequences.map((s) => (
+                <div key={s.id} className="p-4 rounded-xl bg-white border border-border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">{s.name}</h3>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${s.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                        {s.is_active ? "Activa" : "Pausada"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => toggleSeqActive(s)}
+                        className={`p-1.5 rounded-lg transition-colors ${s.is_active ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"}`}
+                        title={s.is_active ? "Pausar" : "Activar"}>
+                        {s.is_active ? <Pause size={12} /> : <Play size={12} />}
+                      </button>
+                      <button onClick={() => deleteSequence(s.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 transition-colors">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                  {s.description && <p className="text-xs text-muted-foreground mb-2">{s.description}</p>}
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><ListChecks size={10} /> {s.steps.length} pasos</span>
+                    <span className="flex items-center gap-1"><Zap size={10} /> Trigger: {s.trigger}</span>
+                  </div>
+                  {s.steps.length > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      {s.steps.map((step, i) => (
+                        <div key={step.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-[10px] font-bold flex-shrink-0">{i + 1}</div>
+                          <span className="truncate flex-1">{step.subject}</span>
+                          {i < s.steps.length - 1 && <span className="text-[10px] flex-shrink-0">+{step.delay_hours}h</span>}
+                          {i < s.steps.length - 1 && <ChevronRight size={10} className="flex-shrink-0" />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Campaign Form Modal */}
+      <AnimatePresence>
+        {showCampaignForm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <h2 className="text-sm font-bold text-foreground">{editCampaign ? "Editar campaña" : "Nueva campaña"}</h2>
+                <button onClick={() => setShowCampaignForm(false)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-colors"><X size={15} /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nombre de la campaña</label>
+                  <input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="Ej: Bienvenida nuevos leads"
+                    className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Asunto del email</label>
+                  <input value={campaignSubject} onChange={(e) => setCampaignSubject(e.target.value)} placeholder="Ej: 🏠 Descubre las mejores propiedades"
+                    className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nombre remitente</label>
+                    <input value={campaignFromName} onChange={(e) => setCampaignFromName(e.target.value)} placeholder="Tu nombre"
+                      className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Email remitente</label>
+                    <input type="email" value={campaignFromEmail} onChange={(e) => setCampaignFromEmail(e.target.value)} placeholder="tu@email.com"
+                      className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Audiencia</label>
+                  <select value={campaignAudience} onChange={(e) => setCampaignAudience(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300 bg-white">
+                    <option value="">Todos los leads con email</option>
+                    <option value='{"stage":"new"}'>Solo leads nuevos</option>
+                    <option value='{"stage":"contacted"}'>Solo leads contactados</option>
+                    <option value='{"stage":"qualified"}'>Solo leads calificados</option>
+                    <option value='{"stage":"converted"}'>Solo leads convertidos</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Cuerpo del email (HTML)</label>
+                  <div ref={campaignBodyRef} contentEditable suppressContentEditableWarning
+                    className="min-h-[120px] p-3 rounded-xl border border-border text-sm outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 prose prose-sm max-w-none"
+                    onInput={() => {}} />
+                </div>
+              </div>
+              <div className="px-5 py-4 border-t border-border flex gap-2 justify-end">
+                <button onClick={() => setShowCampaignForm(false)} className="px-4 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-colors">Cancelar</button>
+                <button onClick={saveCampaign} disabled={saving}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-all disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Guardar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showSeqForm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <h2 className="text-sm font-bold text-foreground">Nueva secuencia automática</h2>
+                <button onClick={() => setShowSeqForm(false)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-colors"><X size={15} /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nombre</label>
+                    <input value={seqName} onChange={(e) => setSeqName(e.target.value)} placeholder="Ej: Seguimiento de leads"
+                      className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Trigger</label>
+                    <select value={seqTrigger} onChange={(e) => setSeqTrigger(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300 bg-white">
+                      <option value="manual">Manual (inscripción manual)</option>
+                      <option value="lead_created">Al crear un lead</option>
+                      <option value="lead_stage_changed">Al cambiar etapa del lead</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Descripción (opcional)</label>
+                  <input value={seqDescription} onChange={(e) => setSeqDescription(e.target.value)} placeholder="Describe el objetivo de esta secuencia..."
+                    className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nombre remitente</label>
+                    <input value={seqFromName} onChange={(e) => setSeqFromName(e.target.value)} placeholder="Tu nombre"
+                      className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Email remitente</label>
+                    <input type="email" value={seqFromEmail} onChange={(e) => setSeqFromEmail(e.target.value)} placeholder="tu@email.com"
+                      className="w-full px-3 py-2 rounded-xl border border-border text-sm outline-none focus:border-violet-300" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold text-muted-foreground">Pasos de la secuencia</label>
+                    <button onClick={addSeqStep} className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-semibold">
+                      <Plus size={10} /> Agregar paso
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {seqSteps.map((step, i) => (
+                      <div key={i} className="p-3 rounded-xl border border-violet-100 bg-violet-50/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-violet-700">Paso {i + 1}</span>
+                          {i > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-muted-foreground">Enviar después de</span>
+                              <input type="number" value={step.delay_hours} min={1}
+                                onChange={(e) => setSeqSteps((prev) => prev.map((s, j) => j === i ? { ...s, delay_hours: Number(e.target.value) } : s))}
+                                className="w-14 px-2 py-0.5 rounded-lg border border-border text-xs text-center outline-none focus:border-violet-300" />
+                              <span className="text-[10px] text-muted-foreground">horas</span>
+                            </div>
+                          )}
+                        </div>
+                        <input value={step.subject}
+                          onChange={(e) => setSeqSteps((prev) => prev.map((s, j) => j === i ? { ...s, subject: e.target.value } : s))}
+                          placeholder="Asunto del email"
+                          className="w-full px-3 py-1.5 rounded-lg border border-border text-xs outline-none focus:border-violet-300" />
+                        <textarea value={step.body_html} rows={3}
+                          onChange={(e) => setSeqSteps((prev) => prev.map((s, j) => j === i ? { ...s, body_html: e.target.value } : s))}
+                          placeholder="Cuerpo del email (HTML o texto)"
+                          className="w-full px-3 py-1.5 rounded-lg border border-border text-xs outline-none focus:border-violet-300 resize-none font-mono" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="px-5 py-4 border-t border-border flex gap-2 justify-end">
+                <button onClick={() => setShowSeqForm(false)} className="px-4 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-colors">Cancelar</button>
+                <button onClick={saveSequence} disabled={savingSeq}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-all disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
+                  {savingSeq ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Crear secuencia
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function EmailPage() {
   const { token } = useAuthStore();
   const searchParams = useSearchParams();
+  const [mainSection, setMainSection] = useState<"crm" | "marketing">("crm");
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [emails, setEmails] = useState<Email[]>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -1148,7 +1692,24 @@ export default function EmailPage() {
   const unreadCount = emails.filter((e) => !e.is_read && e.direction === "inbound").length;
 
   return (
-    <div className="flex h-full overflow-hidden bg-slate-50">
+    <div className="flex flex-col h-full overflow-hidden bg-slate-50">
+      {/* ── Section switcher ── */}
+      <div className="flex border-b border-border bg-white px-4 gap-1 flex-shrink-0">
+        <button onClick={() => setMainSection("crm")}
+          className={`flex items-center gap-1.5 px-3 py-3 text-xs font-semibold border-b-2 transition-colors ${mainSection === "crm" ? "border-sky-500 text-sky-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          <Mail size={12} /> Email CRM
+        </button>
+        <button onClick={() => setMainSection("marketing")}
+          className={`flex items-center gap-1.5 px-3 py-3 text-xs font-semibold border-b-2 transition-colors ${mainSection === "marketing" ? "border-violet-500 text-violet-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          <Megaphone size={12} /> Campañas
+        </button>
+      </div>
+
+      {mainSection === "marketing" ? (
+        <EmailMarketingView token={token ?? ""} />
+      ) : (
+      <>
+      <div className="flex flex-1 overflow-hidden">
       {/* ── Left panel ── */}
       <div className={`flex flex-col border-r border-border bg-white transition-all ${selectedEmail ? "hidden md:flex md:w-[380px]" : "flex-1 md:w-[380px]"} flex-shrink-0`}>
         {/* Header */}
@@ -1333,6 +1894,7 @@ export default function EmailPage() {
           </div>
         )}
       </div>
+      </div>{/* end flex-1 overflow-hidden */}
 
       {/* ── Modals ── */}
       <AnimatePresence>
@@ -1374,6 +1936,8 @@ export default function EmailPage() {
           />
         )}
       </AnimatePresence>
+      </>
+      )}
     </div>
   );
 }

@@ -131,6 +131,12 @@ class Settings(BaseSettings):
     microsoft_client_secret: str = ""  # Azure AD → Certificates & secrets
     microsoft_tenant_id:     str = "common"  # 'common' para cuentas personales y organizacionales
 
+    # SendGrid — Email marketing & campaigns
+    sendgrid_api_key:       str = ""   # SendGrid API Key (SG.xxx)
+    sendgrid_from_email:    str = ""   # Verified sender email in SendGrid
+    sendgrid_from_name:     str = "Petunia AI"
+    sendgrid_webhook_key:   str = ""   # SendGrid Event Webhook verification key
+
     class Config:
         env_file = ".env"
         extra = "ignore"

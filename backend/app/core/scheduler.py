@@ -18,8 +18,10 @@ from app.models.conversation import Conversation
 from app.models.lead import Lead, LeadStage
 from app.models.followup import FollowUp
 from app.models.content import SocialPost, ContentStatus
+from app.models.email_campaign import EmailSequence, EmailSequenceEnrollment, EmailSequenceStep, EmailSend
 from app.services import email_service
 from app.services.social_publisher import publish_post
+from app.services import sendgrid_service as sg
 
 logger = structlog.get_logger()
 scheduler = AsyncIOScheduler(timezone="UTC")
@@ -374,6 +376,119 @@ async def job_zernio_poll_comments():
                 )
 
 
+# ── Email sequence sender ─────────────────────────────────────────────────
+async def job_send_sequence_emails():
+    """Every 5 minutes: send pending sequence step emails."""
+    now = datetime.now(timezone.utc)
+    async with AsyncSessionLocal() as db:
+        try:
+            # Find active enrollments due for sending
+            result = await db.execute(
+                select(EmailSequenceEnrollment).where(
+                    EmailSequenceEnrollment.status == "active",
+                    EmailSequenceEnrollment.next_send_at <= now,
+                )
+            )
+            enrollments = result.scalars().all()
+
+            for enrollment in enrollments:
+                try:
+                    # Load sequence
+                    seq_result = await db.execute(
+                        select(EmailSequence).where(EmailSequence.id == enrollment.sequence_id)
+                    )
+                    seq = seq_result.scalar_one_or_none()
+                    if not seq or not seq.is_active:
+                        enrollment.status = "paused"
+                        continue
+
+                    # Load all steps ordered
+                    steps_result = await db.execute(
+                        select(EmailSequenceStep)
+                        .where(EmailSequenceStep.sequence_id == seq.id)
+                        .order_by(EmailSequenceStep.step_number)
+                    )
+                    steps = steps_result.scalars().all()
+                    if not steps:
+                        enrollment.status = "completed"
+                        continue
+
+                    # current_step is 0-indexed into the steps list
+                    step_idx = enrollment.current_step
+                    if step_idx >= len(steps):
+                        enrollment.status = "completed"
+                        enrollment.completed_at = now
+                        continue
+
+                    step = steps[step_idx]
+
+                    # Load lead email
+                    lead_result = await db.execute(
+                        select(Lead).where(Lead.id == enrollment.lead_id)
+                    )
+                    lead = lead_result.scalar_one_or_none()
+                    if not lead or not lead.email:
+                        enrollment.status = "completed"
+                        continue
+
+                    # Send email via SendGrid
+                    msg_id = await sg.send_sequence_step(
+                        to_email=lead.email,
+                        to_name=lead.name,
+                        subject=step.subject,
+                        html_content=step.body_html,
+                        sequence_id=seq.id,
+                        step_id=step.id,
+                        enrollment_id=enrollment.id,
+                        lead_id=lead.id,
+                        from_email=seq.from_email,
+                        from_name=seq.from_name,
+                    )
+
+                    # Log send
+                    send = EmailSend(
+                        business_id=enrollment.business_id,
+                        sequence_id=seq.id,
+                        step_id=step.id,
+                        lead_id=str(lead.id),
+                        to_email=lead.email,
+                        subject=step.subject,
+                        sendgrid_message_id=msg_id,
+                        status="sent",
+                    )
+                    db.add(send)
+
+                    # Advance to next step
+                    next_step_idx = step_idx + 1
+                    if next_step_idx >= len(steps):
+                        enrollment.status = "completed"
+                        enrollment.completed_at = now
+                        enrollment.next_send_at = None
+                    else:
+                        next_step = steps[next_step_idx]
+                        enrollment.current_step = next_step_idx
+                        enrollment.next_send_at = now + timedelta(hours=next_step.delay_hours)
+
+                    logger.info(
+                        "scheduler.sequence_step_sent",
+                        enrollment_id=enrollment.id,
+                        step=step_idx + 1,
+                        lead_id=str(lead.id),
+                        msg_id=msg_id,
+                    )
+
+                except Exception as e:
+                    logger.warning(
+                        "scheduler.sequence_step_failed",
+                        enrollment_id=enrollment.id,
+                        error=str(e),
+                    )
+
+            await db.commit()
+        except Exception as e:
+            logger.error("scheduler.sequence_emails.failed", error=str(e))
+
+
 # ── Setup ─────────────────────────────────────────────────────────────────
 def start_scheduler():
     scheduler.add_job(
@@ -406,8 +521,14 @@ def start_scheduler():
         id="zernio_poll_comments",
         replace_existing=True,
     )
+    scheduler.add_job(
+        job_send_sequence_emails,
+        CronTrigger(minute="*/5"),  # every 5 minutes
+        id="send_sequence_emails",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts", "followup_notifications", "zernio_poll_comments"])
+    logger.info("scheduler.started", jobs=["trial_reminder", "daily_report", "publish_scheduled_posts", "followup_notifications", "zernio_poll_comments", "send_sequence_emails"])
 
 
 def stop_scheduler():
