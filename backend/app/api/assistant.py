@@ -123,7 +123,7 @@ async def assistant_chat(
 
     try:
         response = await client.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model=settings.claude_model,
             max_tokens=512,
             system=SYSTEM_PROMPT,
             messages=[{"role": m.role, "content": m.content} for m in messages],
